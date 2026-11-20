@@ -1,0 +1,509 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/* soft-dark ikut dihitung gelap supaya utility `dark:` tetap jalan (frontend-guide §5.2) */
+@custom-variant dark (&:is(.dark *, .soft-dark *));
+@custom-variant pointer-fine (@media (pointer: fine));
+@custom-variant pointer-coarse (@media (pointer: coarse));
+
+/*
+ * Token warna disimpan sebagai HSL TANPA hsl() (`--primary: 240 5.9% 10%`) supaya bisa dipakai
+ * dengan alpha: hsl(var(--primary) / 0.45). Tailwind membaca versi berbungkus di bawah.
+ * Token baru WAJIB punya nilai di keempat mode (light, soft-light, dark, soft-dark).
+ */
+@theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-success: hsl(var(--success));
+  --color-success-foreground: hsl(var(--success-foreground));
+  --color-warning: hsl(var(--warning));
+  --color-warning-foreground: hsl(var(--warning-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+
+  /* Grafik: token standar --viz-* (chart-* dipetakan ke viz supaya komponen shadcn chart tetap jalan) */
+  --color-viz-1: hsl(var(--viz-1));
+  --color-viz-2: hsl(var(--viz-2));
+  --color-viz-3: hsl(var(--viz-3));
+  --color-viz-4: hsl(var(--viz-4));
+  --color-viz-5: hsl(var(--viz-5));
+  --color-viz-6: hsl(var(--viz-6));
+  --color-viz-grid: hsl(var(--viz-grid));
+  --color-viz-axis: hsl(var(--viz-axis));
+  --color-chart-1: hsl(var(--viz-1));
+  --color-chart-2: hsl(var(--viz-2));
+  --color-chart-3: hsl(var(--viz-3));
+  --color-chart-4: hsl(var(--viz-4));
+  --color-chart-5: hsl(var(--viz-5));
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --font-sans: var(--font-app);
+  --font-heading: var(--font-app);
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+}
+
+/* ================================================================== */
+/* Empat mode                                                         */
+/* ================================================================== */
+:root {
+  --background: 0 0% 100%;
+  --foreground: 240 10% 3.9%;
+  --card: 0 0% 100%;
+  --card-foreground: 240 10% 3.9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 240 10% 3.9%;
+  --primary: 240 5.9% 10%;
+  --primary-foreground: 0 0% 98%;
+  --secondary: 240 4.8% 95.9%;
+  --secondary-foreground: 240 5.9% 10%;
+  --muted: 240 4.8% 95.9%;
+  --muted-foreground: 240 3.8% 46.1%;
+  --accent: 240 4.8% 95.9%;
+  --accent-foreground: 240 5.9% 10%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 0 0% 98%;
+  --success: 142 71% 30%;
+  --success-foreground: 0 0% 98%;
+  --warning: 32 95% 40%;
+  --warning-foreground: 0 0% 98%;
+  --border: 240 5.9% 90%;
+  --input: 240 5.9% 90%;
+  --ring: 240 5.9% 10%;
+  --radius: 0.5rem;
+
+  --viz-1: 221 83% 53%;
+  --viz-2: 173 80% 32%;
+  --viz-3: 32 95% 44%;
+  --viz-4: 330 72% 50%;
+  --viz-5: 262 60% 55%;
+  --viz-6: 199 89% 40%;
+  --viz-grid: 240 5.9% 92%;
+  --viz-axis: 240 3.8% 46.1%;
+
+  --sidebar: hsl(0 0% 98%);
+  --sidebar-foreground: hsl(240 5.3% 26.1%);
+  --sidebar-primary: hsl(240 5.9% 10%);
+  --sidebar-primary-foreground: hsl(0 0% 98%);
+  --sidebar-accent: hsl(240 4.8% 95.9%);
+  --sidebar-accent-foreground: hsl(240 5.9% 10%);
+  --sidebar-border: hsl(220 13% 91%);
+  --sidebar-ring: hsl(var(--ring));
+
+  --font-app: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+/* Soft Light: off-white hangat, tidak silau */
+.soft-light {
+  color-scheme: light;
+  --background: 40 14% 91.5%;
+  --foreground: 30 7% 23%;
+  --card: 40 16% 94%;
+  --card-foreground: 30 7% 23%;
+  --popover: 40 16% 94%;
+  --popover-foreground: 30 7% 23%;
+  --primary: 30 7% 25%;
+  --primary-foreground: 40 16% 94%;
+  --secondary: 38 12% 86.5%;
+  --secondary-foreground: 30 7% 23%;
+  --muted: 38 12% 86.5%;
+  --muted-foreground: 30 5% 42%;
+  --accent: 38 12% 85%;
+  --accent-foreground: 30 7% 23%;
+  --destructive: 0 70% 55%;
+  --destructive-foreground: 0 0% 98%;
+  --success: 142 60% 28%;
+  --success-foreground: 40 16% 94%;
+  --warning: 32 90% 36%;
+  --warning-foreground: 40 16% 94%;
+  --border: 38 9% 80.5%;
+  --input: 38 9% 80.5%;
+  --ring: 30 7% 25%;
+
+  --viz-1: 221 70% 48%;
+  --viz-2: 173 85% 30%; /* divalidasi dataviz (chroma) */
+  --viz-3: 32 85% 40%;
+  --viz-4: 330 60% 46%;
+  --viz-5: 262 48% 50%;
+  --viz-6: 199 75% 36%;
+  --viz-grid: 38 9% 84%;
+  --viz-axis: 30 5% 42%;
+
+  --sidebar: hsl(40 13% 89%);
+  --sidebar-foreground: hsl(30 6% 28%);
+  --sidebar-primary: hsl(30 7% 25%);
+  --sidebar-primary-foreground: hsl(40 16% 94%);
+  --sidebar-accent: hsl(38 12% 84%);
+  --sidebar-accent-foreground: hsl(30 7% 23%);
+  --sidebar-border: hsl(38 9% 80.5%);
+  --sidebar-ring: hsl(var(--ring));
+}
+
+/* Dark: zinc gelap, tidak hitam pekat */
+.dark {
+  color-scheme: dark;
+  --background: 240 5.9% 10%;
+  --foreground: 0 0% 98%;
+  --card: 240 5.9% 10%;
+  --card-foreground: 0 0% 98%;
+  --popover: 240 5.9% 10%;
+  --popover-foreground: 0 0% 98%;
+  --primary: 0 0% 98%;
+  --primary-foreground: 240 5.9% 10%;
+  --secondary: 240 3.7% 15.9%;
+  --secondary-foreground: 0 0% 98%;
+  --muted: 240 3.7% 15.9%;
+  --muted-foreground: 240 5% 64.9%;
+  --accent: 240 3.7% 15.9%;
+  --accent-foreground: 0 0% 98%;
+  /* Merah terang supaya text-destructive terbaca; isian solid diredam dark:bg-destructive/60 */
+  --destructive: 0 91% 71%;
+  --destructive-foreground: 0 0% 98%;
+  --success: 142 69% 58%;
+  --success-foreground: 240 5.9% 10%;
+  --warning: 38 92% 60%;
+  --warning-foreground: 240 5.9% 10%;
+  --border: 240 3.7% 15.9%;
+  --input: 240 3.7% 15.9%;
+  --ring: 240 4.9% 83.9%;
+
+  --viz-1: 217 91% 65%;
+  --viz-2: 168 70% 38%; /* divalidasi dataviz (band L dark) */
+  --viz-3: 38 92% 60%;
+  --viz-4: 330 81% 70%;
+  --viz-5: 262 83% 76%;
+  --viz-6: 199 89% 62%;
+  --viz-grid: 240 3.7% 20%;
+  --viz-axis: 240 5% 64.9%;
+
+  --sidebar: hsl(240 5.9% 10%);
+  --sidebar-foreground: hsl(0 0% 98%);
+  --sidebar-primary: hsl(0 0% 98%);
+  --sidebar-primary-foreground: hsl(240 5.9% 10%);
+  --sidebar-accent: hsl(240 3.7% 15.9%);
+  --sidebar-accent-foreground: hsl(0 0% 98%);
+  --sidebar-border: hsl(240 3.7% 15.9%);
+  --sidebar-ring: hsl(var(--ring));
+}
+
+/* Soft Dark: abu kebiruan redup */
+.soft-dark {
+  color-scheme: dark;
+  --background: 215 14% 16.5%;
+  --foreground: 210 16% 85%;
+  --card: 215 13% 19%;
+  --card-foreground: 210 16% 85%;
+  --popover: 215 13% 19%;
+  --popover-foreground: 210 16% 85%;
+  --primary: 210 16% 87%;
+  --primary-foreground: 215 14% 15%;
+  --secondary: 215 12% 24.5%;
+  --secondary-foreground: 210 16% 85%;
+  --muted: 215 12% 24.5%;
+  --muted-foreground: 213 9% 64%;
+  --accent: 215 12% 26%;
+  --accent-foreground: 210 16% 87%;
+  --destructive: 0 90% 74%;
+  --destructive-foreground: 0 0% 98%;
+  --success: 142 55% 58%;
+  --success-foreground: 215 14% 15%;
+  --warning: 38 85% 62%;
+  --warning-foreground: 215 14% 15%;
+  --border: 215 11% 23.5%;
+  --input: 215 11% 26%;
+  --ring: 213 14% 66%;
+
+  --viz-1: 213 85% 62%; /* divalidasi dataviz */
+  --viz-2: 168 55% 42%; /* divalidasi dataviz */
+  --viz-3: 38 85% 62%;
+  --viz-4: 330 70% 72%;
+  --viz-5: 262 70% 76%;
+  --viz-6: 199 75% 64%;
+  --viz-grid: 215 11% 26%;
+  --viz-axis: 213 9% 64%;
+
+  --sidebar: hsl(215 14% 14.5%);
+  --sidebar-foreground: hsl(210 16% 85%);
+  --sidebar-primary: hsl(210 16% 87%);
+  --sidebar-primary-foreground: hsl(215 14% 15%);
+  --sidebar-accent: hsl(215 12% 23%);
+  --sidebar-accent-foreground: hsl(210 16% 87%);
+  --sidebar-border: hsl(215 11% 20.5%);
+  --sidebar-ring: hsl(var(--ring));
+}
+
+/* ================================================================== */
+/* Aksen: HANYA --primary, --primary-foreground, --ring (§5.3)        */
+/* ================================================================== */
+.theme-blue { --primary: 217.2 91.2% 59.8%; --primary-foreground: 210 40% 98%; --ring: 217.2 91.2% 59.8%; }
+.theme-sky { --primary: 200.4 98% 39.4%; --primary-foreground: 204 100% 97.1%; --ring: 200.4 98% 39.4%; }
+.theme-cyan { --primary: 191.6 91.4% 36.5%; --primary-foreground: 183.2 100% 96.3%; --ring: 191.6 91.4% 36.5%; }
+.theme-teal { --primary: 174.7 83.9% 31.6%; --primary-foreground: 166.2 76.5% 96.7%; --ring: 174.7 83.9% 31.6%; }
+.theme-emerald { --primary: 161.4 93.5% 30.4%; --primary-foreground: 151.8 81% 95.9%; --ring: 161.4 93.5% 30.4%; }
+.theme-green { --primary: 142.1 76.2% 36.3%; --primary-foreground: 144.9 80.4% 97.3%; --ring: 142.1 76.2% 36.3%; }
+.theme-amber { --primary: 37.7 92.1% 50.2%; --primary-foreground: 26 83.3% 14.1%; --ring: 37.7 92.1% 50.2%; }
+.theme-orange { --primary: 20.5 90.2% 48.2%; --primary-foreground: 33.3 100% 96.5%; --ring: 20.5 90.2% 48.2%; }
+.theme-red { --primary: 0 72.2% 50.6%; --primary-foreground: 0 85.7% 97.3%; --ring: 0 72.2% 50.6%; }
+.theme-rose { --primary: 346.8 77.2% 49.8%; --primary-foreground: 355.7 100% 97.3%; --ring: 346.8 77.2% 49.8%; }
+.theme-pink { --primary: 333.3 71.4% 50.6%; --primary-foreground: 327.3 73.3% 97.1%; --ring: 333.3 71.4% 50.6%; }
+.theme-fuchsia { --primary: 292.2 84.1% 60.6%; --primary-foreground: 289.1 100% 97.8%; --ring: 292.2 84.1% 60.6%; }
+.theme-purple { --primary: 271.5 81.3% 55.9%; --primary-foreground: 270 100% 98%; --ring: 271.5 81.3% 55.9%; }
+.theme-violet { --primary: 262.1 83.3% 57.8%; --primary-foreground: 250 100% 97.6%; --ring: 262.1 83.3% 57.8%; }
+.theme-indigo { --primary: 243.4 75.4% 58.6%; --primary-foreground: 226.5 100% 96.9%; --ring: 243.4 75.4% 58.6%; }
+
+/* Warna perusahaan (public.companies.accent). Versi terang di mode gelap. */
+.theme-gmi { --primary: 240.9 48.6% 26.7%; --primary-foreground: 240 40% 98%; --ring: 240.9 48.6% 26.7%; }
+.dark.theme-gmi, .soft-dark.theme-gmi { --primary: 241 50% 66%; --primary-foreground: 241 50% 10%; --ring: 241 50% 66%; }
+.theme-gis { --primary: 144 58.6% 21.8%; --primary-foreground: 144 60% 97%; --ring: 144 58.6% 21.8%; }
+.dark.theme-gis, .soft-dark.theme-gis { --primary: 144 45% 45%; --primary-foreground: 144 60% 8%; --ring: 144 45% 45%; }
+
+/* Soft Dark: aksen versi lebih terang (setara Tailwind 400) + teks gelap */
+.soft-dark.theme-blue { --primary: 213.1 93.9% 67.8%; --primary-foreground: 213.1 60% 12%; --ring: 213.1 93.9% 67.8%; }
+.soft-dark.theme-sky { --primary: 198.4 93.2% 59.6%; --primary-foreground: 198.4 60% 12%; --ring: 198.4 93.2% 59.6%; }
+.soft-dark.theme-cyan { --primary: 187.9 85.7% 53.3%; --primary-foreground: 187.9 60% 12%; --ring: 187.9 85.7% 53.3%; }
+.soft-dark.theme-teal { --primary: 172.5 66% 50.4%; --primary-foreground: 172.5 60% 12%; --ring: 172.5 66% 50.4%; }
+.soft-dark.theme-emerald { --primary: 158.1 64.4% 51.6%; --primary-foreground: 158.1 60% 12%; --ring: 158.1 64.4% 51.6%; }
+.soft-dark.theme-green { --primary: 141.9 69.2% 58%; --primary-foreground: 141.9 60% 12%; --ring: 141.9 69.2% 58%; }
+.soft-dark.theme-amber { --primary: 45.9 96.7% 64.5%; --primary-foreground: 45.9 60% 12%; --ring: 45.9 96.7% 64.5%; }
+.soft-dark.theme-orange { --primary: 27 96% 61%; --primary-foreground: 27 60% 12%; --ring: 27 96% 61%; }
+.soft-dark.theme-red { --primary: 0 90.6% 70.8%; --primary-foreground: 0 60% 12%; --ring: 0 90.6% 70.8%; }
+.soft-dark.theme-rose { --primary: 351.3 94.5% 71.4%; --primary-foreground: 351.3 60% 12%; --ring: 351.3 94.5% 71.4%; }
+.soft-dark.theme-pink { --primary: 328.6 85.5% 70.2%; --primary-foreground: 328.6 60% 12%; --ring: 328.6 85.5% 70.2%; }
+.soft-dark.theme-fuchsia { --primary: 292 91.4% 72.5%; --primary-foreground: 292 60% 12%; --ring: 292 91.4% 72.5%; }
+.soft-dark.theme-purple { --primary: 270 95.2% 75.3%; --primary-foreground: 270 60% 12%; --ring: 270 95.2% 75.3%; }
+.soft-dark.theme-violet { --primary: 255.1 91.7% 76.3%; --primary-foreground: 255.1 60% 12%; --ring: 255.1 91.7% 76.3%; }
+.soft-dark.theme-indigo { --primary: 234.5 89.5% 73.9%; --primary-foreground: 234.5 60% 12%; --ring: 234.5 89.5% 73.9%; }
+
+/* ================================================================== */
+/* Font & ukuran pilihan user (lib/font-options.ts)                   */
+/* ================================================================== */
+html[data-font="inter"] { --font-app: var(--font-inter), system-ui, sans-serif; }
+html[data-font="jakarta"] { --font-app: var(--font-jakarta), system-ui, sans-serif; }
+html[data-font="poppins"] { --font-app: var(--font-poppins), system-ui, sans-serif; }
+html[data-font="nunito"] { --font-app: var(--font-nunito), system-ui, sans-serif; }
+html[data-font="roboto"] { --font-app: var(--font-roboto), system-ui, sans-serif; }
+html[data-font="atkinson"] { --font-app: var(--font-atkinson), system-ui, sans-serif; }
+html[data-font="system"] { --font-app: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+
+html[data-font-size="sm"] { font-size: 87.5%; }
+html[data-font-size="lg"] { font-size: 112.5%; }
+html[data-font-size="xl"] { font-size: 125%; }
+
+/* Dokumen cetak selalu memakai font & ukuran standar */
+html[data-printing] { font-size: 100% !important; }
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  /* Garis mode gelap utama sedikit lebih tegas (setara zinc-600) */
+  .dark :is(*, ::after, ::before, ::backdrop, ::file-selector-button) {
+    border-color: hsl(240 5.2% 26%);
+  }
+}
+
+/* ================================================================== */
+/* Cetak (frontend-guide §19)                                          */
+/* ================================================================== */
+.print-only {
+  display: none;
+}
+
+/* Di luar @media print: dipakai juga oleh render pengukuran PrintableDocument */
+.printable-document th,
+.printable-document td {
+  overflow-wrap: break-word;
+}
+
+@media print {
+  html {
+    font-size: 100% !important;
+    --font-app: var(--font-geist-sans), system-ui, sans-serif !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+    grid-column: 1 / -1;
+  }
+  /* Sembunyikan sidebar BESERTA gap-nya (className hanya sampai ke container) */
+  [data-slot="sidebar"],
+  [data-app-topbar] {
+    display: none !important;
+  }
+  [data-slot="sidebar-inset"] {
+    margin: 0 !important;
+    width: 100% !important;
+  }
+  /* Halaman berisi dokumen cetak: hanya dokumen itu yang tercetak, tanpa padding/min-height layout
+     (mencegah halaman kosong ekstra) */
+  body :has(.printable-document.print-only) {
+    min-height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    gap: 0 !important;
+  }
+  /* Menu/popup/toast yang masih menutup saat dialog cetak muncul */
+  [role="menu"],
+  [role="dialog"],
+  [role="alertdialog"],
+  [data-sonner-toaster] {
+    display: none !important;
+  }
+  .printable-document thead {
+    display: table-header-group;
+  }
+  tr,
+  td,
+  th {
+    page-break-inside: avoid !important;
+  }
+  @page {
+    size: A4;
+    margin: 15mm;
+  }
+}
+
+/* ================================================================== */
+/* Rich text (Tiptap)                                                  */
+/* ================================================================== */
+.rich-editor.ProseMirror {
+  min-height: 8rem;
+  padding: 0.5rem 0.75rem;
+  outline: none;
+}
+.rich-editor.ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+  color: hsl(var(--muted-foreground));
+}
+.rich-content :where(ul) { list-style: disc; padding-left: 1.25rem; }
+.rich-content :where(ol) { list-style: decimal; padding-left: 1.25rem; }
+.rich-content :where(a) { color: hsl(var(--primary)); text-decoration: underline; text-underline-offset: 2px; }
+.rich-content :where(img) { max-width: 100%; border-radius: var(--radius); }
+.rich-content :where(p + p) { margin-top: 0.5rem; }
+.rich-content :where(h2) { font-size: 1.125rem; font-weight: 600; margin-top: 0.75rem; }
+.rich-content :where(h3) { font-weight: 600; margin-top: 0.5rem; }
+.rich-content :where(blockquote) { border-left: 3px solid hsl(var(--border)); padding-left: 0.75rem; color: hsl(var(--muted-foreground)); }
+
+/* ================================================================== */
+/* Halaman auth: Ken Burns slideshow                                   */
+/* ================================================================== */
+@keyframes auth-kenburns {
+  from { transform: scale(1.04) translate3d(var(--kb-from, 0, 0), 0); }
+  to { transform: scale(1.16) translate3d(var(--kb-to, 0, 0), 0); }
+}
+.auth-kenburns {
+  animation: auth-kenburns var(--kb-duration, 9s) ease-out forwards;
+  will-change: transform;
+}
+
+/* ================================================================== */
+/* Dokumentasi: animasi visual alur                                    */
+/* ================================================================== */
+@keyframes docs-travel-x { 0% { left: 0%; opacity: 0; } 8% { opacity: 1; } 92% { opacity: 1; } 100% { left: 100%; opacity: 0; } }
+@keyframes docs-fade-up { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes docs-pop { 0% { opacity: 0; transform: scale(0.6); } 70% { opacity: 1; transform: scale(1.08); } 100% { opacity: 1; transform: scale(1); } }
+@keyframes docs-ring { 0% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0.45); } 100% { box-shadow: 0 0 0 10px hsl(var(--primary) / 0); } }
+@keyframes docs-grow-x { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.docs-travel-x { animation: docs-travel-x var(--docs-duration, 6s) linear infinite; }
+.docs-fade-up { animation: docs-fade-up 0.45s ease-out both; }
+.docs-pop { animation: docs-pop 0.4s ease-out both; }
+.docs-ring { animation: docs-ring 1.6s ease-out infinite; }
+.docs-grow-x { transform-origin: left; animation: docs-grow-x 0.9s ease-out both; }
+
+/* Denyut halus untuk banner Pembaruan & follow-up */
+@keyframes soft-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+.soft-pulse { animation: soft-pulse 2.4s ease-in-out infinite; }
+
+/* Bar pending tabel list */
+@keyframes list-pending { 0% { left: -33%; } 100% { left: 100%; } }
+
+/* Progress navigasi */
+@keyframes nav-progress { from { transform: scaleX(0.05); } to { transform: scaleX(0.85); } }
+@keyframes nav-progress-done { 0% { transform: scaleX(0.85); opacity: 1; } 55% { transform: scaleX(1); opacity: 1; } 100% { transform: scaleX(1); opacity: 0; } }
+
+/* ================================================================== */
+/* View transitions: ganti tema/aksen/font (lib/view-transition.ts)    */
+/* ================================================================== */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 250ms;
+  animation-timing-function: ease-out;
+}
+:root[data-vt="reveal"]::view-transition-old(root),
+:root[data-vt="reveal"]::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+::view-transition-group(appearance-mode),
+::view-transition-group(appearance-accent),
+::view-transition-group(appearance-font) {
+  animation-duration: 300ms;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ================================================================== */
+/* Reduced motion: semua animasi kustom di atas                        */
+/* ================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .auth-kenburns,
+  [class*="animate-[list-pending"],
+  .docs-travel-x,
+  .docs-ring,
+  .soft-pulse {
+    animation: none;
+  }
+  .docs-travel-x {
+    display: none;
+  }
+  .docs-fade-up,
+  .docs-pop,
+  .docs-grow-x {
+    animation-duration: 0.01ms;
+    animation-delay: 0s !important;
+  }
+  ::view-transition-old(root),
+  ::view-transition-new(root),
+  ::view-transition-group(*) {
+    animation: none !important;
+  }
+}

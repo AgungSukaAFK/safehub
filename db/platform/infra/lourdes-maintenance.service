@@ -1,0 +1,9 @@
+# Pasang di VPS (dengan izin user): /etc/systemd/system/lourdes-maintenance.service
+# Pola sama dengan infra/backup. JANGAN menyentuh container supabase-* milik wms-gmi.
+[Unit]
+Description=Lourdes: maintenance harian semua app (retensi, pengingat approval)
+After=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/docker exec lourdes-db psql -U postgres -d postgres -v ON_ERROR_STOP=1 -c "select public.run_maintenance_all()"

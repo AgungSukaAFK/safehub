@@ -1,0 +1,10 @@
+{
+  "description": "A K3PLH and operations management app for GMI teams at Site MIFA to centralize safety, compliance, maintenance records, reviews, and reporting.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}

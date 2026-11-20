@@ -1,0 +1,10 @@
+# 03:00 WIB = 20:00 UTC, setelah backup 02:00 WIB
+[Unit]
+Description=Lourdes: jadwal maintenance harian
+
+[Timer]
+OnCalendar=*-*-* 20:00:00 UTC
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -5,7 +5,7 @@ Guideline pengembangan fitur berdasarkan prototipe UI Figma di folder
 kode. Detail teknis mengikuti [CLAUDE.md](CLAUDE.md), [frontend-guide.md](frontend-guide.md), dan
 [backend-guide.md](backend-guide.md).
 
-> Status: draf v0.2 (2026-11-20). D1–D4 dan D7 sudah diputuskan. Bagian bertanda **[KEPUTUSAN]** memakai asumsi default. Konfirmasi
+> Status: draf v0.3 (2026-11-21). D1–D5, D7, D14, D15 sudah diputuskan. Bagian bertanda **[KEPUTUSAN]** memakai asumsi default. Konfirmasi
 > dulu sebelum modul terkait dikerjakan, lalu ubah tandanya menjadi **[DIPUTUSKAN]**.
 
 ---
@@ -107,7 +107,7 @@ Prototipe punya 12 peran bisnis, sedangkan boilerplate hanya punya `viewer < edi
 | Lapis | Isi | Disimpan di | Dipakai untuk |
 |---|---|---|---|
 | Role app | `viewer` / `editor` / `admin` (tetap) | `public.app_access` | Gerbang akses app, modul admin |
-| Fungsi K3 | `hse`, `manajemen`, `pjo`, `pja`, `pengawas`, `hr`, `maintenance`, `scm`, `kontraktor_admin`, `karyawan`, `auditor` | `__APP__.members.functions text[]` (kolom baru, dijaga `members_guard`) | Aksi per modul, menu, data terbatas |
+| Fungsi K3 | `hse`, `hse_senior`, `manajemen`, `pjo`, `pja`, `pengawas`, `hr`, `maintenance`, `scm`, `kontraktor_admin`, `karyawan`, `auditor` | `__APP__.members.functions text[]` (kolom baru, dijaga `members_guard`) | Aksi per modul, menu, data terbatas |
 
 Aturan:
 
@@ -176,8 +176,8 @@ Aturan jenis B:
 - Setiap transisi: cek fungsi pelaku → cek prasyarat → update → `set_log_context(...)` (satu aksi = satu
   baris log) → `notify()` ke pihak berikutnya → hasilnya mengembalikan id notifikasi untuk
   `sendPushForNotifications`.
-- Langkah "persetujuan manajemen" di Kejadian **boleh** memakai approval engine sebagai sub-proses
-  (doc_type `incident_review`). Putuskan saat modul Kejadian dikerjakan.
+- Langkah "persetujuan manajemen" di Kejadian memakai **RPC transisi** biasa, bukan approval engine
+  (D5).
 - Komponen stepper (`workflow-stepper` di prototipe) dibuat generik: `components/detail/workflow-stepper.tsx`,
   menerima `{key,label,meta,state}[]` yang disusun server.
 
@@ -462,8 +462,8 @@ Format setiap modul: **Entitas → Status → Peran → Layar → Catatan khusus
 Cabang: `returned` (Dikembalikan dengan catatan, kembali ke tahap sebelumnya), `closed_exception`
 (PJO menutup dengan pengecualian + alasan wajib).
 
-**Peran:** lapor = semua fungsi kecuali auditor · klasifikasi/investigasi = `hse` · review EHS = `hse`
-senior · review manajemen = `pjo`/`manajemen` · tutup dengan pengecualian = `pjo` · baca dampak cedera
+**Peran:** lapor = semua fungsi kecuali auditor · klasifikasi/investigasi = `hse` · review EHS = `hse_senior`
+(D14) · review manajemen = `pjo`/`manajemen` · tutup dengan pengecualian = `pjo` · baca dampak cedera
 = `hse`/`hr`.
 
 **Layar:**
@@ -482,6 +482,8 @@ senior · review manajemen = `pjo`/`manajemen` · tutup dengan pengecualian = `p
   diklasifikasi HSE**, bukan dari input pelapor.
 - Diagram tubuh (BodyDiagram) disederhanakan menjadi pilihan bagian tubuh bila SVG interaktif terlalu
   mahal. Tetap berada di tabel terbatas.
+- Unit sebelum integrasi maintenance (D15): isian bebas `unit_code` + `unit_label` (snapshot, §4.9).
+  Di fase 5 diganti pemilih dari sumber tanpa migrasi data.
 - "Jadikan tindakan" dari analisis penyebab membuka drawer tindakan dengan penyebab terisi.
 
 ### 4.2 Temuan & PICA (fase 1)
@@ -765,7 +767,7 @@ Isi kolom "Keputusan" saat sudah dikonfirmasi, lalu perbarui bagian terkait.
 | D2 | Site: `public.locations` atau `__APP__.sites` + `areas`? Akan ada site selain MIFA? (§2.2) | Siapkan multi-site | **Banyak site; site = `public.locations` (master DB Lourdes), area = master app** (2026-11-20) |
 | D3 | Format nomor `KJD-2026-0012` reset tahunan? (§2.6) | Ya, ikuti prototipe | **Reset tiap tahun** (2026-11-20) |
 | D4 | Mobile bottom tabs sebagai penyimpangan standar? (§2.13) | Ya | **Setuju** (2026-11-20) |
-| D5 | Review manajemen Kejadian lewat approval engine atau RPC transisi? (§4.1) | Putuskan di fase 1 | |
+| D5 | Review manajemen Kejadian lewat approval engine atau RPC transisi? (§4.1) | Putuskan di fase 1 | **RPC transisi** (2026-11-21) |
 | D6 | Sumber jam kerja (penyebut LTIFR)? (§4.6) | Input bulanan per site | |
 | D7 | Maintenance: input penuh di app atau impor/integrasi sistem lain? (§4.9) | Impor + dashboard dulu | **Sistem maintenance sudah ada; Safe Hub hanya membaca** (2026-11-20) |
 | D8 | "Isu Terbuka" = entitas `issues` sendiri atau temuan bersumber rapat? (§4.4) | Temuan dengan `source_kind = meeting` | |
@@ -774,3 +776,5 @@ Isi kolom "Keputusan" saat sudah dikonfirmasi, lalu perbarui bagian terkait.
 | D11 | Ambang KPI kesehatan (CMR ≤ 2,21, dst.) dan target leading indicator: siapa pemilik & di mana diatur? | Kamus KPI (kolom ambang, versi) | |
 | D12 | Sistem maintenance yang ada: schema Lourdes di DB yang sama, API, atau hanya ekspor Excel? Apakah ada URL detail per record? (§4.9) | View read-only lintas schema bila satu DB | |
 | D13 | Perlu pembatasan user per site (`members.location_ids`), atau semua user melihat semua site dalam company-nya? (§2.2) | Kolom disiapkan, default semua site | |
+| D14 | "Review EHS = hse senior" dibedakan bagaimana? (§4.1) | n/a | **Fungsi K3 baru `hse_senior`** (2026-11-21) |
+| D15 | Field unit sebelum integrasi maintenance (fase 1–4)? (§4.9) | n/a | **Isian bebas kode + label snapshot** (2026-11-21) |

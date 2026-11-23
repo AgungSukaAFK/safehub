@@ -60,10 +60,11 @@ export async function listMaster(supabase: ServerClient, kind: MasterKind): Prom
 /** Jumlah baris per jenis (untuk tab). */
 export async function countMasters(supabase: ServerClient): Promise<Record<MasterKind, number>> {
   const head = { count: "exact" as const, head: true };
-  const [area, cat, fcat, risk, mitra, site, jabatan] = await Promise.all([
+  const [area, cat, fcat, itype, risk, mitra, site, jabatan] = await Promise.all([
     supabase.from("areas").select("id", head),
     supabase.from("master_items").select("id", head).eq("kind", "incident_category"),
     supabase.from("master_items").select("id", head).eq("kind", "finding_category"),
+    supabase.from("master_items").select("id", head).eq("kind", "inspection_type"),
     supabase.from("master_items").select("id", head).eq("kind", "risk_level"),
     supabase.from("contractors").select("id", head),
     supabase.schema("public").from("locations").select("id", head),
@@ -73,6 +74,7 @@ export async function countMasters(supabase: ServerClient): Promise<Record<Maste
     area: area.count ?? 0,
     "kategori-kejadian": cat.count ?? 0,
     "kategori-temuan": fcat.count ?? 0,
+    "jenis-inspeksi": itype.count ?? 0,
     "tingkat-risiko": risk.count ?? 0,
     mitra: mitra.count ?? 0,
     site: site.count ?? 0,

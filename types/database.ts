@@ -1226,6 +1226,11 @@ isOneToOne: false
               "action": string,"actor_id": string,"at": string,"entity": string,"href": string,"id": number,"label": string,"note": string,"record_id": string
             }[]
                            },
+"activity_feed_k3":
+{ Args: { "p_before"?: string,"p_limit"?: number }; Returns: {
+              "action": string,"actor_id": string,"at": string,"entity": string,"href": string,"id": number,"label": string,"note": string,"record_id": string
+            }[]
+                           },
 "app_admin_ids":
 { Args: Record<PropertyKey, never>; Returns: (string)[]
                            },

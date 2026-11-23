@@ -1,7 +1,8 @@
 // Registry jenis data global search (frontend-guide §6.6). SATU baris per jenis yang dikembalikan
 // RPC <app>.global_search (kolom `kind`). Dokumen baru: tambah union di SQL global_search + baris di sini.
-import { ClipboardList, FileText, ListChecks, type LucideIcon, ShieldAlert } from "lucide-react";
+import { ClipboardList, Eye, FileText, ListChecks, type LucideIcon, ShieldAlert, SquareCheckBig } from "lucide-react";
 import { INCIDENT_STATUS } from "@/lib/kejadian-rules";
+import { INSPECTION_STATUS } from "@/lib/inspeksi-rules";
 import { ACTION_STATUS } from "@/lib/pica-rules";
 import { DOCUMENT_STATUS, type StatusDef } from "@/lib/status";
 import { FINDING_STATUS } from "@/lib/temuan-rules";
@@ -31,6 +32,17 @@ export const SEARCH_KINDS: Record<string, SearchKind> = {
     label: "Tindakan PICA",
     icon: ListChecks,
     statuses: ACTION_STATUS,
+  },
+  inspeksi: {
+    label: "Inspeksi",
+    icon: SquareCheckBig,
+    listHref: (q) => `/inspeksi?tampilan=daftar&q=${encodeURIComponent(q)}`,
+    statuses: INSPECTION_STATUS,
+  },
+  observasi: {
+    label: "Observasi KTA/TTA",
+    icon: Eye,
+    listHref: () => "/observasi",
   },
   // CONTOH boilerplate (hapus bersama /pengajuan)
   pengajuan: {

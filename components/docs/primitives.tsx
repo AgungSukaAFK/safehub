@@ -5,6 +5,7 @@ import { StatusBadge } from "@/components/detail/status-badge";
 import type { DocRole, MockBlock, StatusMapKey, StepVisual } from "@/lib/docs/types";
 import { FEEDBACK_STATUS } from "@/lib/feedback-rules";
 import { INCIDENT_STATUS } from "@/lib/kejadian-rules";
+import { INSPECTION_STATUS } from "@/lib/inspeksi-rules";
 import { ACTION_STATUS } from "@/lib/pica-rules";
 import { APPROVAL_STEP_STATUS, DOCUMENT_STATUS, type StatusDef } from "@/lib/status";
 import { SUPPORT_STATUS } from "@/lib/support-types";
@@ -17,6 +18,7 @@ export const STATUS_MAPS: Record<StatusMapKey, Record<string, StatusDef>> = {
   feedback: FEEDBACK_STATUS,
   incident: INCIDENT_STATUS,
   action: ACTION_STATUS,
+  inspection: INSPECTION_STATUS,
 };
 
 export function RoleChip({ role, className }: { role: DocRole | undefined; className?: string }) {

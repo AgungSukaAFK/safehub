@@ -82,6 +82,24 @@ export const ACTION_LABELS: Record<string, string> = {
   followup: "Follow-up",
   override: "Approval Diubah Admin",
   admin_edit: "Diedit Admin",
+  // modul K3
+  report: "Dilaporkan",
+  classify: "Diklasifikasi",
+  start_investigation: "Investigasi Dimulai",
+  save_investigation: "Investigasi Diperbarui",
+  submit_review: "Dikirim ke Review",
+  approve_ehs: "Disetujui EHS",
+  approve_mgmt: "Disetujui Manajemen",
+  return: "Dikembalikan",
+  close: "Ditutup",
+  close_exception: "Ditutup (Pengecualian)",
+  start: "Dimulai",
+  submit_evidence: "Bukti Dikirim",
+  accept: "Diterima",
+  change_due: "Due Date Diubah",
+  effectiveness: "Efektivitas Dicatat",
+  schedule: "Dijadwalkan",
+  verify: "Diverifikasi",
 };
 
 export const ACTION_COLORS: Record<string, StatusColor> = {
@@ -95,6 +113,23 @@ export const ACTION_COLORS: Record<string, StatusColor> = {
   followup: "orange",
   override: "violet",
   admin_edit: "violet",
+  report: "blue",
+  classify: "sky",
+  start_investigation: "amber",
+  save_investigation: "sky",
+  submit_review: "amber",
+  approve_ehs: "green",
+  approve_mgmt: "green",
+  return: "orange",
+  close: "green",
+  close_exception: "gray",
+  start: "sky",
+  submit_evidence: "amber",
+  accept: "green",
+  change_due: "orange",
+  effectiveness: "green",
+  schedule: "blue",
+  verify: "green",
 };
 
 export function resolveStatus(map: Record<string, StatusDef>, value: string | null | undefined): StatusDef {

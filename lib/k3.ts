@@ -14,6 +14,7 @@ export type K3Masters = {
   incidentCategories: MasterOption[];
   findingCategories: MasterOption[];
   riskLevels: MasterOption[];
+  inspectionTypes: MasterOption[];
 };
 
 /** Master berkode (termasuk yang nonaktif, untuk label data lama; form memfilter isActive). */
@@ -21,13 +22,13 @@ export const getK3Masters = cache(async (supabase: ServerClient): Promise<K3Mast
   const { data, error } = await supabase
     .from("master_items")
     .select("kind, code, name, color, is_active")
-    .in("kind", ["incident_category", "finding_category", "risk_level"])
+    .in("kind", ["incident_category", "finding_category", "risk_level", "inspection_type"])
     .order("sort_order")
     .order("name");
   if (error) throw error;
   const by = (k: string) =>
     (data ?? []).filter((r) => r.kind === k).map((r) => ({ value: r.code, label: r.name, color: (r.color as StatusColor | null) ?? null, isActive: r.is_active }));
-  return { incidentCategories: by("incident_category"), findingCategories: by("finding_category"), riskLevels: by("risk_level") };
+  return { incidentCategories: by("incident_category"), findingCategories: by("finding_category"), riskLevels: by("risk_level"), inspectionTypes: by("inspection_type") };
 });
 
 /** Peta status untuk StatusBadge dari master berwarna (tingkat risiko). */

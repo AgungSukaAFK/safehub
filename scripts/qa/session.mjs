@@ -2,6 +2,7 @@
 // lalu memasangnya ke tab Chrome. Membaca Supabase URL/key dari .env.local.
 import fs from "node:fs";
 import path from "node:path";
+import { createClient } from "@supabase/supabase-js";
 import { createServerClient } from "@supabase/ssr";
 
 const root = path.resolve(import.meta.dirname, "../..");
@@ -19,6 +20,15 @@ function env() {
 }
 
 export const DEMO_PASSWORD = process.env.QA_PASSWORD || "Demo12345!";
+
+/** Klien Supabase (schema app) yang masuk sebagai satu user DEMO: untuk menyiapkan data uji lewat RPC. */
+export async function asUser(email, schema) {
+  const e = env();
+  const sb = createClient(e.NEXT_PUBLIC_SUPABASE_URL, e.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY, { db: { schema }, auth: { persistSession: false, autoRefreshToken: false } });
+  const { error } = await sb.auth.signInWithPassword({ email, password: DEMO_PASSWORD });
+  if (error) throw new Error(`login ${email}: ${error.message}`);
+  return sb;
+}
 
 /** Cookie sesi untuk satu user DEMO: [{ name, value }]. */
 export async function sessionCookies(email) {

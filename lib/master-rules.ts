@@ -4,7 +4,7 @@
 import { z } from "zod";
 import type { StatusColor } from "@/lib/status";
 
-export const MASTER_KINDS = ["area", "kategori-kejadian", "kategori-temuan", "tingkat-risiko", "mitra", "site", "jabatan"] as const;
+export const MASTER_KINDS = ["area", "kategori-kejadian", "kategori-temuan", "jenis-inspeksi", "tingkat-risiko", "mitra", "site", "jabatan"] as const;
 export type MasterKind = (typeof MASTER_KINDS)[number];
 export type EditableKind = Exclude<MasterKind, "site" | "jabatan">;
 
@@ -47,6 +47,17 @@ export const RISK_COLORS: { value: StatusColor; label: string }[] = [
   { value: "orange", label: "Oranye" },
   { value: "red", label: "Merah" },
   { value: "blue", label: "Biru" },
+  { value: "gray", label: "Abu-abu" },
+];
+
+export const INSPECTION_COLORS: { value: StatusColor; label: string }[] = [
+  { value: "blue", label: "Biru" },
+  { value: "sky", label: "Biru muda" },
+  { value: "amber", label: "Kuning" },
+  { value: "violet", label: "Ungu" },
+  { value: "green", label: "Hijau" },
+  { value: "orange", label: "Oranye" },
+  { value: "red", label: "Merah" },
   { value: "gray", label: "Abu-abu" },
 ];
 
@@ -107,6 +118,23 @@ export const MASTER_CONFIG: Record<MasterKind, MasterKindConfig> = {
     fields: [
       CODE_FIELD,
       { name: "name", label: "Nama", type: "text", required: true, maxLength: 100 },
+      { name: "description", label: "Keterangan", type: "textarea", maxLength: 500 },
+      SORT_FIELD,
+    ],
+  },
+  "jenis-inspeksi": {
+    label: "Jenis Inspeksi",
+    description: "Jenis inspeksi/audit dengan warna di kalender. Template checklist per jenis dikelola di Inspeksi → Template.",
+    editable: true,
+    columns: [
+      { key: "code", label: "Kode" },
+      { key: "color", label: "Warna", options: INSPECTION_COLORS },
+      { key: "sort_order", label: "Urutan" },
+    ],
+    fields: [
+      CODE_FIELD,
+      { name: "name", label: "Nama", type: "text", required: true, maxLength: 100 },
+      { name: "color", label: "Warna kalender", type: "select", required: true, options: INSPECTION_COLORS },
       { name: "description", label: "Keterangan", type: "textarea", maxLength: 500 },
       SORT_FIELD,
     ],
@@ -181,6 +209,14 @@ export const MASTER_SCHEMAS = {
   area: z.object({ location_id: z.string().uuid("Pilih site"), name: name(100), sort_order: sortOrder, is_active: isActive }),
   "kategori-kejadian": z.object({ code, name: z.string().trim().min(1, "Wajib diisi").max(100), description, sort_order: sortOrder, is_active: isActive }),
   "kategori-temuan": z.object({ code, name: z.string().trim().min(1, "Wajib diisi").max(100), description, sort_order: sortOrder, is_active: isActive }),
+  "jenis-inspeksi": z.object({
+    code,
+    name: z.string().trim().min(1, "Wajib diisi").max(100),
+    color: z.enum(["blue", "sky", "amber", "violet", "green", "orange", "red", "gray"], { errorMap: () => ({ message: "Pilih warna" }) }),
+    description,
+    sort_order: sortOrder,
+    is_active: isActive,
+  }),
   "tingkat-risiko": z.object({
     code,
     name: z.string().trim().min(1, "Wajib diisi").max(100),
@@ -198,10 +234,11 @@ export const MASTER_SCHEMAS = {
 } satisfies Record<EditableKind, z.ZodTypeAny>;
 
 /** Tabel + nilai kind master_items per jenis. */
-export const MASTER_TABLES: Record<EditableKind, { table: "areas" | "master_items" | "contractors"; itemKind?: "incident_category" | "finding_category" | "risk_level" }> = {
+export const MASTER_TABLES: Record<EditableKind, { table: "areas" | "master_items" | "contractors"; itemKind?: "incident_category" | "finding_category" | "risk_level" | "inspection_type" }> = {
   area: { table: "areas" },
   "kategori-kejadian": { table: "master_items", itemKind: "incident_category" },
   "kategori-temuan": { table: "master_items", itemKind: "finding_category" },
+  "jenis-inspeksi": { table: "master_items", itemKind: "inspection_type" },
   "tingkat-risiko": { table: "master_items", itemKind: "risk_level" },
   mitra: { table: "contractors" },
 };

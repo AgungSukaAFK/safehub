@@ -283,6 +283,10 @@ select zz_test.check('L9e rencana vs aktual per jenis konsisten dengan inspeksi'
 select zz_test.check('L9f pencarian global menemukan inspeksi & observasi',
   exists (select 1 from __APP__.global_search(lower(:'ins_code')) where kind = 'inspeksi')
   and exists (select 1 from __APP__.global_search(lower(:'obs_code')) where kind = 'observasi'));
+select zz_test.check('L9g feed Beranda memuat log kejadian, temuan, tindakan, inspeksi, observasi',
+  (select count(distinct entity) from __APP__.activity_feed(100)) >= 5
+  and not exists (select 1 from __APP__.activity_feed(100) where href is null),
+  (select string_agg(distinct entity, ',') from __APP__.activity_feed(100)));
 reset role;
 
 do $$ begin raise notice 'Uji inspeksi & KPI selesai.'; end $$;

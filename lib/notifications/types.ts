@@ -1,5 +1,5 @@
 // Bentuk notifikasi untuk UI (aman di client). Kategori = kolom `category` (diisi RPC domain).
-import { ClipboardCheck, ClipboardList, Headset, Info, MessageSquareText, ShieldAlert, type LucideIcon } from "lucide-react";
+import { ClipboardCheck, ClipboardList, Headset, Info, ListChecks, MessageSquareText, ShieldAlert, type LucideIcon } from "lucide-react";
 
 export type NotificationItem = {
   id: string;
@@ -17,6 +17,7 @@ export const NOTIFICATION_CATEGORIES: Record<string, { label: string; icon: Luci
   approval: { label: "Approval", icon: ClipboardCheck },
   kejadian: { label: "Kejadian", icon: ShieldAlert },
   pica: { label: "Temuan & PICA", icon: ClipboardList },
+  inspeksi: { label: "Inspeksi", icon: ListChecks },
   bantuan: { label: "Bantuan", icon: Headset },
   feedback: { label: "Feedback", icon: MessageSquareText },
   umum: { label: "Umum", icon: Info },

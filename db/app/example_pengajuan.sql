@@ -362,13 +362,19 @@ create or replace function __APP__.activity_feed(p_limit integer default 20, p_b
 returns table (id bigint, entity text, record_id uuid, at timestamptz, actor_id uuid, action text, note text,
                label text, href text)
 language sql stable security invoker set search_path = '' as $$
-  select l.id, 'pengajuan', l.record_id, l.at, l.actor_id, l.action, l.note,
-         coalesce(d.code, d.title, 'Pengajuan'), '/pengajuan/' || l.record_id
-    from __APP__.pengajuan_logs l
-    left join __APP__.pengajuan d on d.id = l.record_id
-   where (p_before is null or l.at < p_before)
-   order by l.at desc
-   limit least(greatest(p_limit, 1), 100);
+  select f.* from (
+    (select l.id, 'pengajuan'::text, l.record_id, l.at, l.actor_id, l.action, l.note,
+            coalesce(d.code, d.title, 'Pengajuan'), '/pengajuan/' || l.record_id
+       from __APP__.pengajuan_logs l
+       left join __APP__.pengajuan d on d.id = l.record_id
+      where (p_before is null or l.at < p_before)
+      order by l.at desc
+      limit 100)
+    union all
+    select * from __APP__.activity_feed_k3(100, p_before)
+  ) f
+  order by f.at desc
+  limit least(greatest(p_limit, 1), 100);
 $$;
 
 revoke execute on function __APP__.dashboard_summary(date, date, text), __APP__.dashboard_daily(date, date, text),

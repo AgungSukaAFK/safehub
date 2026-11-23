@@ -19,9 +19,9 @@ const ACTION_MAP = Object.fromEntries(Object.entries(ACTION_LABELS).map(([k, lab
 
 const CHIPS: { key: string; label: string; actions: string[] | null }[] = [
   { key: "semua", label: "Semua", actions: null },
-  { key: "ajukan", label: "Diajukan", actions: ["submit", "followup"] },
-  { key: "putus", label: "Disetujui / Ditolak", actions: ["approve", "reject", "override"] },
-  { key: "ubah", label: "Dibuat / Diubah", actions: ["create", "update", "admin_edit", "cancel", "delete"] },
+  { key: "ajukan", label: "Diajukan / Dilaporkan", actions: ["submit", "followup", "report", "schedule", "submit_review", "submit_evidence"] },
+  { key: "putus", label: "Diputuskan", actions: ["approve", "reject", "override", "approve_ehs", "approve_mgmt", "accept", "return", "verify", "close", "close_exception"] },
+  { key: "ubah", label: "Dibuat / Diubah", actions: ["create", "update", "admin_edit", "cancel", "delete", "classify", "start", "start_investigation", "save_investigation", "change_due", "effectiveness"] },
 ];
 
 export function ActivityFeed({ initial, pageSize }: { initial: FeedItem[]; pageSize: number }) {

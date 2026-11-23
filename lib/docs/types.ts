@@ -3,7 +3,7 @@
 import type { LucideIcon } from "lucide-react";
 
 /** Kunci peta status yang dipakai app (StatusBadge yang sama dengan halaman asli). */
-export type StatusMapKey = "document" | "approval" | "support" | "feedback" | "incident" | "action";
+export type StatusMapKey = "document" | "approval" | "support" | "feedback" | "incident" | "action" | "inspection";
 
 export type RoleId = string;
 

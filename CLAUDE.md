@@ -82,8 +82,9 @@ saat tersedia.
 - **Foto profil**: `ImageCropDialog` (WebP 512, dikompres < 300 KB) → `uploadAvatarFile` (browser →
   `avatars/<uid>/avatar-<ts>.webp`) → `setAvatarAction` (pasang URL, hapus file lama) → event
   `AVATAR_UPDATED_EVENT` + `forgetPersonCard(uid)` + `router.refresh()`. No HP via `updatePhoneAction`.
-- **Beranda** (`app/(app)/page.tsx`): urutan wajib §17.1, tiap blok data = Server Component di
-  `components/dashboard/blocks.tsx` dalam `<Suspense>` sendiri (key = periode). Periode di URL
+- **Beranda** (`app/(app)/page.tsx`; sejak fase 2 = Beranda K3, lihat bagian fase 2): urutan wajib §17.1, tiap blok data = Server
+  Component dalam `<Suspense>` sendiri. Blok Pengajuan lama (`blocks.tsx`: Summary/Charts/Insight) tidak lagi dipasang.
+  Catatan lama untuk contoh Pengajuan: periode di URL
   (`bulan`, `minggu`, `perusahaan`) via `parseDashboardParams` (`lib/dashboard.ts`). Angka = SATU RPC
   `dashboard_summary`; tren `dashboard_daily`, distribusi `dashboard_by_department`, feed `activity_feed`.
   Drill-down & link "Buka di daftar" = loader list Pengajuan dengan filter yang sama (`pengajuanListHref`),
@@ -221,6 +222,32 @@ Spesifikasi & keputusan sendiri S1-S7: [docs/spec/fase-1-kejadian-pica.md](docs/
   notifikasi, nomor wajar) lalu tanggal dimundurkan; plus 6 draf Pengajuan contoh (budi/GMI, sari/GIS).
 - **Belum dibangun (fase 1)**: cetak/PDF kejadian, matriks akses fungsi x modul di `/pengguna`, tautan unit ke
   sistem maintenance (D15: isian bebas), unggah lampiran dari antrean offline.
+
+## Safe Hub: Inspeksi, Observasi, KPI & Beranda (fase 2)
+
+Spesifikasi & keputusan sendiri T1-T9: [docs/spec/fase-2-inspeksi-dashboard.md](docs/spec/fase-2-inspeksi-dashboard.md).
+
+- **Inspeksi** (jenis B, `db/app/12_inspeksi_kpi.sql`): jadwal = baris `inspections` berstatus `scheduled` (tanpa tabel jadwal
+  terpisah); `scheduled > in_progress > submitted > verified | cancelled`. Tulis HANYA lewat RPC `inspection_*` (pemeriksa
+  = `inspector_id`; verifikator HSE bukan pemeriksa). `inspection_answers` menyimpan teks butir (snapshot template).
+  Kirim membuat temuan lewat `k3_finding_insert` (sumber `inspection`). "Terlambat" turunan (`inspectionDisplayStatus`).
+  Foto checklist ke storage `inspeksi/<id>/` (hanya pemeriksa, saat berjalan); `observasi/<id>/` (pembuat).
+- **Observasi KTA/TTA** (`observation_submit`): tindak lanjut membuat temuan walau pelapor Karyawan (RPC definer).
+- **Kamus KPI**: `kpi_definitions` (admin menulis langsung; trigger `kpi_definitions_guard`: ubah definisi/rumus = versi
+  baru + kembali draf; status hanya lewat `kpi_approve`). Badge "Rumus belum disahkan" dari data (`KpiStatusBadge`).
+- **KPI & Beranda**: `kpi_safety` (definer; hanya kejadian TERKLASIFIKASI HSE; LTIFR/LTISR dari `work_hours`, null = "Belum
+  tersedia", bukan 0) dan `dashboard_k3` (SATU RPC; promise dari `getDashboardK3` dibagi ke blok `<Suspense>`
+  di `components/dashboard/k3-blocks.tsx`). Grafik = HTML/SVG dengan token `--viz-*` + label teks + tabel `sr-only`.
+  Beranda K3 menggantikan blok Pengajuan (komponen lama tetap ada). Karyawan = varian ringkas. Jam kerja: `/kpi/jam-kerja`.
+- **Feed & pencarian**: `activity_feed_k3` dan `global_search_k3` (+ `_core` dari fase 1) = satu sumber modul K3; contoh
+  Pengajuan membungkusnya (UNION). Hindari mendefinisikan ulang fungsi itu di file contoh tanpa memanggil versi K3.
+- **Lib**: `lib/inspeksi-rules.ts`, `kpi-rules.ts` (zod, label, fungsi murni), loader `lib/inspeksi.ts`, `lib/kpi.ts`.
+  Jenis inspeksi = master `inspection_type` (warna kalender; kelas warna lewat `typeChipClass` = `STATUS_CLASSES`).
+- **Gotcha UI**: `ConfirmDialog trigger` tidak boleh diberi `onClick` sendiri (menimpa pembuka dialog); toast di kanan
+  bawah menutupi bar kirim sticky beberapa detik (QA menunggu toast hilang); kartu `col-span-12` tidak boleh berada di
+  `grid` tanpa template (kolom implisit meluber di font XL) pakai `flex flex-col`.
+- **Belum dibangun (fase 2)**: ekspor Excel/cetak inspeksi, jadwal berulang, blok Beranda yang datanya belum ada
+  (Manpower, Kepatuhan Dokumen, TSP, Health, Maintenance, Isu Terbuka, Perlu Perhatian).
 
 ## Koreksi terhadap guide (sudah diterapkan di `db/`)
 

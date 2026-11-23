@@ -9,7 +9,7 @@ import fs from "node:fs";
 import path from "node:path";
 import sharp from "sharp";
 import { launch, sleep } from "./cdp.mjs";
-import { loginPage } from "./session.mjs";
+import { asUser, loginPage } from "./session.mjs";
 
 const ROOT = path.resolve(import.meta.dirname, "../..");
 const OUT = path.join(import.meta.dirname, "out");
@@ -90,7 +90,7 @@ async function contactSheet(file, items, { cols = 4, width = 420 } = {}) {
   return file;
 }
 
-const APP_PAGES = ["/", "/tugas", "/kejadian", "/kejadian/lapor", "/temuan", "/temuan/baru", "/master", "/notifikasi", "/pengajuan", "/pengajuan/baru", "__DETAIL__", "/pengguna", "/approval/template", "/approval/kepala-departemen", "/bantuan", "/bantuan/kelola", "/feedback", "/feedback/kelola", "/pembaruan", "/pembaruan/baru", "/dokumentasi", "/tentang", "/profil"];
+const APP_PAGES = ["/", "/tugas", "/kejadian", "/kejadian/lapor", "/temuan", "/temuan/baru", "/inspeksi", "/inspeksi/template", "/observasi", "/observasi/baru", "/kpi", "/kpi/jam-kerja", "/master", "/notifikasi", "/pengajuan", "/pengajuan/baru", "__DETAIL__", "/pengguna", "/approval/template", "/approval/kepala-departemen", "/bantuan", "/bantuan/kelola", "/feedback", "/feedback/kelola", "/pembaruan", "/pembaruan/baru", "/dokumentasi", "/tentang", "/profil"];
 
 const chrome = await launch();
 const page = await chrome.newPage();
@@ -295,6 +295,118 @@ try {
     await page.screenshot(path.join(OUT, "lapor-390.png"));
     await page.viewport(1280, 900);
     // bagian berikutnya (Tema, Cetak, ...) mengandalkan sesi admin
+    await loginPage(page, BASE, USER("admin"));
+  });
+
+  // ------------------------------------------------------------------ fase 2: Inspeksi, Observasi, KPI, Beranda
+  await run("Fase 2: Inspeksi, KPI & Beranda", async () => {
+    await page.viewport(1280, 900);
+    await setAppearance(page, { mode: "light" });
+    // Klik asli di tengah elemen; tunggu (maks. 6 dtk) sampai elemen itu yang paling atas di titiknya
+    // (toast di kanan bawah bisa menutupi tombol bar kirim beberapa detik).
+    const clickEl = async (expr) => {
+      for (let i = 0; i < 20; i++) {
+        const pt = await page.eval(`(() => { const el = ${expr}; if (!el) return null; el.scrollIntoView({ block: "center" }); const r = el.getBoundingClientRect(); const x = r.x + r.width / 2, y = r.y + r.height / 2; const top = document.elementFromPoint(x, y); return { x, y, ok: !!top && (el === top || el.contains(top)) }; })()`);
+        if (!pt) return false;
+        if (pt.ok || i === 19) {
+          for (const type of ["mousePressed", "mouseReleased"]) await page.send("Input.dispatchMouseEvent", { type, x: pt.x, y: pt.y, button: "left", clickCount: 1 });
+          return true;
+        }
+        await sleep(300);
+      }
+      return false;
+    };
+    const btnByText = (t, exact = true) => `[...document.querySelectorAll('button')].find(b => ${exact ? `b.innerText.trim() === ${JSON.stringify(t)}` : `b.innerText.trim().includes(${JSON.stringify(t)})`} && !b.disabled)`;
+
+    // ---- Beranda
+    await loginPage(page, BASE, USER("hse"));
+    await visit(page, "/", 2500);
+    const ht = await page.text();
+    check("beranda HSE: kinerja keselamatan, leading indicator, status PICA", ht.includes("Kinerja Keselamatan") && ht.includes("Leading Indicator") && ht.includes("Status PICA") && ht.includes("Umur Temuan"), ht.slice(0, 120));
+    check("beranda: KPI draf berbadge 'Rumus belum disahkan' (dari data Kamus KPI)", ht.includes("Rumus belum disahkan"));
+    check("beranda: LTIFR bulan ini tanpa jam kerja = 'Belum tersedia' (bukan 0)", ht.includes("Belum tersedia"));
+    await loginPage(page, BASE, USER("karyawan"));
+    await visit(page, "/", 2000);
+    const kt = await page.text();
+    check("beranda karyawan: tombol Lapor besar, tanpa blok KPI", kt.includes("Lapor Kejadian") && kt.includes("Observasi KTA/TTA") && !kt.includes("Kinerja Keselamatan"), kt.slice(0, 120));
+
+    // ---- Kamus KPI & jam kerja
+    await loginPage(page, BASE, USER("hse"));
+    await visit(page, "/kpi/ltifr", 1500);
+    const kp = await page.text();
+    check("kamus KPI: detail memuat definisi, rumus, metadata", kp.includes("Rumus") && kp.includes("LTI × 1.000.000") && kp.includes("Metadata"), kp.slice(0, 120));
+    check("kamus KPI: HSE (bukan admin) tidak melihat tombol Sahkan", !kp.includes("Sahkan Rumus"));
+    await visit(page, "/kpi/jam-kerja", 1500);
+    check("jam kerja: grid memuat input untuk HSE", (await page.eval(`document.querySelectorAll('input[aria-label^="Jam kerja"]').length`)) > 0);
+    await loginPage(page, BASE, USER("admin"));
+    await visit(page, "/kpi/ltifr", 1500);
+    check("kamus KPI: admin melihat tombol Sahkan Rumus", (await page.text()).includes("Sahkan Rumus"));
+
+    // ---- Inspeksi: kalender, daftar, template
+    await loginPage(page, BASE, USER("hse"));
+    await visit(page, "/inspeksi", 2000);
+    const it = await page.text();
+    check("inspeksi: kalender + panel rencana vs aktual + tombol jadwal", it.includes("Rencana vs Aktual") && it.includes("Jadwalkan Inspeksi") && it.includes("Sen") && it.includes("Min"), it.slice(0, 120));
+    await visit(page, "/inspeksi?tampilan=daftar", 1500);
+    check("inspeksi: mode daftar memuat nomor INS-", (await page.text()).includes("INS-"));
+    await visit(page, "/inspeksi/template", 1500);
+    check("template inspeksi: daftar template HSE", (await page.text()).includes("Inspeksi Kotak P3K & APAR"));
+    await loginPage(page, BASE, USER("karyawan"));
+    await visit(page, "/inspeksi/template", 2500);
+    check("template inspeksi: karyawan dialihkan", (await page.eval("location.pathname")) === "/inspeksi", await page.eval("location.href"));
+
+    // ---- Alur nyata: jadwal (RPC, HSE) → pemeriksa (UI) isi & kirim → HSE verifikasi (UI)
+    const hseDb = await asUser(USER("hse"), APP_ID);
+    const { data: tpl } = await hseDb.from("inspection_templates").select("id").eq("name", "Inspeksi Padlock").maybeSingle();
+    const { data: site } = await hseDb.schema("public").from("locations").select("id").eq("name", "Site MIFA").maybeSingle();
+    const { data: area } = await hseDb.from("areas").select("id").eq("location_id", site?.id).eq("name", "Workshop Service").maybeSingle();
+    const { data: me } = await hseDb.schema("public").from("profiles").select("id").eq("email", USER("pengawas")).maybeSingle();
+    const { data: sched, error: schedErr } = await hseDb.rpc("inspection_schedule", {
+      p: { template_id: tpl?.id, location_id: site?.id, area_id: area?.id, planned_at: new Date(Date.now() + 86_400_000).toISOString(), inspector_id: me?.id, object_text: "QA Toolkit" },
+    });
+    check("inspeksi QA: jadwal dibuat lewat RPC", !!sched?.id && !schedErr, schedErr?.message);
+    if (sched?.id) {
+      const path = `/inspeksi/${sched.id}`;
+      await loginPage(page, BASE, USER("pengawas"));
+      await visit(page, path, 1800);
+      check("inspeksi QA: pemeriksa melihat tombol Mulai Inspeksi", (await page.text()).includes("Mulai Inspeksi"));
+      await clickEl(btnByText("Mulai Inspeksi", false));
+      const started = await page.waitText("Progres checklist", 8000);
+      // toast "Inspeksi dimulai." menutupi bar kirim beberapa detik: tunggu hilang sebelum mengeklik
+      for (let i = 0; i < 30 && (await page.eval(`!!document.querySelector('[data-sonner-toast]')`)); i++) await sleep(300);
+      check("inspeksi QA: mulai → checklist 6 butir tampil", started && (await page.eval(`document.querySelectorAll('[role="radiogroup"]').length`)) === 6);
+      const submitBtn = btnByText("Selesai & Kirim", false);
+      check("inspeksi QA: kirim dinonaktifkan sebelum semua butir dijawab", await page.eval(`!!(() => { const b = [...document.querySelectorAll('button')].find(x => x.innerText.includes('Selesai & Kirim')); return b && b.disabled; })()`));
+      for (let i = 0; i < 6; i++) await clickEl(`[...document.querySelectorAll('[role="radio"]')].filter(b => b.innerText.trim() === "Sesuai")[${i}]`);
+      await sleep(400);
+      await clickEl(submitBtn);
+      await sleep(500);
+      await clickEl(btnByText("Kirim Inspeksi"));
+      const sent = await page.waitText("Inspeksi berhasil dikirim", 10000);
+      check("inspeksi QA: pemeriksa mengirim → layar sukses", sent);
+
+      await loginPage(page, BASE, USER("hse"));
+      await visit(page, path, 1800);
+      const dt = await page.text();
+      check("inspeksi QA: HSE melihat hasil & tombol Verifikasi", dt.includes("Menunggu Verifikasi") && dt.includes("Hasil Checklist"), dt.slice(0, 120));
+      await clickEl(btnByText("Verifikasi"));
+      await sleep(500);
+      await clickEl(`[...document.querySelectorAll('[role="alertdialog"] button')].find(b => b.innerText.trim() === "Verifikasi")`);
+      await sleep(1800);
+      await visit(page, path, 1500);
+      check("inspeksi QA: HSE memverifikasi → Terverifikasi", (await page.text()).includes("Terverifikasi"));
+    }
+
+    // ---- Observasi
+    await loginPage(page, BASE, USER("karyawan"));
+    await page.viewport(390, 844, { mobile: true, touch: true });
+    await visit(page, "/observasi/baru", 1500);
+    const ot = await page.text();
+    check("observasi: form cepat KTA/TTA tampil di HP, tanpa scroll horizontal", ot.includes("KTA") && ot.includes("TTA") && ot.includes("Perlu tindak lanjut?") && (await noHScroll(page)) <= 1, ot.slice(0, 120));
+    await page.screenshot(path.join(OUT, "observasi-390.png"));
+    await page.viewport(1280, 900);
+    await visit(page, "/observasi", 1500);
+    check("observasi: daftar memuat OBS-", (await page.text()).includes("OBS-"));
     await loginPage(page, BASE, USER("admin"));
   });
 

@@ -896,10 +896,10 @@ begin
   select jsonb_build_object(
     'month',  (select __APP__.kpi_safety(v_first, v_last, p_location)),
     'ytd',    (select __APP__.kpi_safety(make_date(p_year, 1, 1), v_last, p_location)),
-    'hours_series', coalesce((select jsonb_agg(jsonb_build_object('month', to_char(m, 'YYYY-MM'), 'hours', coalesce(h.hours, 0)) order by m)
+    'hours_series', coalesce((select jsonb_agg(jsonb_build_object('month', to_char(m, 'YYYY-MM'), 'hours', h.hours) order by m)
         from generate_series(make_date(p_year, 1, 1), v_first, interval '1 month') m
-        left join (select w.month, sum(w.hours) hours from __APP__.work_hours w
-                    where p_location is null or w.location_id = p_location group by w.month) h on h.month = m::date), '[]'),
+        join (select w.month, sum(w.hours) hours from __APP__.work_hours w
+               where p_location is null or w.location_id = p_location group by w.month) h on h.month = m::date), '[]'),
     'findings', jsonb_build_object(
       'open',    (select count(*) from __APP__.findings f where f.status <> 'closed' and (p_location is null or f.location_id = p_location)),
       'overdue', (select count(*) from __APP__.findings f where f.status <> 'closed' and f.due_date < v_today and (p_location is null or f.location_id = p_location)),
@@ -1083,6 +1083,48 @@ language sql stable security invoker set search_path = '' as $$
     limit least(greatest(p_limit, 1), 10))
 $$;
 revoke execute on function __APP__.global_search_k3(text, integer) from public, anon;
+
+-- Feed aktivitas Beranda: log semua modul K3 (ikut RLS log masing-masing). example_pengajuan.sql (bila dipasang)
+-- mendefinisikan ulang activity_feed dengan tambahan log Pengajuan.
+create or replace function __APP__.activity_feed_k3(p_limit integer default 20, p_before timestamptz default null)
+returns table (id bigint, entity text, record_id uuid, at timestamptz, actor_id uuid, action text, note text,
+               label text, href text)
+language sql stable security invoker set search_path = '' as $$
+  select f.* from (
+    (select l.id, 'kejadian'::text, l.record_id, l.at, l.actor_id, l.action, l.note, coalesce(i.code, 'Kejadian'), '/kejadian/' || l.record_id
+       from __APP__.incidents_logs l left join __APP__.incidents i on i.id = l.record_id
+      where (p_before is null or l.at < p_before) order by l.at desc limit 100)
+    union all
+    (select l.id, 'temuan', l.record_id, l.at, l.actor_id, l.action, l.note, coalesce(x.code, 'Temuan'), '/temuan/' || l.record_id
+       from __APP__.findings_logs l left join __APP__.findings x on x.id = l.record_id
+      where (p_before is null or l.at < p_before) order by l.at desc limit 100)
+    union all
+    (select l.id, 'tindakan', l.record_id, l.at, l.actor_id, l.action, l.note, coalesce(a.code, 'Tindakan'),
+            coalesce(__APP__.k3_action_href(a), '/temuan')
+       from __APP__.pica_actions_logs l left join __APP__.pica_actions a on a.id = l.record_id
+      where (p_before is null or l.at < p_before) order by l.at desc limit 100)
+    union all
+    (select l.id, 'inspeksi', l.record_id, l.at, l.actor_id, l.action, l.note, coalesce(x.code, 'Inspeksi'), '/inspeksi/' || l.record_id
+       from __APP__.inspections_logs l left join __APP__.inspections x on x.id = l.record_id
+      where (p_before is null or l.at < p_before) order by l.at desc limit 100)
+    union all
+    (select l.id, 'observasi', l.record_id, l.at, l.actor_id, l.action, l.note, coalesce(x.code, 'Observasi'), '/observasi/' || l.record_id
+       from __APP__.observations_logs l left join __APP__.observations x on x.id = l.record_id
+      where (p_before is null or l.at < p_before) order by l.at desc limit 100)
+  ) f
+  order by f.at desc
+  limit least(greatest(p_limit, 1), 100);
+$$;
+revoke execute on function __APP__.activity_feed_k3(integer, timestamptz) from public, anon;
+
+-- Pembungkus (contoh Pengajuan mendefinisikan ulang dengan log Pengajuan)
+create or replace function __APP__.activity_feed(p_limit integer default 20, p_before timestamptz default null)
+returns table (id bigint, entity text, record_id uuid, at timestamptz, actor_id uuid, action text, note text,
+               label text, href text)
+language sql stable security invoker set search_path = '' as $$
+  select * from __APP__.activity_feed_k3(p_limit, p_before);
+$$;
+revoke execute on function __APP__.activity_feed(integer, timestamptz) from public, anon;
 
 -- Label aksi tambahan untuk riwayat
 create or replace function __APP__.action_label(p_action text)

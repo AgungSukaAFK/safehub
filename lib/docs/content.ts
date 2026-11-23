@@ -2,12 +2,14 @@
 // ganti bersama contoh Pengajuan), Bantuan Admin, dan pengaturan admin (modul dasar, tetap relevan).
 import {
   BellRing,
+  CalendarPlus,
   CheckCheck,
   ClipboardCheck,
   Cpu,
   FilePen,
   Headset,
   KeyRound,
+  ListChecks,
   MessageSquare,
   Paperclip,
   Printer,
@@ -227,6 +229,78 @@ export const DOCS: DocsContent = {
           visual: {
             window: "Alur Persetujuan",
             blocks: [{ kind: "path", items: [{ label: "Investigator", state: "done" }, { label: "Review EHS", state: "done" }, { label: "Review Manajemen", state: "current" }] }],
+          },
+        },
+      ],
+    },
+    {
+      id: "inspeksi",
+      title: "Inspeksi & observasi",
+      subtitle: "Dari jadwal, checklist di lapangan, sampai temuan otomatis dan verifikasi.",
+      steps: [
+        {
+          short: "Jadwal",
+          title: "Jadwalkan inspeksi",
+          icon: CalendarPlus,
+          actors: ["hse", "pengawas"],
+          summary: "Pilih jenis inspeksi, lokasi, waktu, dan pemeriksa. Jadwal tampil di kalender dan masuk rencana bulan itu.",
+          menu: "Inspeksi & Observasi → Jadwalkan Inspeksi",
+          details: ["Pemeriksa menerima notifikasi dan tugas di Tugas Saya.", "Panel Rencana vs Aktual menunjukkan pencapaian per jenis bulan ini."],
+          status: { map: "inspection", to: "scheduled" },
+          visual: {
+            window: "Jadwalkan Inspeksi",
+            blocks: [
+              { kind: "field", label: "Jenis inspeksi", value: "Inspeksi Kotak P3K & APAR", highlight: true },
+              { kind: "field", label: "Lokasi", value: "Workshop Service" },
+              { kind: "buttons", items: [{ label: "Simpan Jadwal", pulse: true }] },
+            ],
+          },
+        },
+        {
+          short: "Checklist",
+          title: "Isi checklist di lapangan",
+          icon: ListChecks,
+          actors: ["pengawas", "hse"],
+          summary: "Mulai inspeksi, jawab tiap butir (Sesuai, Tidak Sesuai, N/A), tambahkan komentar dan foto dari kamera.",
+          menu: "Tugas Saya → Inspeksi terjadwal",
+          details: ["Jawaban tersimpan otomatis; tetap aman bila sinyal hilang karena draf juga ada di perangkat.", "Butir Tidak Sesuai bisa langsung dijadikan temuan lengkap dengan prioritas, PIC, dan due date."],
+          status: { map: "inspection", from: "scheduled", to: "in_progress" },
+          visual: {
+            window: "Checklist",
+            blocks: [
+              { kind: "row", title: "Tekanan pada pressure gauge di area hijau", sub: "Butir 4", highlight: true },
+              { kind: "buttons", items: [{ label: "Sesuai", variant: "outline" }, { label: "Tidak Sesuai", variant: "danger", pulse: true }, { label: "N/A", variant: "outline" }] },
+            ],
+          },
+        },
+        {
+          short: "Kirim",
+          title: "Kirim inspeksi",
+          icon: Send,
+          actors: ["pengawas", "hse"],
+          summary: "Setelah semua butir dijawab, kirim. Temuan otomatis dibuat dan PIC-nya diberi tahu.",
+          details: ["Checklist terkunci setelah dikirim.", "Ringkasan menampilkan jumlah Sesuai / Tidak Sesuai / N/A dan nomor temuan yang dibuat."],
+          status: { map: "inspection", from: "in_progress", to: "submitted" },
+          visual: {
+            window: "Inspeksi berhasil dikirim",
+            blocks: [
+              { kind: "row", title: "16 sesuai · 2 tidak sesuai · 0 N/A", highlight: true },
+              { kind: "note", text: "2 temuan dibuat: TMN-2026-0092 · TMN-2026-0093", tone: "success" },
+            ],
+          },
+        },
+        {
+          short: "Verifikasi",
+          title: "HSE memverifikasi",
+          icon: CheckCheck,
+          actors: ["hse"],
+          summary: "HSE memeriksa hasil dan temuan lalu memverifikasi. Pemeriksa tidak dapat memverifikasi inspeksinya sendiri.",
+          menu: "Tugas Saya → Menunggu Verifikasi",
+          details: ["Observasi KTA/TTA (lapor cepat dari HP) tidak perlu jadwal; tindak lanjutnya otomatis menjadi temuan."],
+          status: { map: "inspection", from: "submitted", to: "verified" },
+          visual: {
+            window: "Verifikasi",
+            blocks: [{ kind: "buttons", items: [{ label: "Verifikasi", pulse: true }] }],
           },
         },
       ],

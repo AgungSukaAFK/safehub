@@ -162,9 +162,8 @@ Rancangan modul & keputusan D1–D15 ada di [rancangan-implementasi.md](rancanga
   kontrol top bar tidak bertumpuk @360/@390.
 - `npm run db:test` butuh Docker. `types/database.ts` SELALU dari `npm run db:types` (bukan manual).
 - **`db:local` di Supabase lokal bersama** (`db-lourdes` juga dipakai app lain, mis. `boilerplate_demo`):
-  `reset` menghapus SEMUA user `@demo.lourdes.test` (milik app lain juga) → pakai `apply` bila schema
-  belum ada; `expose` menimpa `pgrst.db_schemas` → tambahkan kembali schema app lain. Seed tidak membuat
-  dokumen Pengajuan; QA butuh beberapa (buat lewat `pengajuan_save` sebagai budi/GMI & sari/GIS).
+  `reset` hanya menghapus schema/policy/akses app ini (user demo & file storage dipertahankan); `expose`
+  MENAMBAH schema app ke `pgrst.db_schemas` tanpa menghapus yang lain. Seed membuat draf Pengajuan contoh.
 - **App baru**: `scripts/create-app.sh <app_id> "<Nama>"` (salin, ganti penanda, migration gabungan di
   `db/out/` via mode `migration` = tanpa `09_verify`, `git init`). `09_verify` hanya lewat `--dengan-verifikasi`.
 - **QA**: `npm run qa` (Chrome headless via DevTools Protocol, `scripts/qa/`), jalankan terhadap build
@@ -181,6 +180,47 @@ Rancangan modul & keputusan D1–D15 ada di [rancangan-implementasi.md](rancanga
 - Dev: setelah `next typegen` atau kalau dev server reload terus-menerus, hentikan server lalu hapus `.next/dev`.
 - Lint React 19 ketat: jangan `setState` sinkron di effect atau membaca ref saat render; pakai
   `useSyncExternalStore` (`useStoredState`, `useHydrated`, `useIsMobile`).
+
+## Safe Hub: Kejadian & Temuan/PICA (fase 1)
+
+Spesifikasi & keputusan sendiri S1-S7: [docs/spec/fase-1-kejadian-pica.md](docs/spec/fase-1-kejadian-pica.md).
+
+- **Jenis B (workflow operasional)**: tabel `incidents`, `findings`, `pica_actions` TIDAK punya hak tulis untuk
+  `authenticated`; semua perubahan lewat RPC security definer (`db/app/11_kejadian_pica.sql`) yang memeriksa
+  fungsi K3 + visibilitas record (`k3_incident_visible/k3_finding_visible/k3_action_visible`), lalu
+  `set_log_context` + `set_log_extra` (satu aksi = satu baris log), `notify()`, dan hasilnya memuat
+  `notification_ids` untuk `sendPushForNotifications`. Baca = RLS (company + site; Karyawan = miliknya/atasan/tim/PIC).
+- **Alur Kejadian**: `reported > classified > investigating > review_ehs > review_mgmt > actions > closed`.
+  Kembalikan = `return_note` + kembali ke `investigating` (S3). Tutup otomatis saat review manajemen disetujui
+  dan semua tindakan Closed (`k3_incident_try_close`, S4). Tutup dengan pengecualian = PJO + alasan >= 10 karakter.
+  Pembuat laporan tidak boleh meninjau laporannya sendiri. Kategori final (`category`) dari HSE yang dipakai KPI.
+- **Data terbatas** (rancangan §2.7): `incident_restricted` (cedera: HSE/HR) dan `incident_costs` (biaya:
+  HSE/PJO/Manajemen/SCM/admin) = tabel terpisah dengan RLS fungsi; loader `getKejadianDetail` hanya
+  membacanya bila `canSeeRestricted/canSeeCost`; UI `RestrictedData`. Ekspor Excel tidak memuatnya. Halaman
+  detail ditandai `<NoOffline />` bagi yang berhak (data cedera tidak masuk cache SW).
+- **PICA**: tindakan milik temuan ATAU kejadian (`pica_actions`), nomor `PCA-YYYY-NNNN` (S1). Bukti per putaran
+  di storage `pica/<action_id>/r<putaran>/` (policy insert: hanya PIC, putaran berjalan); RPC
+  `pica_submit_evidence` memverifikasi file ada. Verifikasi Terima/Kembalikan (S2), komentar wajib; ubah due
+  date wajib beralasan. Status temuan = cache turunan (`k3_finding_refresh`, tanpa log); overdue dihitung
+  (`due_date < today WIB`), tidak disimpan.
+- **Lampiran** `kejadian/<id>/`, `temuan/<id>/` ikut hak baca record (policy `<host>-lampiran` didefinisikan ulang
+  di 11_kejadian_pica.sql). Lapor: foto diunggah SETELAH kejadian terbentuk (S7); draf hanya di perangkat.
+- **Lib**: `lib/kejadian-rules.ts`, `temuan-rules.ts`, `pica-rules.ts` (zod, label, fungsi murni; aman client);
+  loader `lib/kejadian.ts`, `temuan.ts`, `pica.ts` (SATU sumber: tabel, kanban, ekspor `all: true`, detail);
+  `lib/k3.ts` (master berkode, area, pilihan orang `k3_user_options`, mitra); `lib/k3-actions.ts` (`k3DbError`:
+  pesan RPC 42501 berbahasa Indonesia ditampilkan apa adanya). Izin per peran dihitung di `page.tsx` server
+  (cermin RPC) lalu dioper sebagai `perms`; DB tetap penjaga terakhir.
+- **Halaman**: `/kejadian` (saved views + filter + ekspor), `/kejadian/lapor` (wizard HP-first, `lapor-wizard.tsx`),
+  `/kejadian/[id]` (stepper 7 tahap, tab via `?tab=`, panel `tab-klasifikasi/investigasi/review`),
+  `/temuan` (strip angka + widget dari RPC `finding_stats`, Tabel/Kanban via `?mode=kanban`), `/temuan/baru`,
+  `/temuan/[id]` (+ `/ubah`), kartu tindakan bersama `components/pica/*`. Deep link `?tindakan=<kode>`.
+- **Tugas Saya** (`my_tasks`): cabang `incident_classify`, `incident_investigate`, `incident_review` (grup
+  approval), `pica_do`, `pica_verify`. Label di `lib/task-labels.ts`. Badge menu: `incidents` (perlu klasifikasi,
+  HSE) dan `findings` (overdue) dari RPC `k3_badges`.
+- **Seed DEMO**: 8 kejadian + 8 temuan + 15 tindakan dari prototipe, dibuat LEWAT RPC sebagai persona (log,
+  notifikasi, nomor wajar) lalu tanggal dimundurkan; plus 6 draf Pengajuan contoh (budi/GMI, sari/GIS).
+- **Belum dibangun (fase 1)**: cetak/PDF kejadian, matriks akses fungsi x modul di `/pengguna`, tautan unit ke
+  sistem maintenance (D15: isian bebas), unggah lampiran dari antrean offline.
 
 ## Koreksi terhadap guide (sudah diterapkan di `db/`)
 

@@ -87,7 +87,7 @@ function columnsFor(riskMap: Record<string, StatusDef>): Column<TemuanRow>[] {
 function ViewTabs({ view, counts }: { view: FindingView; counts: Record<FindingView, number> }) {
   const { setParams } = useList();
   return (
-    <div className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1" role="tablist" aria-label="Tampilan tersimpan">
+    <div className="-mx-1 flex gap-1 overflow-x-auto overflow-y-hidden px-1 pb-1" role="tablist" aria-label="Tampilan tersimpan">
       {FINDING_VIEWS.map((v) => (
         <button
           key={v}

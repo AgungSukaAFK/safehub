@@ -4,6 +4,8 @@ import { ArrowRight, Bell, Check, X } from "lucide-react";
 import { StatusBadge } from "@/components/detail/status-badge";
 import type { DocRole, MockBlock, StatusMapKey, StepVisual } from "@/lib/docs/types";
 import { FEEDBACK_STATUS } from "@/lib/feedback-rules";
+import { INCIDENT_STATUS } from "@/lib/kejadian-rules";
+import { ACTION_STATUS } from "@/lib/pica-rules";
 import { APPROVAL_STEP_STATUS, DOCUMENT_STATUS, type StatusDef } from "@/lib/status";
 import { SUPPORT_STATUS } from "@/lib/support-types";
 import { cn } from "@/lib/utils";
@@ -13,6 +15,8 @@ export const STATUS_MAPS: Record<StatusMapKey, Record<string, StatusDef>> = {
   approval: APPROVAL_STEP_STATUS,
   support: SUPPORT_STATUS,
   feedback: FEEDBACK_STATUS,
+  incident: INCIDENT_STATUS,
+  action: ACTION_STATUS,
 };
 
 export function RoleChip({ role, className }: { role: DocRole | undefined; className?: string }) {

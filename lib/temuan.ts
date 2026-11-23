@@ -144,6 +144,8 @@ type RawRow = {
   pic_id: string;
 };
 
+// Builder Supabase generik (metode filter bersama); tipe Function di sini sengaja longgar
+// eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
 function applyFilters<Q extends { ilike: Function; in: Function; eq: Function; gte: Function; lte: Function; lt: Function; neq: Function }>(
   q: Q,
   f: TemuanFilters,
@@ -332,6 +334,8 @@ export type TemuanDetail = {
   rootCauses: { factor: string; text: string }[];
   dueDate: string;
   status: string;
+  /** hari terlambat (0 bila belum lewat / closed) */
+  lateDays: number;
   closedAt: string | null;
   closeNote: string | null;
   closedBy: Person | null;
@@ -384,6 +388,7 @@ export async function getTemuanDetail(supabase: ServerClient, id: string): Promi
     rootCauses: (d.root_causes as { factor: string; text: string }[]) ?? [],
     dueDate: d.due_date,
     status: d.status,
+    lateDays: d.status !== "closed" && d.due_date < todayWibIso() ? Math.round((Date.parse(todayWibIso()) - Date.parse(d.due_date)) / 86_400_000) : 0,
     closedAt: d.closed_at,
     closeNote: d.close_note,
     closedBy: d.closed_by ? (people.get(d.closed_by) ?? null) : null,

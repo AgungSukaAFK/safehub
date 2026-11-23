@@ -113,6 +113,28 @@ export type FindingValues = {
   change_reason: string;
 };
 
+export const newFindingValues = (init: Partial<FindingValues>): FindingValues => ({
+  company_code: null,
+  location_id: "",
+  area_id: "",
+  location_detail: "",
+  found_at: "",
+  title: "",
+  description: "",
+  source_kind: "",
+  source_ref: "",
+  source_id: null,
+  category: "",
+  risk_level: "",
+  likelihood: null,
+  consequence: null,
+  root_causes: [],
+  pic_id: null,
+  due_date: null,
+  change_reason: "",
+  ...init,
+});
+
 /** Status tampil temuan (overdue turunan). */
 export function findingDisplayStatus(f: { status: string; dueDate: string }, today: string): string {
   return f.status !== "closed" && f.dueDate < today ? "overdue" : f.status;

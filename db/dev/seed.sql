@@ -406,6 +406,25 @@ begin
   alter table __APP__.pica_actions enable trigger pica_actions_log;
 end $$;
 
+-- ---------- dokumen contoh Pengajuan (draf) supaya list/QA punya data setelah reset ----------
+do $$
+declare v_u record; i integer;
+begin
+  if exists (select 1 from __APP__.pengajuan) then return; end if;
+  for v_u in select p.id, p.company, p.department_id, p.email from public.profiles p
+              where p.email in ('budi@demo.lourdes.test', 'sari@demo.lourdes.test') loop
+    perform pg_temp.as_user(v_u.email);
+    for i in 1..3 loop
+      perform __APP__.pengajuan_save(null, jsonb_build_object(
+        'company_code', v_u.company, 'department_id', v_u.department_id,
+        'title', format('Contoh QA %s #%s', split_part(v_u.email, '@', 1), i), 'needed_date', (current_date + 14)::text,
+        'items', jsonb_build_array(jsonb_build_object('item_name', 'Sarung tangan', 'qty', 10, 'unit', 'pasang', 'unit_price', 25000))));
+    end loop;
+  end loop;
+  perform set_config('request.jwt.claims', '', true);
+  perform set_config('request.jwt.claim.sub', '', true);
+end $$;
+
 -- ---------- konfigurasi approval (tanpa auth.uid → log/CCTV tercatat sebagai sistem) ----------
 insert into __APP__.department_heads (department_id, company_code, user_id)
 select d.id, c.code, p.id

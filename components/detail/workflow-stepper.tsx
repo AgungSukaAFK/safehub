@@ -66,13 +66,14 @@ export function WorkflowStepper({ steps, className, label = "Tahapan proses" }: 
               <span
                 aria-hidden
                 className={cn(
-                  "absolute top-7 bottom-0 left-3.5 w-0.5 -translate-x-1/2 md:top-3.5 md:right-0 md:bottom-auto md:left-1/2 md:h-0.5 md:w-full md:translate-x-3.5",
+                  // md+: dari tepi dot ini ke tepi dot berikutnya (lebar item sama), tidak melebihi lebar daftar
+                  "absolute top-7 bottom-0 left-3.5 w-0.5 -translate-x-1/2 md:top-3.5 md:right-auto md:bottom-auto md:left-[calc(50%+1.125rem)] md:h-0.5 md:w-[calc(100%-2.25rem)] md:translate-x-0",
                   s.state === "done" ? "bg-green-600 dark:bg-green-500" : "bg-muted-foreground/20",
                 )}
               />
             )}
             <Dot step={s} n={i + 1} />
-            <div className="min-w-0 md:max-w-32 md:px-1">
+            <div className="min-w-0 md:max-w-28 md:px-1">
               <p className={cn("text-sm leading-tight md:text-xs", s.state === "current" ? "font-semibold" : "font-medium", s.state === "pending" && "text-muted-foreground")}>
                 {s.label}
               </p>

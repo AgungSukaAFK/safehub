@@ -14,6 +14,7 @@ import {
   INCIDENT_VIEW_STATUSES,
   INCIDENT_VIEWS,
   INJURY_CLASS_LABEL,
+  incidentAgeDays,
   type CauseKey,
   type IncidentStatus,
   type IncidentView,
@@ -99,6 +100,8 @@ export type KejadianRow = {
   status: string;
   isEmergency: boolean;
   returned: boolean;
+  /** umur sejak dilaporkan (hari), berhenti saat closed */
+  ageDays: number;
   actions: { closed: number; total: number };
   reporter: Pick<Person, "id" | "name" | "avatarUrl"> | null;
 };
@@ -135,6 +138,8 @@ type RawRow = {
 };
 
 /** Filter bersama (tanpa status/tampilan bila `ignoreStatus`, untuk hitungan tab). */
+// Builder Supabase generik (metode filter bersama); tipe Function di sini sengaja longgar
+// eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
 function applyFilters<Q extends { ilike: Function; in: Function; eq: Function; gte: Function; lte: Function }>(
   q: Q,
   f: KejadianFilters,
@@ -194,6 +199,7 @@ async function hydrate(supabase: ServerClient, raw: RawRow[], masters: K3Masters
       status: r.status,
       isEmergency: r.is_emergency,
       returned: !!r.return_note && r.status === "investigating",
+      ageDays: incidentAgeDays(r.reported_at, r.closed_at, new Date()),
       actions: progress.get(r.id) ?? { closed: 0, total: 0 },
       reporter: p ? { id: p.id, name: p.name, avatarUrl: p.avatarUrl } : null,
     };
@@ -253,6 +259,7 @@ export const KEJADIAN_EXPORT_COLUMNS: ExcelColumn<KejadianRow>[] = [
   { header: "Unit", value: (r) => r.unit },
   { header: "Pelapor", value: (r) => r.reporter?.name ?? null },
   { header: "Status", value: (r) => INCIDENT_STATUS[r.status]?.label ?? r.status },
+  { header: "Umur (hari)", type: "number", value: (r) => r.ageDays },
   { header: "Tindakan Closed", type: "number", value: (r) => r.actions.closed },
   { header: "Tindakan Total", type: "number", value: (r) => r.actions.total },
   { header: "Darurat", value: (r) => (r.isEmergency ? "Ya" : "Tidak") },

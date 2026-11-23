@@ -90,7 +90,7 @@ async function contactSheet(file, items, { cols = 4, width = 420 } = {}) {
   return file;
 }
 
-const APP_PAGES = ["/", "/tugas", "/master", "/notifikasi", "/pengajuan", "/pengajuan/baru", "__DETAIL__", "/pengguna", "/approval/template", "/approval/kepala-departemen", "/bantuan", "/bantuan/kelola", "/feedback", "/feedback/kelola", "/pembaruan", "/pembaruan/baru", "/dokumentasi", "/tentang", "/profil"];
+const APP_PAGES = ["/", "/tugas", "/kejadian", "/kejadian/lapor", "/temuan", "/temuan/baru", "/master", "/notifikasi", "/pengajuan", "/pengajuan/baru", "__DETAIL__", "/pengguna", "/approval/template", "/approval/kepala-departemen", "/bantuan", "/bantuan/kelola", "/feedback", "/feedback/kelola", "/pembaruan", "/pembaruan/baru", "/dokumentasi", "/tentang", "/profil"];
 
 const chrome = await launch();
 const page = await chrome.newPage();
@@ -222,6 +222,82 @@ try {
   });
 
   // ------------------------------------------------------------------ 4 mode × 3 aksen
+  // ------------------------------------------------------------------ fase 1: Kejadian & Temuan
+  await run("Fase 1: Kejadian & Temuan", async () => {
+    await page.viewport(1280, 900);
+    await setAppearance(page, { mode: "light" });
+    const firstLink = (list) => page.eval(`(document.querySelector('tbody a[href^="${list}/"]') || {}).getAttribute?.("href") || ""`);
+    const find = async (list, q) => {
+      await visit(page, `${list}?q=${encodeURIComponent(q)}`, 1800);
+      return firstLink(list);
+    };
+
+    await loginPage(page, BASE, USER("hse"));
+    await visit(page, "/kejadian", 1800);
+    const kt = await page.text();
+    check("kejadian: daftar memuat nomor KJD- dan tab Perlu Klasifikasi", kt.includes("KJD-") && kt.includes("Perlu Klasifikasi"), kt.slice(0, 120));
+    const kjd = await find("/kejadian", "jari terjepit");
+    check("kejadian: kejadian contoh ditemukan (cari)", !!kjd, kjd);
+    if (kjd) {
+      await visit(page, `${kjd}?tab=klasifikasi`, 1800);
+      const ct = await page.text();
+      check("kejadian HSE: data cedera terbaca", ct.includes("Memar dan luka ringan") && ct.includes("Rp 2.750.000"), ct.slice(0, 120));
+      await visit(page, `${kjd}?tab=tindakan`, 1800);
+      check("kejadian: tab Tindakan memuat kartu tindakan PCA-", (await page.text()).includes("PCA-"));
+      check("kejadian: halaman detail ber-NoOffline untuk HSE (data cedera)", await page.eval(`!!document.querySelector('meta[name="x-no-offline"]')`));
+
+      await loginPage(page, BASE, USER("karyawan"));
+      await visit(page, `${kjd}?tab=klasifikasi`, 1800);
+      const kr = await page.text();
+      check("kejadian karyawan: data cedera & biaya terbatas", kr.includes("Hanya HSE dan HR") && !kr.includes("Memar") && !kr.includes("2.750.000"), kr.slice(0, 120));
+
+      await loginPage(page, BASE, USER("pjo"));
+      await visit(page, `${kjd}?tab=klasifikasi`, 1800);
+      const pr = await page.text();
+      check("kejadian PJO: biaya terbaca, cedera tetap terbatas", pr.includes("Rp 2.750.000") && pr.includes("Hanya HSE dan HR") && !pr.includes("Memar"), pr.slice(0, 120));
+      await loginPage(page, BASE, USER("hr"));
+      await visit(page, `${kjd}?tab=klasifikasi`, 1800);
+      const hr = await page.text();
+      check("kejadian HR: cedera terbaca, biaya terbatas", hr.includes("Memar") && !hr.includes("2.750.000"), hr.slice(0, 120));
+    }
+
+    await loginPage(page, BASE, USER("hse"));
+    await visit(page, "/temuan", 1800);
+    const tt = await page.text();
+    check("temuan: strip angka, widget, dan daftar", tt.includes("Overdue per PIC") && tt.includes("Temuan per Sumber") && tt.includes("TMN-"), tt.slice(0, 120));
+    await visit(page, "/temuan?mode=kanban", 1800);
+    check("temuan: kanban memuat kolom status", (await page.text()).includes("Menunggu Verifikasi") && (await noHScroll(page)) <= 1);
+    const tmn = await find("/temuan", "Padlock");
+    if (tmn) {
+      await visit(page, tmn, 1800);
+      const dt = await page.text();
+      check("temuan: detail memuat rencana tindakan & sumber", dt.includes("Rencana Tindakan") && dt.includes("INS-2026-0230"), dt.slice(0, 120));
+      await loginPage(page, BASE, USER("pengawas"));
+      await visit(page, tmn, 1800);
+      check("temuan: PIC melihat tombol Unggah Bukti", (await page.text()).includes("Unggah Bukti"));
+    } else check("temuan: temuan contoh ditemukan", false, tmn);
+
+    await loginPage(page, BASE, USER("auditor"));
+    await visit(page, "/kejadian/lapor", 2500);
+    check("auditor: /kejadian/lapor dialihkan ke daftar", (await page.eval("location.pathname")) === "/kejadian", await page.eval("location.href"));
+    check("auditor: menu Lapor Kejadian tidak tampil", !(await page.text()).includes("Lapor Kejadian"));
+
+    // wizard lapor di HP: validasi langkah 1 (klik asli)
+    await loginPage(page, BASE, USER("karyawan"));
+    await page.viewport(390, 844, { mobile: true, touch: true });
+    await visit(page, "/kejadian/lapor", 1500);
+    const btn = await page.eval(`(() => { const b = [...document.querySelectorAll('button')].find(x => x.innerText.trim().startsWith('Lanjutkan')); if (!b) return null; const r = b.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; })()`);
+    if (btn) for (const type of ["mousePressed", "mouseReleased"]) await page.send("Input.dispatchMouseEvent", { type, x: btn.x, y: btn.y, button: "left", clickCount: 1 });
+    await sleep(500);
+    const wt = await page.text();
+    check("wizard lapor: validasi langkah 1 (lokasi & kategori wajib)", wt.includes("Lokasi kejadian wajib dipilih") && wt.includes("Kategori kejadian wajib dipilih"), wt.slice(0, 160));
+    check("wizard lapor @390: tanpa scroll horizontal", (await noHScroll(page)) <= 1);
+    await page.screenshot(path.join(OUT, "lapor-390.png"));
+    await page.viewport(1280, 900);
+    // bagian berikutnya (Tema, Cetak, ...) mengandalkan sesi admin
+    await loginPage(page, BASE, USER("admin"));
+  });
+
   await run("Tema: 4 mode × 3 aksen", async () => {
     await page.viewport(1280, 900);
     const shots = [];

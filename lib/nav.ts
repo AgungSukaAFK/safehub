@@ -5,6 +5,7 @@ import {
   BookOpen,
   Building2,
   ClipboardCheck,
+  Database,
   FileText,
   Headset,
   Inbox,
@@ -19,9 +20,11 @@ import {
   Users,
 } from "lucide-react";
 import type { AppAccess } from "@/lib/access-types";
+import { hasAnyFunction, type Fn } from "@/lib/functions";
 import { roleAtLeast, type Role } from "@/lib/roles";
 
-export type NavGroupId = "menu" | "admin" | "bantuan";
+// Grup sesuai prototipe Safe Hub (rancangan §2.13). Grup tanpa item yang boleh dilihat tidak tampil.
+export type NavGroupId = "menu" | "k3lh" | "people" | "dokumen" | "maintenance" | "laporan" | "inbox" | "admin" | "bantuan";
 
 export type NavItem = {
   href: string;
@@ -32,17 +35,33 @@ export type NavItem = {
   group: NavGroupId;
   /** sinonim, singkatan, istilah lama (untuk cari menu & global search) */
   keywords?: string[];
+  /** Fungsi K3 yang boleh melihat menu (salah satu). Tidak diisi = semua fungsi. */
+  functions?: Fn[];
   /** aturan tambahan (company, data members) */
   visible?: (a: AppAccess) => boolean;
-  /** kunci badge dari provider (notifikasi, bantuan, pembaruan, approval) */
-  badge?: "notifications" | "support" | "updates" | "approvals";
+  /** kunci badge dari provider (notifikasi, bantuan, pembaruan, tugas) */
+  badge?: "notifications" | "support" | "updates" | "tasks";
+  /** Halaman buat baru → muncul di tombol "Buat" top bar (rancangan §2.13) */
+  createHref?: string;
+  /** Label di menu "Buat" (default = label menu) */
+  createLabel?: string;
+  /** Role minimum untuk tombol Buat (default = min menu) */
+  createMin?: Role;
 };
 
 export const NAV_GROUP_LABELS: Record<NavGroupId, string> = {
   menu: "Menu",
+  k3lh: "K3LH",
+  people: "People & Compliance",
+  dokumen: "Dokumen",
+  maintenance: "Maintenance",
+  laporan: "Laporan",
+  inbox: "Inbox",
   admin: "Admin",
   bantuan: "Bantuan",
 };
+
+export const NAV_GROUP_ORDER: NavGroupId[] = ["menu", "k3lh", "people", "dokumen", "maintenance", "laporan", "inbox", "admin", "bantuan"];
 
 export const NAV_ITEMS: NavItem[] = [
   // ── Menu ──────────────────────────────────────────────────────────────
@@ -55,26 +74,6 @@ export const NAV_ITEMS: NavItem[] = [
     group: "menu",
     keywords: ["dashboard", "home", "ringkasan"],
   },
-  {
-    href: "/approval",
-    label: "Approval Saya",
-    description: "Dokumen yang menunggu persetujuan Anda",
-    icon: ClipboardCheck,
-    min: "viewer",
-    group: "menu",
-    keywords: ["persetujuan", "antrian", "setujui", "tolak", "acc"],
-    badge: "approvals",
-  },
-  {
-    href: "/notifikasi",
-    label: "Notifikasi",
-    description: "Semua notifikasi Anda",
-    icon: Inbox,
-    min: "viewer",
-    group: "menu",
-    keywords: ["inbox", "pemberitahuan", "notif"],
-    badge: "notifications",
-  },
   // CONTOH: hapus bersama db/app/example_pengajuan.sql saat app punya dokumen asli
   {
     href: "/pengajuan",
@@ -84,17 +83,51 @@ export const NAV_ITEMS: NavItem[] = [
     min: "viewer",
     group: "menu",
     keywords: ["pj", "permintaan", "request", "contoh"],
+    createHref: "/pengajuan/baru",
+    createLabel: "Pengajuan (contoh)",
+    createMin: "editor",
+  },
+
+  // ── Inbox ─────────────────────────────────────────────────────────────
+  {
+    href: "/tugas",
+    label: "Tugas Saya",
+    description: "Yang perlu tindakan, verifikasi, dan persetujuan Anda",
+    icon: ClipboardCheck,
+    min: "viewer",
+    group: "inbox",
+    keywords: ["approval", "persetujuan", "antrian", "setujui", "tolak", "acc", "todo"],
+    badge: "tasks",
+  },
+  {
+    href: "/notifikasi",
+    label: "Notifikasi",
+    description: "Semua notifikasi Anda",
+    icon: Inbox,
+    min: "viewer",
+    group: "inbox",
+    keywords: ["inbox", "pemberitahuan", "notif"],
+    badge: "notifications",
   },
 
   // ── Admin ─────────────────────────────────────────────────────────────
   {
     href: "/pengguna",
-    label: "Pengguna & Akses",
-    description: "Atur siapa yang bisa membuka app ini dan role-nya",
+    label: "Pengguna & Peran",
+    description: "Atur siapa yang bisa membuka app ini, role, dan fungsi K3-nya",
     icon: Users,
     min: "admin",
     group: "admin",
-    keywords: ["user", "akses", "role", "hak akses", "karyawan"],
+    keywords: ["user", "akses", "role", "hak akses", "karyawan", "fungsi k3", "peran"],
+  },
+  {
+    href: "/master",
+    label: "Master Data",
+    description: "Area per site, kategori kejadian, tingkat risiko, perusahaan mitra",
+    icon: Database,
+    min: "admin",
+    group: "admin",
+    keywords: ["master", "area", "site", "lokasi", "kategori", "risiko", "mitra", "kontraktor", "subkon", "vendor"],
   },
   {
     href: "/approval/template",
@@ -189,18 +222,26 @@ export const QUICK_ACTION_ICON = Sparkles;
 export type NavGroup = { id: NavGroupId; label: string; items: NavItem[] };
 
 export function canSee(item: NavItem, access: AppAccess): boolean {
-  return roleAtLeast(access.role, item.min) && (item.visible ? item.visible(access) : true);
+  return (
+    roleAtLeast(access.role, item.min) &&
+    (!item.functions?.length || hasAnyFunction(access, item.functions)) &&
+    (item.visible ? item.visible(access) : true)
+  );
+}
+
+/** Item tombol "Buat" di top bar: menu yang boleh dilihat dan punya halaman buat baru. */
+export function buildCreateItems(access: AppAccess): NavItem[] {
+  return NAV_ITEMS.filter((i) => i.createHref && canSee(i, access) && roleAtLeast(access.role, i.createMin ?? i.min));
 }
 
 /** Dipakai sidebar DAN global search: menu yang tidak boleh dibuka tidak pernah muncul. */
 export function buildNavGroups(access: AppAccess): NavGroup[] {
-  const order: NavGroupId[] = ["menu", "admin", "bantuan"];
-  return order
+  return NAV_GROUP_ORDER
     .map((id) => ({ id, label: NAV_GROUP_LABELS[id], items: NAV_ITEMS.filter((i) => i.group === id && canSee(i, access)) }))
     .filter((g) => g.items.length > 0);
 }
 
-/** Menu aktif = longest match (`/approval/template` tidak ikut mengaktifkan `/approval`). */
+/** Menu aktif = longest match (`/pengajuan/baru` tetap mengaktifkan `/pengajuan`, menu terpanjang menang). */
 export function activeHref(pathname: string, items: NavItem[]): string | null {
   let best: string | null = null;
   for (const i of items) {

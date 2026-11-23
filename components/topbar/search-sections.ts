@@ -66,11 +66,11 @@ const QUICK_ACTIONS: QuickAction[] = [
     visible: (a) => roleAtLeast(a.role, "editor"),
   },
   {
-    id: "approval",
-    title: "Buka Approval Saya",
+    id: "tugas",
+    title: "Buka Tugas Saya",
     icon: ClipboardCheck,
-    href: "/approval",
-    keywords: ["approval", "persetujuan", "antrian", "setujui"],
+    href: "/tugas",
+    keywords: ["approval", "persetujuan", "antrian", "setujui", "tugas", "todo"],
   },
   {
     id: "profil",
@@ -158,7 +158,7 @@ export function buildSections(input: BuildInput): SearchSection[] {
     const sections: SearchSection[] = [];
     if (pending.length > 0) {
       const items = pending.map(pendingToItem);
-      items.push({ key: "more:approval", icon: ArrowRight, title: "Lihat semua di Approval Saya", href: "/approval", more: true });
+      items.push({ key: "more:approval", icon: ArrowRight, title: "Lihat semua di Tugas Saya", href: "/tugas", more: true });
       sections.push({ id: "pending", label: "Menunggu aksi Anda", items });
     }
     if (history.docs.length > 0) {

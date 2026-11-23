@@ -7,6 +7,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Headset, Palette } from "lucide-react";
 import { AppearanceTabs } from "@/components/appearance/appearance-panels";
+import { CreateMenu } from "@/components/topbar/create-menu";
 import { useApp } from "@/components/providers/app-context";
 import { TopbarIconButton } from "@/components/topbar/topbar-icon-button";
 import { TopbarInbox } from "@/components/topbar/topbar-inbox";
@@ -113,6 +114,9 @@ function TopbarProfile() {
 export function TopbarActions() {
   return (
     <div className="flex items-center gap-1 sm:gap-0.5">
+      <div className="mr-1 sm:mr-1.5">
+        <CreateMenu />
+      </div>
       <TopbarInbox />
       <TopbarHelp />
       <TopbarAppearance />

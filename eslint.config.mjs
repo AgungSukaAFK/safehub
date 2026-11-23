@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Prototipe Figma: referensi saja, tidak ikut build (rancangan-implementasi §0)
+    "GMI Safety Management App/**",
   ]),
 ]);
 

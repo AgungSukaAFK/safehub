@@ -1,9 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
 import Link from "next/link";
-import { ArrowRight, BellRing, CheckCircle2, ClipboardCheck, XCircle } from "lucide-react";
-import { useApp } from "@/components/providers/app-context";
+import { ArrowRight, BellRing, CheckCircle2, XCircle } from "lucide-react";
 import { Content } from "@/components/list/content";
 import { buttonVariants } from "@/components/ui/button";
 import { UserProfileCard } from "@/components/user/user-profile-card";
@@ -13,23 +11,10 @@ import { formatDateTime, formatHours, formatRupiah, timeAgo } from "@/lib/format
 import { APPROVAL_TYPE_LABELS } from "@/lib/status";
 import { cn } from "@/lib/utils";
 
+/** Grup "Approval" di Tugas Saya: dikelompokkan per jenis dokumen. Kosong = tidak dirender. */
 export function ApprovalQueue({ items }: { items: QueueItem[] }) {
   const now = useNow();
-  const { setBadge } = useApp();
-  // badge sidebar mengikuti data server terbaru
-  useEffect(() => setBadge("approvals", items.length), [items.length, setBadge]);
-
-  if (items.length === 0) {
-    return (
-      <Content>
-        <div className="flex flex-col items-center gap-2 py-12 text-center">
-          <ClipboardCheck className="size-9 text-muted-foreground opacity-60" />
-          <p className="font-medium">Tidak ada yang menunggu Anda.</p>
-          <p className="text-sm text-muted-foreground">Dokumen baru yang perlu keputusan Anda akan muncul di sini dan di notifikasi.</p>
-        </div>
-      </Content>
-    );
-  }
+  if (items.length === 0) return null;
 
   const groups = [...new Set(items.map((i) => i.docLabel))];
   return (

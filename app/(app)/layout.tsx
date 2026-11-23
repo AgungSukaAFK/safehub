@@ -14,6 +14,8 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { requireAccess } from "@/lib/auth";
 import { getInitialBadges } from "@/lib/badges";
 import { getCompanies } from "@/lib/companies";
+import { resolveSite, SITE_COOKIE } from "@/lib/site-types";
+import { getMySites } from "@/lib/sites";
 import { createClient } from "@/lib/supabase/server";
 import { CompanyAccent } from "@/lib/theme";
 
@@ -24,12 +26,14 @@ export default async function AppLayout({
 }) {
   const access = await requireAccess();
   const supabase = await createClient();
-  const [companies, appsRes, badges, cookieStore] = await Promise.all([
+  const [companies, appsRes, badges, cookieStore, sites] = await Promise.all([
     getCompanies(),
     supabase.schema("public").rpc("my_apps"),
     getInitialBadges(supabase, access.userId),
     cookies(),
+    getMySites(),
   ]);
+  const initialSite = resolveSite(cookieStore.get(SITE_COOKIE)?.value, sites, access.profile.locationId);
   const myApps = (appsRes.data ?? []) as MyApp[];
   const sidebarOpen = cookieStore.get("sidebar_state")?.value !== "false";
   const companyAccent =
@@ -40,6 +44,8 @@ export default async function AppLayout({
       access={access}
       companies={companies}
       myApps={myApps}
+      sites={sites}
+      initialSite={initialSite}
       initialBadges={badges}
     >
       {/* Waktu render untuk banner offline ("menampilkan data per 14.32 WIB", F11) */}

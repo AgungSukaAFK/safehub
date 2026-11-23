@@ -6,6 +6,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { AppAccess } from "@/lib/access-types";
 import { companyScope, type Company } from "@/lib/company-types";
+import type { Site, SiteChoice } from "@/lib/site-types";
 import { storageKey } from "@/lib/storage";
 import { UPDATE_SEEN_KEY } from "@/lib/update-types";
 
@@ -13,7 +14,8 @@ export type MyApp = { id: string; name: string; description: string | null; url:
 
 export type BadgeCounts = {
   notifications: number;
-  approvals: number;
+  /** Tugas Saya (my_tasks): approval + tugas workflow */
+  tasks: number;
   support: number;
   updates: number;
 };
@@ -23,6 +25,10 @@ type AppContextValue = {
   companies: Company[];
   scope: string[] | "ALL";
   myApps: MyApp[];
+  /** Site dalam scope user (my_sites), opsi pemilih site */
+  sites: Site[];
+  /** Pilihan site perangkat saat render (cookie → site profil → site pertama); null = semua */
+  initialSite: SiteChoice;
   badges: BadgeCounts;
   setBadge: (key: keyof BadgeCounts, value: number | ((prev: number) => number)) => void;
   /** Foto profil terbaru (berubah tanpa reload lewat event avatar-updated) */
@@ -37,12 +43,16 @@ export function AppProvider({
   access,
   companies,
   myApps,
+  sites,
+  initialSite,
   initialBadges,
   children,
 }: {
   access: AppAccess;
   companies: Company[];
   myApps: MyApp[];
+  sites: Site[];
+  initialSite: SiteChoice;
   initialBadges: BadgeCounts;
   children: ReactNode;
 }) {
@@ -73,11 +83,13 @@ export function AppProvider({
       companies,
       scope: companyScope({ company: access.profile.company, platformAdmin: access.platformAdmin }, companies),
       myApps,
+      sites,
+      initialSite,
       badges,
       setBadge,
       avatarUrl,
     }),
-    [access, companies, myApps, badges, setBadge, avatarUrl],
+    [access, companies, myApps, sites, initialSite, badges, setBadge, avatarUrl],
   );
 
   return <AppContext value={value}>{children}</AppContext>;

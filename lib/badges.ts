@@ -7,7 +7,7 @@ export async function getInitialBadges(supabase: ServerClient, userId: string): 
   const sevenDaysAgo = new Date(Date.now() - 7 * 86_400_000).toISOString();
   const [unread, pending, support, latest, seen] = await Promise.all([
     supabase.from("notifications").select("id", { count: "exact", head: true }).eq("user_id", userId).is("read_at", null),
-    supabase.rpc("pending_for_me", { p_limit: 200 }),
+    supabase.rpc("my_tasks", { p_limit: 500 }),
     supabase.rpc("support_badge"),
     supabase.from("updates").select("id").gte("created_at", sevenDaysAgo).order("id", { ascending: false }).limit(1).maybeSingle(),
     supabase.from("update_seen").select("last_seen_id").eq("user_id", userId).maybeSingle(),
@@ -17,7 +17,7 @@ export async function getInitialBadges(supabase: ServerClient, userId: string): 
   const seenId = seen.data?.last_seen_id ?? 0;
   return {
     notifications: unread.count ?? 0,
-    approvals: pending.data?.length ?? 0,
+    tasks: pending.data?.length ?? 0,
     support: (sb.mine_unread ?? 0) + (sb.admin_waiting ?? 0),
     updates: latestId > seenId ? 1 : 0,
   };

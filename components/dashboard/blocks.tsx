@@ -135,7 +135,7 @@ export async function ActionNeeded({ supabase, userId }: { supabase: ServerClien
         description={items.length ? "Diurutkan dari yang paling lama menunggu." : undefined}
         cardAction={
           waiting.length > 6 && (
-            <Link href="/approval" className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline">
+            <Link href="/tugas" className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline">
               Semua ({waiting.length}) <ArrowRight className="size-4" />
             </Link>
           )

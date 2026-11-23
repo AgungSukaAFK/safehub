@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { APP_ID } from "@/lib/app-config";
 import type { AppAccess } from "@/lib/access-types";
 import { cctv } from "@/lib/cctv";
+import { normalizeFunctions } from "@/lib/functions";
 import { isRole, roleAtLeast, type Role } from "@/lib/roles";
 import { createClient } from "@/lib/supabase/server";
 
@@ -28,15 +29,17 @@ export const getAccessResult = cache(async (): Promise<AccessResult> => {
   if (!userId) return { status: "guest" };
 
   const pub = supabase.schema("public");
-  const [profileRes, accessRes] = await Promise.all([
+  const [profileRes, accessRes, memberRes] = await Promise.all([
     pub
       .from("profiles")
       .select(
-        "id, email, full_name, avatar_url, company, phone, is_active, department_id, departments(name), job_titles(name), locations(name)",
+        "id, email, full_name, avatar_url, company, phone, is_active, department_id, location_id, departments(name), job_titles(name), locations(name)",
       )
       .eq("id", userId)
       .maybeSingle(),
     pub.from("app_access").select("app_id, role").eq("user_id", userId).in("app_id", [APP_ID, "platform"]),
+    // fungsi K3 + batas site (RLS: viewer boleh membaca members)
+    supabase.from("members").select("functions, location_ids").eq("user_id", userId).maybeSingle(),
   ]);
 
   const p = profileRes.data;
@@ -57,6 +60,9 @@ export const getAccessResult = cache(async (): Promise<AccessResult> => {
       email: p.email ?? (claimsData?.claims?.email as string | undefined) ?? "",
       role,
       platformAdmin,
+      functions: normalizeFunctions(memberRes.data?.functions ?? []),
+      // admin platform melihat semua site (sama dengan my_location_scope())
+      locationIds: platformAdmin ? null : (memberRes.data?.location_ids ?? null),
       profile: {
         fullName: p.full_name ?? p.email ?? "Tanpa nama",
         avatarUrl: p.avatar_url ?? null,
@@ -64,6 +70,7 @@ export const getAccessResult = cache(async (): Promise<AccessResult> => {
         departmentId: p.department_id ?? null,
         departmentName: one<{ name: string }>(p.departments)?.name ?? null,
         jobTitleName: one<{ name: string }>(p.job_titles)?.name ?? null,
+        locationId: p.location_id ?? null,
         locationName: one<{ name: string }>(p.locations)?.name ?? null,
         phone: p.phone ?? null,
       },

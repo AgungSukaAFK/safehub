@@ -5,7 +5,91 @@ export type Database = {
   
   "safehub": {
           Tables: {
-            "approval_doc_types": {
+            "areas": {
+                  Row: {
+                    "created_at": string,"created_by": string | null,"id": string,"is_active": boolean,"location_id": string,"name": string,"sort_order": number,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"created_by"?: string | null,"id"?: string,"is_active"?: boolean,"location_id": string,"name": string,"sort_order"?: number,"updated_at"?: string
+                  }
+                  Update: {
+                    "created_at"?: string,"created_by"?: string | null,"id"?: string,"is_active"?: boolean,"location_id"?: string,"name"?: string,"sort_order"?: number,"updated_at"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"areas_logs": {
+                  Row: {
+                    "action": string,"actor_id": string | null,"at": string,"changes": Json | null,"id": number,"note": string | null,"record_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "action": string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id": string
+                  }
+                  Update: {
+                    "action"?: string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"contractors": {
+                  Row: {
+                    "company_code": string,"created_at": string,"created_by": string | null,"id": string,"is_active": boolean,"kind": string,"name": string,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "company_code": string,"created_at"?: string,"created_by"?: string | null,"id"?: string,"is_active"?: boolean,"kind"?: string,"name": string,"updated_at"?: string
+                  }
+                  Update: {
+                    "company_code"?: string,"created_at"?: string,"created_by"?: string | null,"id"?: string,"is_active"?: boolean,"kind"?: string,"name"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"contractors_logs": {
+                  Row: {
+                    "action": string,"actor_id": string | null,"at": string,"changes": Json | null,"id": number,"note": string | null,"record_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "action": string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id": string
+                  }
+                  Update: {
+                    "action"?: string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"master_items": {
+                  Row: {
+                    "code": string,"color": string | null,"created_at": string,"created_by": string | null,"description": string | null,"id": string,"is_active": boolean,"kind": string,"name": string,"sort_order": number,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "code": string,"color"?: string | null,"created_at"?: string,"created_by"?: string | null,"description"?: string | null,"id"?: string,"is_active"?: boolean,"kind": string,"name": string,"sort_order"?: number,"updated_at"?: string
+                  }
+                  Update: {
+                    "code"?: string,"color"?: string | null,"created_at"?: string,"created_by"?: string | null,"description"?: string | null,"id"?: string,"is_active"?: boolean,"kind"?: string,"name"?: string,"sort_order"?: number,"updated_at"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"master_items_logs": {
+                  Row: {
+                    "action": string,"actor_id": string | null,"at": string,"changes": Json | null,"id": number,"note": string | null,"record_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "action": string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id": string
+                  }
+                  Update: {
+                    "action"?: string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"approval_doc_types": {
                   Row: {
                     "code": string,"context_fn": unknown,"href_prefix": string,"is_active": boolean,"label": string,"on_done_fn": unknown,"table_name": string
                   }
@@ -191,14 +275,14 @@ isOneToOne: false
                   ]
                 },"members": {
                   Row: {
-                    "admin_note": string | null,"approval_limit": number | null,"created_at": string,"id": string,"preferences": NonNullable<Json>,"team": string | null,"updated_at": string,"user_id": string
+                    "admin_note": string | null,"approval_limit": number | null,"created_at": string,"functions": (string)[],"id": string,"location_ids": (string)[] | null,"preferences": NonNullable<Json>,"team": string | null,"updated_at": string,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "admin_note"?: string | null,"approval_limit"?: number | null,"created_at"?: string,"id"?: string,"preferences"?: NonNullable<Json>,"team"?: string | null,"updated_at"?: string,"user_id": string
+                    "admin_note"?: string | null,"approval_limit"?: number | null,"created_at"?: string,"functions"?: (string)[],"id"?: string,"location_ids"?: (string)[] | null,"preferences"?: NonNullable<Json>,"team"?: string | null,"updated_at"?: string,"user_id": string
                   }
                   Update: {
-                    "admin_note"?: string | null,"approval_limit"?: number | null,"created_at"?: string,"id"?: string,"preferences"?: NonNullable<Json>,"team"?: string | null,"updated_at"?: string,"user_id"?: string
+                    "admin_note"?: string | null,"approval_limit"?: number | null,"created_at"?: string,"functions"?: (string)[],"id"?: string,"location_ids"?: (string)[] | null,"preferences"?: NonNullable<Json>,"team"?: string | null,"updated_at"?: string,"user_id"?: string
                   }
                   Relationships: [
                     
@@ -524,11 +608,36 @@ isOneToOne: false
               "amount": number,"href": string,"id": string,"is_exact": boolean,"kind": string,"status": string,"subtitle": string,"title": string
             }[]
                            },
+"has_any_function":
+{ Args: { "p_functions": (string)[] }; Returns: boolean
+                           },
+"has_function":
+{ Args: { "p_function": string }; Returns: boolean
+                           },
+"location_visible":
+{ Args: { "p_location": string }; Returns: boolean
+                           },
+"my_functions":
+{ Args: Record<PropertyKey, never>; Returns: (string)[]
+                           },
+"my_location_scope":
+{ Args: Record<PropertyKey, never>; Returns: (string)[]
+                           },
+"my_sites":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "id": string,"name": string
+            }[]
+                           },
+"my_tasks":
+{ Args: { "p_limit"?: number }; Returns: {
+              "code": string,"due_at": string,"href": string,"kind": string,"meta": Json,"ref_id": string,"ref_type": string,"status": string,"task_group": string,"title": string,"waiting_since": string
+            }[]
+                           },
 "my_company_scope":
 { Args: Record<PropertyKey, never>; Returns: (string)[]
                            },
 "next_doc_number":
-{ Args: { "p_company": string,"p_prefix": string }; Returns: string
+{ Args: { "p_company": string,"p_prefix": string,"p_reset"?: string }; Returns: string
                            },
 "notify":
 { Args: { "p_body"?: string,"p_category"?: string,"p_entity"?: string,"p_href"?: string,"p_record_id"?: string,"p_title": string,"p_type": string,"p_user_ids": (string)[] }; Returns: string[]

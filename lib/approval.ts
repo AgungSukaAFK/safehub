@@ -15,7 +15,8 @@ const DOC_SUMMARY: Record<string, (s: ServerClient, ids: string[]) => Promise<{ 
   },
 };
 
-async function summaries(supabase: ServerClient, refs: { docType: string; recordId: string }[]) {
+/** Ringkasan dokumen (kode, judul, nominal, pemohon) per `docType:recordId`. Dipakai juga lib/tasks.ts. */
+export async function getDocSummaries(supabase: ServerClient, refs: { docType: string; recordId: string }[]) {
   const byType = new Map<string, string[]>();
   refs.forEach((r) => byType.set(r.docType, [...(byType.get(r.docType) ?? []), r.recordId]));
   const raw = (await Promise.all([...byType].map(async ([t, ids]) => ((await DOC_SUMMARY[t]?.(supabase, [...new Set(ids)])) ?? []).map((d) => ({ ...d, docType: t }))))).flat();
@@ -48,7 +49,7 @@ export async function getMyQueue(supabase: ServerClient): Promise<QueueItem[]> {
   const { data, error } = await supabase.rpc("pending_for_me", { p_limit: 200 });
   if (error) throw error;
   const rows = data ?? [];
-  const docs = await summaries(supabase, rows.map((r) => ({ docType: r.doc_type, recordId: r.record_id })));
+  const docs = await getDocSummaries(supabase, rows.map((r) => ({ docType: r.doc_type, recordId: r.record_id })));
   return rows.map((r) => ({
     approvalId: r.approval_id,
     docType: r.doc_type,
@@ -74,7 +75,7 @@ export async function getMyDecisions(supabase: ServerClient, userId: string): Pr
     supabase.from("approval_doc_types").select("code, href_prefix"),
   ]);
   const prefix = new Map((types ?? []).map((t) => [t.code, t.href_prefix]));
-  const docs = await summaries(supabase, (data ?? []).map((r) => ({ docType: r.doc_type, recordId: r.record_id })));
+  const docs = await getDocSummaries(supabase, (data ?? []).map((r) => ({ docType: r.doc_type, recordId: r.record_id })));
   return (data ?? []).map((r) => ({
     id: r.id,
     docType: r.doc_type,

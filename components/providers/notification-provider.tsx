@@ -76,7 +76,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     window.dispatchEvent(new CustomEvent(NOTIFICATION_EVENT, { detail: n }));
     // halaman yang sedang menampilkan dokumen terkait ikut diperbarui
     const target = n.href?.split("?")[0];
-    if (target && (target === pathname || pathname === "/approval")) router.refresh();
+    if (target && (target === pathname || pathname === "/tugas")) router.refresh();
   });
 
   // channel realtime tunggal

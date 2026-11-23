@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 import { isUuid } from "@/lib/utils";
 
 /** Tabel yang punya `<entity>_logs` dan boleh dibaca lewat ActivityLogDialog (RLS tetap berlaku). */
-const LOG_ENTITIES = ["pengajuan", "members", "approval_templates", "department_heads"] as const;
+const LOG_ENTITIES = ["pengajuan", "members", "approval_templates", "department_heads", "areas", "master_items", "contractors"] as const;
 type LogEntity = (typeof LOG_ENTITIES)[number];
 
 export async function getPersonCardAction(userId: string): Promise<Person | null> {

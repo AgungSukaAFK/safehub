@@ -1663,7 +1663,7 @@ revoke execute on function __APP__.my_tasks(integer) from public, anon;
 
 -- Pencarian global modul K3. example_pengajuan.sql (bila dipasang) mendefinisikan ulang dengan
 -- tambahan Pengajuan; saat contoh dihapus, versi ini yang berlaku.
-create or replace function __APP__.global_search(p_q text, p_limit integer default 5)
+create or replace function __APP__.global_search_k3_core(p_q text, p_limit integer default 5)
 returns table (kind text, id text, title text, subtitle text, status text, amount numeric,
                href text, is_exact boolean)
 language sql stable security invoker set search_path = '' as $$
@@ -1686,5 +1686,23 @@ language sql stable security invoker set search_path = '' as $$
     where length(q.t) >= 3 and a.search_text like '%' || q.t || '%'
     order by (lower(a.code) = q.t) desc, a.created_at desc
     limit least(greatest(p_limit, 1), 10))
+$$;
+revoke execute on function __APP__.global_search_k3_core(text, integer) from public, anon;
+
+-- Dasar pencarian K3; 12_inspeksi_kpi.sql mendefinisikan ulang global_search_k3 dengan inspeksi + observasi.
+create or replace function __APP__.global_search_k3(p_q text, p_limit integer default 5)
+returns table (kind text, id text, title text, subtitle text, status text, amount numeric,
+               href text, is_exact boolean)
+language sql stable security invoker set search_path = '' as $$
+  select * from __APP__.global_search_k3_core(p_q, p_limit);
+$$;
+revoke execute on function __APP__.global_search_k3(text, integer) from public, anon;
+
+-- Pembungkus: example_pengajuan.sql (bila dipasang) mendefinisikan ulang dengan tambahan Pengajuan.
+create or replace function __APP__.global_search(p_q text, p_limit integer default 5)
+returns table (kind text, id text, title text, subtitle text, status text, amount numeric,
+               href text, is_exact boolean)
+language sql stable security invoker set search_path = '' as $$
+  select * from __APP__.global_search_k3(p_q, p_limit);
 $$;
 revoke execute on function __APP__.global_search(text, integer) from public, anon;

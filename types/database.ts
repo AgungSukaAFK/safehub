@@ -660,6 +660,148 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"inspection_answers": {
+                  Row: {
+                    "answer": string | null,"comment": string | null,"finding_id": string | null,"id": string,"inspection_id": string,"item_text": string,"line_no": number,"photos": (string)[]
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "answer"?: string | null,"comment"?: string | null,"finding_id"?: string | null,"id"?: string,"inspection_id": string,"item_text": string,"line_no": number,"photos"?: (string)[]
+                  }
+                  Update: {
+                    "answer"?: string | null,"comment"?: string | null,"finding_id"?: string | null,"id"?: string,"inspection_id"?: string,"item_text"?: string,"line_no"?: number,"photos"?: (string)[]
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "inspection_answers_finding_id_fkey"
+      columns: ["finding_id"]
+isOneToOne: false
+      referencedRelation: "findings"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "inspection_answers_inspection_id_fkey"
+      columns: ["inspection_id"]
+isOneToOne: false
+      referencedRelation: "inspections"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"inspection_template_items": {
+                  Row: {
+                    "id": string,"line_no": number,"template_id": string,"text": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "id"?: string,"line_no": number,"template_id": string,"text": string
+                  }
+                  Update: {
+                    "id"?: string,"line_no"?: number,"template_id"?: string,"text"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "inspection_template_items_template_id_fkey"
+      columns: ["template_id"]
+isOneToOne: false
+      referencedRelation: "inspection_templates"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"inspection_templates": {
+                  Row: {
+                    "created_at": string,"created_by": string | null,"finding_category": string,"id": string,"is_active": boolean,"name": string,"object_label": string | null,"type_code": string,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"created_by"?: string | null,"finding_category"?: string,"id"?: string,"is_active"?: boolean,"name": string,"object_label"?: string | null,"type_code": string,"updated_at"?: string
+                  }
+                  Update: {
+                    "created_at"?: string,"created_by"?: string | null,"finding_category"?: string,"id"?: string,"is_active"?: boolean,"name"?: string,"object_label"?: string | null,"type_code"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"inspection_templates_logs": {
+                  Row: {
+                    "action": string,"actor_id": string | null,"at": string,"changes": Json | null,"id": number,"note": string | null,"record_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "action": string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id": string
+                  }
+                  Update: {
+                    "action"?: string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"inspections": {
+                  Row: {
+                    "area_id": string,"cancel_reason": string | null,"code": string,"company_code": string,"created_at": string,"created_by": string | null,"id": string,"inspector_id": string,"location_id": string,"object_text": string | null,"planned_at": string,"search_text": string | null,"started_at": string | null,"status": string,"submitted_at": string | null,"summary": Json | null,"template_id": string | null,"title": string,"type_code": string,"updated_at": string,"verified_at": string | null,"verified_by": string | null,"verify_note": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "area_id": string,"cancel_reason"?: string | null,"code": string,"company_code": string,"created_at"?: string,"created_by"?: string | null,"id"?: string,"inspector_id": string,"location_id": string,"object_text"?: string | null,"planned_at": string,"search_text"?: string | null,"started_at"?: string | null,"status"?: string,"submitted_at"?: string | null,"summary"?: Json | null,"template_id"?: string | null,"title": string,"type_code": string,"updated_at"?: string,"verified_at"?: string | null,"verified_by"?: string | null,"verify_note"?: string | null
+                  }
+                  Update: {
+                    "area_id"?: string,"cancel_reason"?: string | null,"code"?: string,"company_code"?: string,"created_at"?: string,"created_by"?: string | null,"id"?: string,"inspector_id"?: string,"location_id"?: string,"object_text"?: string | null,"planned_at"?: string,"search_text"?: string | null,"started_at"?: string | null,"status"?: string,"submitted_at"?: string | null,"summary"?: Json | null,"template_id"?: string | null,"title"?: string,"type_code"?: string,"updated_at"?: string,"verified_at"?: string | null,"verified_by"?: string | null,"verify_note"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "inspections_area_id_fkey"
+      columns: ["area_id"]
+isOneToOne: false
+      referencedRelation: "areas"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "inspections_template_id_fkey"
+      columns: ["template_id"]
+isOneToOne: false
+      referencedRelation: "inspection_templates"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"inspections_logs": {
+                  Row: {
+                    "action": string,"actor_id": string | null,"at": string,"changes": Json | null,"id": number,"note": string | null,"record_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "action": string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id": string
+                  }
+                  Update: {
+                    "action"?: string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"kpi_definitions": {
+                  Row: {
+                    "approval_note": string | null,"approved_at": string | null,"approved_by": string | null,"code": string,"created_at": string,"definition": string,"direction": string,"example": string | null,"formula": string,"id": string,"is_active": boolean,"name": string,"owner": string | null,"rule_text": string | null,"sort_order": number,"source": string | null,"status": string,"thresholds": Json | null,"unit": string | null,"updated_at": string,"version": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "approval_note"?: string | null,"approved_at"?: string | null,"approved_by"?: string | null,"code": string,"created_at"?: string,"definition": string,"direction"?: string,"example"?: string | null,"formula": string,"id"?: string,"is_active"?: boolean,"name": string,"owner"?: string | null,"rule_text"?: string | null,"sort_order"?: number,"source"?: string | null,"status"?: string,"thresholds"?: Json | null,"unit"?: string | null,"updated_at"?: string,"version"?: number
+                  }
+                  Update: {
+                    "approval_note"?: string | null,"approved_at"?: string | null,"approved_by"?: string | null,"code"?: string,"created_at"?: string,"definition"?: string,"direction"?: string,"example"?: string | null,"formula"?: string,"id"?: string,"is_active"?: boolean,"name"?: string,"owner"?: string | null,"rule_text"?: string | null,"sort_order"?: number,"source"?: string | null,"status"?: string,"thresholds"?: Json | null,"unit"?: string | null,"updated_at"?: string,"version"?: number
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"kpi_definitions_logs": {
+                  Row: {
+                    "action": string,"actor_id": string | null,"at": string,"changes": Json | null,"id": number,"note": string | null,"record_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "action": string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id": string
+                  }
+                  Update: {
+                    "action"?: string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
                 },"maintenance_runs": {
                   Row: {
                     "id": number,"ran_at": string,"result": NonNullable<Json>
@@ -740,6 +882,46 @@ isOneToOne: false
                   }
                   Update: {
                     "actor_id"?: string | null,"body"?: string | null,"category"?: string,"created_at"?: string,"entity"?: string | null,"href"?: string | null,"id"?: string,"read_at"?: string | null,"record_id"?: string | null,"title"?: string,"type"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"observations": {
+                  Row: {
+                    "area_id": string,"code": string,"company_code": string,"created_at": string,"created_by": string | null,"description": string,"finding_id": string | null,"id": string,"immediate_action": string | null,"kind": string,"location_id": string,"needs_followup": boolean,"observed_at": string,"search_text": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "area_id": string,"code": string,"company_code": string,"created_at"?: string,"created_by"?: string | null,"description": string,"finding_id"?: string | null,"id"?: string,"immediate_action"?: string | null,"kind": string,"location_id": string,"needs_followup"?: boolean,"observed_at"?: string,"search_text"?: string | null
+                  }
+                  Update: {
+                    "area_id"?: string,"code"?: string,"company_code"?: string,"created_at"?: string,"created_by"?: string | null,"description"?: string,"finding_id"?: string | null,"id"?: string,"immediate_action"?: string | null,"kind"?: string,"location_id"?: string,"needs_followup"?: boolean,"observed_at"?: string,"search_text"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "observations_area_id_fkey"
+      columns: ["area_id"]
+isOneToOne: false
+      referencedRelation: "areas"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "observations_finding_id_fkey"
+      columns: ["finding_id"]
+isOneToOne: false
+      referencedRelation: "findings"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"observations_logs": {
+                  Row: {
+                    "action": string,"actor_id": string | null,"at": string,"changes": Json | null,"id": number,"note": string | null,"record_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "action": string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id": string
+                  }
+                  Update: {
+                    "action"?: string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id"?: string
                   }
                   Relationships: [
                     
@@ -988,6 +1170,34 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"work_hours": {
+                  Row: {
+                    "created_at": string,"created_by": string | null,"hours": number,"id": string,"location_id": string,"month": string,"note": string | null,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"created_by"?: string | null,"hours": number,"id"?: string,"location_id": string,"month": string,"note"?: string | null,"updated_at"?: string
+                  }
+                  Update: {
+                    "created_at"?: string,"created_by"?: string | null,"hours"?: number,"id"?: string,"location_id"?: string,"month"?: string,"note"?: string | null,"updated_at"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"work_hours_logs": {
+                  Row: {
+                    "action": string,"actor_id": string | null,"at": string,"changes": Json | null,"id": number,"note": string | null,"record_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "action": string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id": string
+                  }
+                  Update: {
+                    "action"?: string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
                 }
           }
           Views: {
@@ -1083,6 +1293,9 @@ isOneToOne: false
               "amount": number,"approved": number,"created": number,"day": string
             }[]
                            },
+"dashboard_k3":
+{ Args: { "p_location"?: string,"p_month": number,"p_year": number }; Returns: Json
+                           },
 "dashboard_summary":
 { Args: { "p_company"?: string,"p_from": string,"p_to": string }; Returns: Json
                            },
@@ -1102,6 +1315,16 @@ isOneToOne: false
 { Args: { "p_company"?: string,"p_location"?: string }; Returns: Json
                            },
 "global_search":
+{ Args: { "p_limit"?: number,"p_q": string }; Returns: {
+              "amount": number,"href": string,"id": string,"is_exact": boolean,"kind": string,"status": string,"subtitle": string,"title": string
+            }[]
+                           },
+"global_search_k3":
+{ Args: { "p_limit"?: number,"p_q": string }; Returns: {
+              "amount": number,"href": string,"id": string,"is_exact": boolean,"kind": string,"status": string,"subtitle": string,"title": string
+            }[]
+                           },
+"global_search_k3_core":
 { Args: { "p_limit"?: number,"p_q": string }; Returns: {
               "amount": number,"href": string,"id": string,"is_exact": boolean,"kind": string,"status": string,"subtitle": string,"title": string
             }[]
@@ -1136,6 +1359,32 @@ isOneToOne: false
 "incident_submit_review":
 { Args: { "p_id": string,"p_note"?: string }; Returns: Json
                            },
+"inspection_cancel":
+{ Args: { "p_id": string,"p_reason": string }; Returns: Json
+                           },
+"inspection_plan_actual":
+{ Args: { "p_location"?: string,"p_month": number,"p_year": number }; Returns: {
+              "actual": number,"plan": number,"type_code": string
+            }[]
+                           },
+"inspection_save_answers":
+{ Args: { "p": Json,"p_id": string }; Returns: Json
+                           },
+"inspection_schedule":
+{ Args: { "p": Json }; Returns: Json
+                           },
+"inspection_start":
+{ Args: { "p_id": string }; Returns: Json
+                           },
+"inspection_submit":
+{ Args: { "p_findings"?: Json,"p_id": string }; Returns: Json
+                           },
+"inspection_template_save":
+{ Args: { "p": Json,"p_id": string }; Returns: Json
+                           },
+"inspection_verify":
+{ Args: { "p_id": string,"p_note"?: string }; Returns: Json
+                           },
 "k3_action_href":
 { Args: { "a": Omit<Database["safehub"]['Tables']["pica_actions"]['Row'], Database["safehub"]['Tables']["pica_actions"]['ComputedFields']> }; Returns: string
                            },
@@ -1144,6 +1393,11 @@ isOneToOne: false
                            },
 "k3_badges":
 { Args: Record<PropertyKey, never>; Returns: Json
+                           },
+"k3_finding_insert":
+{ Args: { "p_area": string,"p_category": string,"p_company": string,"p_creator": string,"p_description": string,"p_detail": string,"p_due": string,"p_found_at": string,"p_location": string,"p_pic": string,"p_risk": string,"p_source_kind": string,"p_source_ref": string,"p_title": string }; Returns: {
+              "code": string,"id": string
+            }[]
                            },
 "k3_finding_refresh":
 { Args: { "p_id": string }; Returns: undefined
@@ -1163,6 +1417,9 @@ isOneToOne: false
 "k3_incident_visible":
 { Args: { "p_id": string }; Returns: boolean
                            },
+"k3_inspection_visible":
+{ Args: { "p_id": string }; Returns: boolean
+                           },
 "k3_master_ok":
 { Args: { "p_code": string,"p_kind": string }; Returns: boolean
                            },
@@ -1171,6 +1428,9 @@ isOneToOne: false
                            },
 "k3_my_team_incidents":
 { Args: Record<PropertyKey, never>; Returns: (string)[]
+                           },
+"k3_observation_visible":
+{ Args: { "p_id": string }; Returns: boolean
                            },
 "k3_sees_all":
 { Args: Record<PropertyKey, never>; Returns: boolean
@@ -1185,6 +1445,12 @@ isOneToOne: false
                            },
 "k3_writer":
 { Args: Record<PropertyKey, never>; Returns: boolean
+                           },
+"kpi_approve":
+{ Args: { "p_code": string,"p_note": string }; Returns: Json
+                           },
+"kpi_safety":
+{ Args: { "p_from": string,"p_location"?: string,"p_to": string }; Returns: Json
                            },
 "location_visible":
 { Args: { "p_location": string }; Returns: boolean
@@ -1213,6 +1479,9 @@ isOneToOne: false
                            },
 "notify":
 { Args: { "p_body"?: string,"p_category"?: string,"p_entity"?: string,"p_href"?: string,"p_record_id"?: string,"p_title": string,"p_type": string,"p_user_ids": (string)[] }; Returns: string[]
+                           },
+"observation_submit":
+{ Args: { "p": Json }; Returns: Json
                            },
 "pending_for_me":
 { Args: { "p_limit"?: number }; Returns: {
@@ -1309,6 +1578,9 @@ isOneToOne: false
                            },
 "verify_document":
 { Args: { "p_token": string }; Returns: Json
+                           },
+"work_hours_save":
+{ Args: { "p_hours": number,"p_location": string,"p_month": string,"p_note"?: string }; Returns: Json
                            },
 "write_log":
 { Args: { "p_action": string,"p_category"?: string,"p_cctv": boolean,"p_changes": Json,"p_company": string,"p_entity_label": string,"p_href": string,"p_label": string,"p_note": string,"p_record_id": string,"p_table": string }; Returns: undefined

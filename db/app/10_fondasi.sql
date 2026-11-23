@@ -116,7 +116,7 @@ create policy "areas_logs: admin read" on __APP__.areas_logs for select to authe
 -- label, urutan, warna, status aktif boleh diubah admin. Tidak dihapus (nonaktifkan).
 create table __APP__.master_items (
   id           uuid primary key default gen_random_uuid(),
-  kind         text not null check (kind in ('incident_category', 'risk_level', 'finding_category')),
+  kind         text not null check (kind in ('incident_category', 'risk_level', 'finding_category', 'inspection_type')),
   code         text not null check (code ~ '^[a-z][a-z0-9_]{1,40}$'),
   name         text not null check (length(btrim(name)) between 1 and 100),
   description  text check (length(description) <= 500),
@@ -192,7 +192,13 @@ insert into __APP__.master_items (kind, code, name, color, sort_order) values
   ('finding_category',  'environment',          'Lingkungan',             null, 30),
   ('finding_category',  'housekeeping',         'Housekeeping',           null, 40),
   ('finding_category',  'equipment_ppe',        'Peralatan & APD',        null, 50),
-  ('finding_category',  'documents',            'Dokumen & Prosedur',     null, 60)
+  ('finding_category',  'documents',            'Dokumen & Prosedur',     null, 60),
+  ('inspection_type',   'padlock',              'Inspeksi Padlock',               'blue',   10),
+  ('inspection_type',   'lv',                   'Inspeksi LV',                    'sky',    20),
+  ('inspection_type',   'work_equipment',       'Inspeksi Peralatan Kerja',       'amber',  30),
+  ('inspection_type',   'first_aid_fire',       'Inspeksi Kotak P3K & APAR',      'violet', 40),
+  ('inspection_type',   'maintenance_obs',      'Observasi Maintenance',          'gray',   50),
+  ('inspection_type',   'internal_audit',       'Audit Internal',                 'red',    60)
 on conflict (kind, code) do nothing;
 
 -- ---------------------------------------------------------------- perusahaan mitra (§4.0, §4.7)

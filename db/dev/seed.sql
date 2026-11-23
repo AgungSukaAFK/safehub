@@ -406,6 +406,216 @@ begin
   alter table __APP__.pica_actions enable trigger pica_actions_log;
 end $$;
 
+-- ---------- data DEMO fase 2: template checklist, inspeksi, observasi, jam kerja, kejadian LTI ----------
+-- Template dari prototipe (butir APAR/P3K asli; jenis lain disusun serupa). Inspeksi lama dimasukkan
+-- langsung (seed = superuser) supaya tanggal tersebar beberapa bulan; observasi lewat RPC lalu dimundurkan.
+do $$
+declare
+  v_site uuid := (select id from public.locations where name = 'Site MIFA');
+  v_site2 uuid := (select id from public.locations where name = 'Site Demo Kalimantan');
+  tpl record;
+begin
+  if exists (select 1 from __APP__.inspection_templates) or v_site is null then
+    return;
+  end if;
+
+  for tpl in
+    select * from (values
+      ('padlock', 'Inspeksi Padlock', 'Nomor toolkit', 'operational_safety', array[
+        'Padlock personal tersedia dan dipakai setiap pekerjaan perbaikan.',
+        'Tag LOTO terisi lengkap (nama, tanggal, nomor).',
+        'Titik isolasi energi diidentifikasi dan dikunci.',
+        'Kunci padlock hanya dipegang pemilik.',
+        'Papan kontrol LOTO di workshop terpasang dan terbaca.',
+        'Pekerja memahami prosedur lepas padlock.']),
+      ('lv', 'Inspeksi LV', 'Nomor unit LV', 'equipment_ppe', array[
+        'Kondisi ban dan tekanan angin sesuai standar.',
+        'Lampu utama, sein, dan rem berfungsi.',
+        'Sabuk pengaman semua kursi berfungsi.',
+        'Bendera/lampu rotator terpasang dan menyala.',
+        'APAR dan P3K unit tersedia dan belum kedaluwarsa.',
+        'Wiper, spion, dan kaca dalam kondisi baik.',
+        'Tidak ada kebocoran oli, bahan bakar, atau air.',
+        'Stiker izin kendaraan (SIMPER unit) masih berlaku.']),
+      ('work_equipment', 'Inspeksi Peralatan Kerja', 'Nomor peralatan', 'equipment_ppe', array[
+        'Peralatan tangan tidak rusak, bergerigi, atau longgar.',
+        'Kabel dan steker alat listrik utuh, tidak terkelupas.',
+        'Guard pelindung alat putar terpasang.',
+        'Alat angkat (sling, shackle) memiliki tag kalibrasi/inspeksi aktif.',
+        'Peralatan disimpan rapi di tempat yang ditentukan.',
+        'Peralatan rusak diberi tag "Jangan Dipakai".']),
+      ('first_aid_fire', 'Inspeksi Kotak P3K & APAR', 'Nomor APAR / kotak P3K', 'equipment_ppe', array[
+        'APAR tersedia pada lokasi yang telah ditentukan dan mudah dijangkau.',
+        'Nomor identifikasi APAR sesuai dengan register peralatan.',
+        'Pin pengaman dan segel APAR terpasang dalam kondisi baik.',
+        'Tekanan pada pressure gauge berada di area hijau.',
+        'Selang dan nozzle APAR tidak retak, tersumbat, atau rusak.',
+        'Tabung APAR tidak berkarat, penyok, atau mengalami kerusakan fisik.',
+        'Label instruksi penggunaan terlihat dan dapat dibaca dengan jelas.',
+        'Tanggal inspeksi bulanan sebelumnya telah dicatat pada tag.',
+        'Masa berlaku dan jadwal hydrotest APAR masih aktif.',
+        'Area di sekitar APAR bebas dari material yang menghalangi akses.',
+        'Bracket atau dudukan APAR terpasang kuat.',
+        'Rambu lokasi APAR terlihat dari jarak yang memadai.',
+        'Kotak P3K tersedia dan mudah diakses.',
+        'Daftar isi perlengkapan P3K tersedia dan terbaru.',
+        'Obat dan perlengkapan P3K belum melewati tanggal kedaluwarsa.',
+        'Jumlah perlengkapan P3K sesuai dengan daftar minimum.',
+        'Kotak P3K dalam kondisi bersih dan tidak rusak.',
+        'Nama petugas P3K dan nomor darurat terpasang di dekat kotak.']),
+      ('maintenance_obs', 'Observasi Maintenance', 'Nomor unit / WO', 'operational_safety', array[
+        'JSA/instruksi kerja tersedia di lokasi pekerjaan.',
+        'Pekerja memakai APD sesuai JSA.',
+        'Area kerja diberi barikade dan rambu.',
+        'Prosedur LOTO diterapkan sebelum pekerjaan dimulai.',
+        'Limbah B3 ditempatkan di wadah yang sesuai.']),
+      ('internal_audit', 'Audit Internal', 'Objek audit', 'documents', array[
+        'Dokumen prosedur terkini tersedia dan dikendalikan.',
+        'Rekaman inspeksi bulan berjalan lengkap.',
+        'Temuan sebelumnya ditindaklanjuti sesuai due date.',
+        'Pelatihan wajib pekerja masih berlaku.',
+        'Izin kerja khusus (kerja panas, ketinggian) terdokumentasi.',
+        'Register APD dan peralatan terbarui.',
+        'Rapat K3 dilaksanakan sesuai jadwal.',
+        'Tindakan korektif kejadian terdahulu tidak berulang.'])
+    ) as t(type_code, name, object_label, cat, items)
+  loop
+    insert into __APP__.inspection_templates (type_code, name, object_label, finding_category)
+    values (tpl.type_code, tpl.name, tpl.object_label, tpl.cat);
+    insert into __APP__.inspection_template_items (template_id, line_no, text)
+    select t.id, x.ord::integer, x.txt
+      from __APP__.inspection_templates t, unnest(tpl.items) with ordinality as x(txt, ord)
+     where t.name = tpl.name;
+  end loop;
+
+  -- Jam kerja bulanan (Jan sampai bulan lalu): MIFA ~95 ribu YTD, site kedua lebih kecil
+  insert into __APP__.work_hours (location_id, month, hours, note)
+  select v_site, m::date, 9000 + (extract(month from m)::integer * 397) % 2500, 'Data contoh'
+    from generate_series(date_trunc('year', current_date), date_trunc('month', current_date) - interval '1 month', interval '1 month') m
+  on conflict (location_id, month) do nothing;
+  insert into __APP__.work_hours (location_id, month, hours, note)
+  select v_site2, m::date, 3000 + (extract(month from m)::integer * 211) % 900, 'Data contoh'
+    from generate_series(date_trunc('year', current_date), date_trunc('month', current_date) - interval '1 month', interval '1 month') m
+  on conflict (location_id, month) do nothing;
+end $$;
+
+-- Jadwal & pelaksanaan inspeksi (langsung, tersebar per bulan)
+create or replace function pg_temp.seed_inspection(p_tpl text, p_planned timestamptz, p_status text, p_inspector text,
+  p_object text, p_area text, p_nc integer[]) returns uuid language plpgsql as $$
+declare
+  v_site uuid := (select id from public.locations where name = 'Site MIFA');
+  t __APP__.inspection_templates;
+  v_id uuid := gen_random_uuid();
+  v_insp uuid := pg_temp.uid(p_inspector);
+  v_sum jsonb;
+begin
+  select * into t from __APP__.inspection_templates where name = p_tpl;
+  insert into __APP__.inspections (id, code, company_code, location_id, area_id, template_id, type_code, title, object_text,
+    planned_at, inspector_id, status, started_at, submitted_at, verified_at, verified_by, summary, created_by, created_at)
+  values (v_id, __APP__.next_doc_number('INS', 'GMI', 'year'), 'GMI', v_site,
+    (select id from __APP__.areas where location_id = v_site and name = p_area), t.id, t.type_code, t.name, p_object,
+    p_planned, v_insp, p_status,
+    case when p_status in ('in_progress', 'submitted', 'verified') then p_planned end,
+    case when p_status in ('submitted', 'verified') then p_planned + interval '2 hours' end,
+    case when p_status = 'verified' then p_planned + interval '1 day' end,
+    case when p_status = 'verified' then pg_temp.uid('hse.senior@demo.lourdes.test') end,
+    null, pg_temp.uid('hse@demo.lourdes.test'), p_planned - interval '5 days');
+  if p_status in ('in_progress', 'submitted', 'verified') then
+    insert into __APP__.inspection_answers (inspection_id, line_no, item_text, answer)
+    select v_id, i.line_no, i.text,
+           case when p_status = 'in_progress' and i.line_no > 3 then null
+                when i.line_no = any (p_nc) then 'noncompliant'
+                when i.line_no % 7 = 0 then 'na' else 'compliant' end
+      from __APP__.inspection_template_items i where i.template_id = t.id;
+    if p_status in ('submitted', 'verified') then
+      select jsonb_build_object('compliant', count(*) filter (where answer = 'compliant'),
+             'noncompliant', count(*) filter (where answer = 'noncompliant'), 'na', count(*) filter (where answer = 'na'),
+             'findings', 0) into v_sum from __APP__.inspection_answers where inspection_id = v_id;
+      update __APP__.inspections set summary = v_sum where id = v_id;
+    end if;
+  end if;
+  return v_id;
+end $$;
+
+do $$
+declare
+  m date; k integer; v_status text; v_planned timestamptz;
+  names text[] := array['Inspeksi Padlock', 'Inspeksi LV', 'Inspeksi Peralatan Kerja', 'Inspeksi Kotak P3K & APAR',
+                        'Observasi Maintenance', 'Audit Internal'];
+  objs text[] := array['Toolkit #3', 'LV-07', 'Mesin bubut', 'APAR #07', 'WO-2145', 'Workshop Service'];
+  areas text[] := array['Workshop Service', 'Hauling Road', 'Bay 3', 'Workshop Service', 'Pit Area', 'Workshop Service'];
+  insp text[] := array['hse@demo.lourdes.test', 'pengawas@demo.lourdes.test'];
+  v_today date := current_date;
+  cur_first date := date_trunc('month', current_date)::date;
+begin
+  if exists (select 1 from __APP__.inspections) then return; end if;
+  -- Bulan lalu-lalu (6 bulan ke belakang): 5-6 jadwal per bulan, hampir semua terlaksana
+  for m in select (cur_first - (n || ' months')::interval)::date from generate_series(6, 1, -1) n loop
+    for k in 1..(5 + (extract(month from m)::integer % 2)) loop
+      v_planned := ((m + (k * 4 - 1))::timestamp + time '08:00') at time zone 'Asia/Jakarta';
+      v_status := case when k = 3 and extract(month from m)::integer % 3 = 0 then 'scheduled'     -- terlewat (terlambat)
+                       when k = 5 and extract(month from m)::integer % 4 = 0 then 'cancelled'
+                       when k % 2 = 0 then 'verified' else 'submitted' end;
+      perform pg_temp.seed_inspection(names[(k - 1) % 6 + 1], v_planned, v_status, insp[k % 2 + 1], objs[(k - 1) % 6 + 1],
+        areas[(k - 1) % 6 + 1], case when k % 3 = 1 then array[2] else array[]::integer[] end);
+    end loop;
+  end loop;
+  -- Bulan berjalan: yang sudah lewat terlaksana, hari ini berjalan, sisanya terjadwal
+  for k in 1..6 loop
+    v_planned := ((cur_first + (k * 4 - 2))::timestamp + time '08:30') at time zone 'Asia/Jakarta';
+    v_status := case when v_planned::date < v_today - 1 and k % 5 <> 0 then (case when k % 2 = 0 then 'verified' else 'submitted' end)
+                     when v_planned::date < v_today then 'scheduled'
+                     when v_planned::date = v_today then 'in_progress'
+                     else 'scheduled' end;
+    perform pg_temp.seed_inspection(names[(k - 1) % 6 + 1], v_planned, v_status, insp[k % 2 + 1], objs[(k - 1) % 6 + 1],
+      areas[(k - 1) % 6 + 1], case when k = 4 then array[4, 9] else array[]::integer[] end);
+  end loop;
+  -- Bulan depan: beberapa jadwal (kalender)
+  for k in 1..3 loop
+    perform pg_temp.seed_inspection(names[k * 2 - 1], (((cur_first + interval '1 month')::date + (k * 7 - 3))::timestamp + time '09:00') at time zone 'Asia/Jakarta',
+      'scheduled', insp[k % 2 + 1], objs[k * 2 - 1], areas[k * 2 - 1], array[]::integer[]);
+  end loop;
+end $$;
+
+-- Observasi KTA/TTA (RPC sebagai persona, lalu dimundurkan) + satu kejadian LTI untuk KPI
+do $$
+declare
+  v_site uuid := (select id from public.locations where name = 'Site MIFA');
+  v_obs uuid; i integer; k9 uuid;
+  who text[] := array['karyawan@demo.lourdes.test', 'pengawas@demo.lourdes.test', 'hse@demo.lourdes.test', 'karyawan@demo.lourdes.test'];
+  descr text[] := array['Kabel ekstensi melintang di jalur pejalan', 'Teknisi bekerja tanpa kacamata pengaman',
+    'Tumpahan oli di dekat bay 3 belum dibersihkan', 'Tangga kerja tidak diikat saat dipakai', 'Tabung gas disimpan tanpa rantai pengaman',
+    'Pekerja mengangkat beban berat tanpa alat bantu', 'Lampu penerangan area parkir mati', 'Rambu jalur evakuasi terhalang material'];
+begin
+  if exists (select 1 from __APP__.observations) or v_site is null then return; end if;
+  for i in 1..8 loop
+    perform pg_temp.as_user(who[(i - 1) % 4 + 1]);
+    v_obs := (__APP__.observation_submit(jsonb_build_object('location_id', v_site,
+      'area_id', (select id from __APP__.areas where location_id = v_site and name = (array['Workshop Service', 'Bay 3', 'Pit Area', 'Hauling Road'])[(i - 1) % 4 + 1]),
+      'kind', case when i % 3 = 0 then 'tta' else 'kta' end, 'description', descr[i],
+      'immediate_action', case when i % 2 = 0 then 'Area diamankan sementara' end,
+      'followup', i in (3, 6), 'risk_level', 'medium', 'pic_id', pg_temp.uid('pengawas@demo.lourdes.test'),
+      'due_date', (current_date + 6)::text)) ->> 'id')::uuid;
+    update __APP__.observations set observed_at = observed_at - make_interval(days => i * 8),
+           created_at = created_at - make_interval(days => i * 8) where id = v_obs;
+  end loop;
+
+  -- Kejadian LTI ±50 hari lalu (3 hari kerja hilang): nilai nyata untuk LTIFR/LTISR
+  perform pg_temp.as_user('karyawan@demo.lourdes.test');
+  k9 := (__APP__.incident_report(jsonb_build_object('location_id', v_site,
+    'area_id', (select id from __APP__.areas where location_id = v_site and name = 'Workshop Service'),
+    'occurred_at', now()::text, 'category', 'injury', 'description', 'Pergelangan tangan keseleo saat mengangkat kompresor',
+    'unit_code', 'E5126', 'unit_label', 'PC2000')) ->> 'id')::uuid;
+  perform pg_temp.as_user('hse@demo.lourdes.test');
+  perform __APP__.incident_classify(k9, jsonb_build_object('category', 'injury', 'injury_class', 'lost_time',
+    'severity', 'medium', 'potential_severity', 'high',
+    'restricted', jsonb_build_object('injury_type', 'Keseleo', 'body_parts', jsonb_build_array('Tangan kanan'),
+      'treatment', 'clinic', 'facility', 'Klinik Site MIFA', 'lost_days', 3, 'restricted_days', 5)));
+  perform pg_temp.mundur('incidents', k9, 50);
+  perform set_config('request.jwt.claims', '', true);
+  perform set_config('request.jwt.claim.sub', '', true);
+end $$;
+
 -- ---------- dokumen contoh Pengajuan (draf) supaya list/QA punya data setelah reset ----------
 do $$
 declare v_u record; i integer;

@@ -101,3 +101,34 @@ export function resolveStatus(map: Record<string, StatusDef>, value: string | nu
   if (!value) return { label: "-", color: "gray" };
   return map[value] ?? { label: value, color: "gray" };
 }
+
+// ---------------------------------------------------------------- Safe Hub (rancangan §2.5)
+// Pemetaan warna design system prototipe. Label per modul di lib/<modul>-rules.ts boleh
+// menurunkan dari sini. Status tidak boleh dibedakan warna saja: badge selalu berlabel.
+
+/** Status umum workflow K3 (jenis B, rancangan §2.3) */
+export const WORKFLOW_STATUS: Record<string, StatusDef> = {
+  draft: { label: "Draft", color: "gray" },
+  open: { label: "Open", color: "blue" },
+  in_progress: { label: "In Progress", color: "amber" },
+  waiting_verification: { label: "Menunggu Verifikasi", color: "violet" },
+  returned: { label: "Dikembalikan", color: "amber" },
+  closed: { label: "Closed", color: "green" },
+  overdue: { label: "Overdue", color: "red" },
+  rejected: { label: "Ditolak", color: "red" },
+  published: { label: "Terbit", color: "gray" },
+};
+
+/** Status masa berlaku turunan (rancangan §2.4): dihitung dari tanggal, tidak disimpan. */
+export const EXPIRY_STATUS: Record<string, StatusDef> = {
+  valid: { label: "Berlaku", color: "green" },
+  expiring: { label: "Akan Kedaluwarsa", color: "amber" },
+  expired: { label: "Kedaluwarsa", color: "red" },
+  none: { label: "Belum Ada", color: "gray" },
+};
+
+/** Status rumus KPI (Kamus KPI, rancangan §2.8) */
+export const KPI_STATUS: Record<string, StatusDef> = {
+  draft: { label: "Rumus belum disahkan", color: "gray" },
+  approved: { label: "Disahkan", color: "green" },
+};

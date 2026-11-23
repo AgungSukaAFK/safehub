@@ -39,9 +39,10 @@ export const FONT_SIZE_STORAGE_KEY = `${APP_ID}:font-size`;
  * swatch. Company baru dengan aksen baru: tambahkan class di globals.css + baris di sini.
  */
 export const accentThemes = [
+  { name: "gmi-k3", label: "GMI K3 (Default)", color: "#0B4F7C", group: "company" },
   { name: "gmi", label: "GMI", color: "#242365", group: "company" },
   { name: "gis", label: "GIS", color: "rgb(23 88 49)", group: "company" },
-  { name: "zinc", label: "Zinc (Default)", color: "hsl(240 5.9% 10%)", group: "general" },
+  { name: "zinc", label: "Zinc", color: "hsl(240 5.9% 10%)", group: "general" },
   { name: "blue", label: "Biru", color: "hsl(217.2 91.2% 59.8%)", group: "general" },
   { name: "sky", label: "Langit", color: "hsl(200.4 98% 39.4%)", group: "general" },
   { name: "cyan", label: "Sian", color: "hsl(191.6 91.4% 36.5%)", group: "general" },
@@ -60,7 +61,10 @@ export const accentThemes = [
 ] as const;
 
 export type AccentTheme = (typeof accentThemes)[number]["name"];
-export const DEFAULT_ACCENT: AccentTheme = "zinc";
+/** Aksen default app (Safe Hub: GMI K3). Zinc = token dasar :root tanpa class. */
+export const DEFAULT_ACCENT: AccentTheme = "gmi-k3";
+/** Aksen yang tidak punya class (memakai token :root). */
+export const BASE_ACCENT: AccentTheme = "zinc";
 
 export const themeModes = [
   { name: "light", label: "Terang" },
@@ -81,8 +85,9 @@ const j = JSON.stringify;
 export const appearanceInitScript =
   "(function(){try{var d=document.documentElement,l=localStorage;" +
   "function g(k){var v=l.getItem(k);if(v===null)return null;try{return JSON.parse(v)}catch(e){return v}}" +
-  `var f=g(${j(FONT_FAMILY_STORAGE_KEY)}),s=g(${j(FONT_SIZE_STORAGE_KEY)}),a=g(${j(ACCENT_STORAGE_KEY)});` +
+  `var f=g(${j(FONT_FAMILY_STORAGE_KEY)}),s=g(${j(FONT_SIZE_STORAGE_KEY)}),a=g(${j(ACCENT_STORAGE_KEY)})||${j(DEFAULT_ACCENT)};` +
   `if(f&&f!=="geist"&&${j(fontFamilies.map((x) => x.name))}.indexOf(f)>-1)d.dataset.font=f;` +
   `if(s&&s!=="md"&&${j(fontSizes.map((x) => x.name))}.indexOf(s)>-1)d.dataset.fontSize=s;` +
-  `if(a&&a!=="zinc"&&${j(accentThemes.map((x) => x.name))}.indexOf(a)>-1)d.classList.add("theme-"+a);` +
+  `if(${j(accentThemes.map((x) => x.name))}.indexOf(a)<0)a=${j(DEFAULT_ACCENT)};` +
+  `if(a!==${j(BASE_ACCENT)})d.classList.add("theme-"+a);` +
   "}catch(e){}})();";

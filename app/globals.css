@@ -286,6 +286,37 @@
 .theme-gis { --primary: 144 58.6% 21.8%; --primary-foreground: 144 60% 97%; --ring: 144 58.6% 21.8%; }
 .dark.theme-gis, .soft-dark.theme-gis { --primary: 144 45% 45%; --primary-foreground: 144 60% 8%; --ring: 144 45% 45%; }
 
+/* Aksen app Safe Hub "GMI K3" (default app, rancangan §2.13): primary #0B4F7C. Di mode Terang
+   (termasuk Ikuti Sistem → terang) sidebar navy #0B2238; token di dalam sidebar ikut diganti supaya
+   teks/ikon/border tetap kontras. Mode gelap & lembut memakai token sidebar bawaan mode itu. */
+.theme-gmi-k3 { --primary: 204 84% 26%; --primary-foreground: 204 60% 97%; --ring: 204 84% 26%; }
+.soft-light.theme-gmi-k3 { --primary: 204 70% 28%; --ring: 204 70% 28%; }
+.dark.theme-gmi-k3, .soft-dark.theme-gmi-k3 { --primary: 204 70% 62%; --primary-foreground: 204 60% 10%; --ring: 204 70% 62%; }
+.light.theme-gmi-k3 {
+  --sidebar: hsl(209 67% 13%);
+  --sidebar-foreground: hsl(210 25% 86%);
+  --sidebar-primary: hsl(204 70% 62%);
+  --sidebar-primary-foreground: hsl(204 60% 10%);
+  --sidebar-accent: hsl(209 45% 20%);
+  --sidebar-accent-foreground: hsl(0 0% 98%);
+  --sidebar-border: hsl(209 40% 21%);
+  --sidebar-ring: hsl(204 70% 62%);
+}
+.light.theme-gmi-k3 [data-sidebar="sidebar"] {
+  color-scheme: dark;
+  --background: 209 67% 13%;
+  --foreground: 0 0% 98%;
+  --muted: 209 45% 20%;
+  --muted-foreground: 210 20% 70%;
+  --accent: 209 45% 20%;
+  --accent-foreground: 0 0% 98%;
+  --border: 209 40% 24%;
+  --input: 209 40% 26%;
+  --primary: 204 70% 62%;
+  --primary-foreground: 204 60% 10%;
+  --ring: 204 70% 62%;
+}
+
 /* Soft Dark: aksen versi lebih terang (setara Tailwind 400) + teks gelap */
 .soft-dark.theme-blue { --primary: 213.1 93.9% 67.8%; --primary-foreground: 213.1 60% 12%; --ring: 213.1 93.9% 67.8%; }
 .soft-dark.theme-sky { --primary: 198.4 93.2% 59.6%; --primary-foreground: 198.4 60% 12%; --ring: 198.4 93.2% 59.6%; }

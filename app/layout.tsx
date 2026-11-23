@@ -48,6 +48,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             richColors
             closeButton
             position="bottom-right"
+            // HP: di atas tab bawah (components/shell/mobile-tabs.tsx)
+            mobileOffset={{ bottom: "calc(4.5rem + env(safe-area-inset-bottom))" }}
             toastOptions={{ closeButtonAriaLabel: "Tutup", classNames: { content: "flex-1" } }}
           />
         </AppThemeProvider>

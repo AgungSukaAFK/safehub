@@ -129,14 +129,14 @@ export function AccentPanel() {
                 {selected && <Check className="size-3.5 text-white" />}
               </span>
               <span className="w-full truncate text-center text-[11px] leading-tight">
-                {t.name === "zinc" ? "Default" : t.label}
+                {t.label}
               </span>
             </button>
           );
         })}
       </div>
       {!accentChosen && (
-        <p className="mt-3 text-xs text-muted-foreground">Saat ini mengikuti warna perusahaan Anda.</p>
+        <p className="mt-3 text-xs text-muted-foreground">Saat ini memakai aksen default app (GMI K3).</p>
       )}
     </>
   );

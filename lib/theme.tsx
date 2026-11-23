@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { ThemeProvider as NextThemesProvider, useTheme } from "next-themes";
 import {
   ACCENT_STORAGE_KEY,
+  BASE_ACCENT,
   DEFAULT_ACCENT,
   DEFAULT_FONT_FAMILY,
   DEFAULT_FONT_SIZE,
@@ -64,7 +65,7 @@ function writeJson(key: string, value: unknown) {
 function applyAccentClass(accent: AccentTheme) {
   const root = document.documentElement;
   accentThemes.forEach((t) => root.classList.remove(`theme-${t.name}`));
-  if (accent !== DEFAULT_ACCENT) root.classList.add(`theme-${accent}`);
+  if (accent !== BASE_ACCENT) root.classList.add(`theme-${accent}`);
 }
 
 function AppearanceProvider({ children }: { children: React.ReactNode }) {

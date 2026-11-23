@@ -1178,6 +1178,11 @@ isOneToOne: false
 "k3_user_ok":
 { Args: { "p_user": string }; Returns: boolean
                            },
+"k3_user_options":
+{ Args: { "p_function"?: string }; Returns: {
+              "company": string,"department": string,"functions": (string)[],"id": string,"job_title": string,"name": string
+            }[]
+                           },
 "k3_writer":
 { Args: Record<PropertyKey, never>; Returns: boolean
                            },

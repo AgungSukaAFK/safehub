@@ -5,6 +5,7 @@ import {
   BookOpen,
   Building2,
   ClipboardCheck,
+  ClipboardList,
   Database,
   FileText,
   Headset,
@@ -16,6 +17,8 @@ import {
   Megaphone,
   MessagesSquare,
   Route,
+  ShieldAlert,
+  Siren,
   Sparkles,
   Users,
 } from "lucide-react";
@@ -40,14 +43,21 @@ export type NavItem = {
   /** aturan tambahan (company, data members) */
   visible?: (a: AppAccess) => boolean;
   /** kunci badge dari provider (notifikasi, bantuan, pembaruan, tugas) */
-  badge?: "notifications" | "support" | "updates" | "tasks";
+  badge?: "notifications" | "support" | "updates" | "tasks" | "incidents" | "findings";
   /** Halaman buat baru → muncul di tombol "Buat" top bar (rancangan §2.13) */
   createHref?: string;
   /** Label di menu "Buat" (default = label menu) */
   createLabel?: string;
   /** Role minimum untuk tombol Buat (default = min menu) */
   createMin?: Role;
+  /** Aturan tambahan tombol Buat (mis. fungsi K3 tertentu); WAJIB sama dengan cek di RPC */
+  createVisible?: (a: AppAccess) => boolean;
 };
+
+/** Semua yang bisa menulis K3 (auditor = baca saja, rancangan §2.1). Cermin k3_writer() di DB. */
+const notAuditor = (a: AppAccess) => !a.functions.includes("auditor");
+/** Staf K3 (fungsi selain karyawan) atau admin: menu daftar Temuan. Karyawan membuka temuan lewat Tugas Saya. */
+const k3Staff = (a: AppAccess) => a.role === "admin" || a.platformAdmin || a.functions.some((f) => f !== "karyawan");
 
 export const NAV_GROUP_LABELS: Record<NavGroupId, string> = {
   menu: "Menu",
@@ -88,6 +98,43 @@ export const NAV_ITEMS: NavItem[] = [
     createMin: "editor",
   },
 
+  // ── K3LH ──────────────────────────────────────────────────────────────
+  {
+    href: "/kejadian/lapor",
+    label: "Lapor Kejadian",
+    description: "Catat kejadian, near miss, cedera, atau kondisi berbahaya",
+    icon: Siren,
+    min: "viewer",
+    group: "k3lh",
+    keywords: ["lapor", "insiden", "kecelakaan", "near miss", "nearmiss", "cedera", "darurat", "kjd"],
+    visible: notAuditor,
+    createHref: "/kejadian/lapor",
+    createLabel: "Lapor Kejadian",
+  },
+  {
+    href: "/kejadian",
+    label: "Kejadian & Investigasi",
+    description: "Klasifikasi, investigasi, review, dan penutupan kejadian",
+    icon: ShieldAlert,
+    min: "viewer",
+    group: "k3lh",
+    keywords: ["insiden", "kecelakaan", "investigasi", "kjd", "laporan saya", "near miss"],
+    badge: "incidents",
+  },
+  {
+    href: "/temuan",
+    label: "Temuan & PICA",
+    description: "Temuan, tindakan perbaikan, dan verifikasi bukti",
+    icon: ClipboardList,
+    min: "viewer",
+    group: "k3lh",
+    keywords: ["temuan", "pica", "tindakan", "capa", "finding", "tmn", "pca", "kanban", "overdue"],
+    visible: k3Staff,
+    badge: "findings",
+    createHref: "/temuan/baru",
+    createLabel: "Temuan",
+    createVisible: (a) => notAuditor(a) && a.functions.some((f) => f === "hse" || f === "pengawas" || f === "pjo"),
+  },
   // ── Inbox ─────────────────────────────────────────────────────────────
   {
     href: "/tugas",
@@ -231,7 +278,9 @@ export function canSee(item: NavItem, access: AppAccess): boolean {
 
 /** Item tombol "Buat" di top bar: menu yang boleh dilihat dan punya halaman buat baru. */
 export function buildCreateItems(access: AppAccess): NavItem[] {
-  return NAV_ITEMS.filter((i) => i.createHref && canSee(i, access) && roleAtLeast(access.role, i.createMin ?? i.min));
+  return NAV_ITEMS.filter(
+    (i) => i.createHref && canSee(i, access) && roleAtLeast(access.role, i.createMin ?? i.min) && (i.createVisible ? i.createVisible(access) : true),
+  );
 }
 
 /** Dipakai sidebar DAN global search: menu yang tidak boleh dibuka tidak pernah muncul. */

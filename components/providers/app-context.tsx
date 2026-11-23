@@ -18,6 +18,10 @@ export type BadgeCounts = {
   tasks: number;
   support: number;
   updates: number;
+  /** Kejadian perlu klasifikasi (HSE saja) */
+  incidents: number;
+  /** Temuan overdue */
+  findings: number;
 };
 
 type AppContextValue = {

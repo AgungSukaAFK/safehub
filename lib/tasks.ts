@@ -31,7 +31,8 @@ export type TaskItem = {
 export type MyTasks = {
   total: number;
   approvals: QueueItem[];
-  others: Record<Exclude<TaskGroup, "approval">, TaskItem[]>;
+  /** others.approval = persetujuan workflow modul (mis. review kejadian), bukan approval engine */
+  others: Record<TaskGroup, TaskItem[]>;
 };
 
 type Meta = { approval_id?: string; step_no?: number; followup_count?: number; last_followup_at?: string | null };
@@ -64,11 +65,11 @@ export async function getMyTasks(supabase: ServerClient): Promise<MyTasks> {
     // urutan antrian approval: follow-up terbanyak, lalu paling lama menunggu
     .sort((a, b) => b.followupCount - a.followupCount || a.waitingSince.localeCompare(b.waitingSince));
 
-  const others: MyTasks["others"] = { action: [], verification: [], scheduled: [] };
+  const others: MyTasks["others"] = { action: [], verification: [], approval: [], scheduled: [] };
   for (const r of rows) {
     if (r.kind === "approval") continue;
     const group = r.task_group as TaskGroup;
-    if (group === "approval" || !(group in others)) continue;
+    if (!(group in others)) continue;
     others[group].push({
       kind: r.kind,
       group,

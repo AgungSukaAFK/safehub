@@ -26,6 +26,9 @@ export default async function TugasPage() {
       <TaskList title={L.action.title} description={L.action.description} items={tasks.others.action} />
       <TaskList title={L.verification.title} description={L.verification.description} items={tasks.others.verification} />
       <ApprovalQueue items={tasks.approvals} />
+      {tasks.others.approval.length > 0 && (
+        <TaskList title="Review & Persetujuan" description="Laporan yang menunggu review Anda." items={tasks.others.approval} />
+      )}
       <TaskList title={L.scheduled.title} description={L.scheduled.description} items={tasks.others.scheduled} />
       <DecisionHistory items={decisions} />
     </>

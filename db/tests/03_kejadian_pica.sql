@@ -419,4 +419,17 @@ select zz_test.expect_error('K9l user tanpa hak tidak bisa mengunggah ke folder 
   '42501');
 reset role;
 
+-- pilihan orang: user aktif app dalam scope company, tanpa data kontak
+select zz_test.login('karyawan@demo.lourdes.test');
+set role authenticated;
+select zz_test.check('K9m pilihan orang memuat persona K3 GMI, tanpa user company lain',
+  exists (select 1 from __APP__.k3_user_options() where id = :'u_hse')
+  and not exists (select 1 from __APP__.k3_user_options() o join public.profiles p on p.id = o.id where p.email = 'sari@demo.lourdes.test')
+  and (select count(*) from __APP__.k3_user_options('hse')) >= 2);
+reset role;
+select zz_test.login('noaccess@demo.lourdes.test');
+set role authenticated;
+select zz_test.check('K9n tanpa akses app: pilihan orang kosong', not exists (select 1 from __APP__.k3_user_options()));
+reset role;
+
 do $$ begin raise notice 'Uji kejadian & PICA selesai.'; end $$;

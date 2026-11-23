@@ -1536,6 +1536,27 @@ revoke execute on function __APP__.incident_report(jsonb), __APP__.incident_clas
   __APP__.k3_my_team_incidents(), __APP__.k3_my_action_findings()
   from public, anon;
 
+-- Pilihan orang di form K3 (PIC, verifikator, atasan, tim). app_access hanya terbaca admin, jadi
+-- daftar user app disajikan lewat helper ini: user aktif ber-akses app dalam scope company pemanggil.
+-- Hanya nama/jabatan/departemen/fungsi (tanpa email, NRP, HP).
+create or replace function __APP__.k3_user_options(p_function text default null)
+returns table (id uuid, name text, job_title text, department text, company text, functions text[])
+language sql stable security definer set search_path = '' as $$
+  select p.id, p.full_name, jt.name, d.name, p.company, coalesce(m.functions, '{}')
+    from public.app_access a
+    join public.profiles p on p.id = a.user_id and p.is_active
+    left join __APP__.members m on m.user_id = p.id
+    left join public.job_titles jt on jt.id = p.job_title_id
+    left join public.departments d on d.id = p.department_id
+   where a.app_id = '__APP__'
+     and public.has_app_role('__APP__', 'viewer')
+     and ('*' = any (__APP__.my_company_scope()) or p.company is null or p.company = any (__APP__.my_company_scope()))
+     and (p_function is null or p_function = any (coalesce(m.functions, '{}')))
+   order by p.full_name
+   limit 1000;
+$$;
+revoke execute on function __APP__.k3_user_options(text) from public, anon;
+
 -- =====================================================================================
 -- RINGKASAN & BADGE
 -- =====================================================================================

@@ -16,14 +16,14 @@ case "$MODE" in
   platform)          FILES=(platform/p01_companies.sql platform/p02_cctv.sql platform/p03_maintenance.sql) ;;
   app)               FILES=(app/00_schema.sql app/01_base.sql app/02_notifications.sql app/03_approval.sql
                             app/04_support.sql app/05_feedback.sql app/06_updates.sql app/07_storage.sql
-                            app/08_maintenance.sql app/example_pengajuan.sql app/09_verify.sql) ;;
+                            app/08_maintenance.sql app/10_fondasi.sql app/example_pengajuan.sql app/09_verify.sql) ;;
   migration)         FILES=(app/00_schema.sql app/01_base.sql app/02_notifications.sql app/03_approval.sql
                             app/04_support.sql app/05_feedback.sql app/06_updates.sql app/07_storage.sql
-                            app/08_maintenance.sql app/example_pengajuan.sql) ;;
+                            app/08_maintenance.sql app/10_fondasi.sql app/example_pengajuan.sql) ;;
   verify)            FILES=(app/09_verify.sql) ;;
   app-no-example)    FILES=(app/00_schema.sql app/01_base.sql app/02_notifications.sql app/03_approval.sql
                             app/04_support.sql app/05_feedback.sql app/06_updates.sql app/07_storage.sql
-                            app/08_maintenance.sql) ;;
+                            app/08_maintenance.sql app/10_fondasi.sql) ;;
   dev-stub)          FILES=(dev/00_platform_stub.sql) ;;
   dev-storage-stub)  FILES=(dev/00_storage_stub.sql) ;;
   seed)              FILES=(dev/seed.sql) ;;

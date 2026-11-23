@@ -145,10 +145,14 @@ $$;
 revoke execute on function __APP__.set_log_extra(jsonb) from public, anon, authenticated;
 
 -- ---------------------------------------------------------------- penomoran (§5)
+-- Dua format (keputusan D3 Safe Hub, menyimpang dari backend-guide §5):
+--   'month' (bawaan boilerplate): <PREFIX>/<COMPANY>/<YYMM>/<NNNN>, reset bulanan
+--   'year'  (dokumen K3):         <PREFIX>-<YYYY>-<NNNN>, reset tahunan per prefix per company
+-- Periode disimpan 'YYMM' atau 'Y'||YYYY supaya kedua mode tidak pernah berbagi counter.
 create table __APP__.doc_sequences (
   prefix        text not null,
   company_code  text not null,
-  period        text not null,               -- YYMM (WIB)
+  period        text not null,               -- YYMM | YYYYY (WIB)
   last_no       integer not null default 0,
   primary key (prefix, company_code, period)
 );
@@ -158,28 +162,40 @@ revoke insert, update, delete on __APP__.doc_sequences from authenticated;
 create policy "doc_sequences: admin read" on __APP__.doc_sequences for select to authenticated
   using ((select public.has_app_role('__APP__', 'admin')));
 
-create or replace function __APP__.next_doc_number(p_prefix text, p_company text)
+create or replace function __APP__.next_doc_number(p_prefix text, p_company text, p_reset text default 'month')
 returns text language plpgsql security definer set search_path = '' as $$
 declare
-  v_period text := to_char(now() at time zone 'Asia/Jakarta', 'YYMM');
+  v_now    timestamp := now() at time zone 'Asia/Jakarta';
+  v_period text;
   v_no     integer;
 begin
+  if p_reset not in ('month', 'year') then
+    raise exception 'p_reset harus month atau year' using errcode = '22023';
+  end if;
+  v_period := case p_reset when 'year' then 'Y' || to_char(v_now, 'YYYY') else to_char(v_now, 'YYMM') end;
   insert into __APP__.doc_sequences as s (prefix, company_code, period, last_no)
   values (p_prefix, p_company, v_period, 1)
   on conflict (prefix, company_code, period) do update set last_no = s.last_no + 1
   returning last_no into v_no;
-  return format('%s/%s/%s/%s', p_prefix, p_company, v_period, lpad(v_no::text, 4, '0'));
+  return case p_reset
+    when 'year' then format('%s-%s-%s', p_prefix, substr(v_period, 2), lpad(v_no::text, 4, '0'))
+    else format('%s/%s/%s/%s', p_prefix, p_company, v_period, lpad(v_no::text, 4, '0')) end;
 end $$;
-revoke execute on function __APP__.next_doc_number(text, text) from public, anon, authenticated;
+revoke execute on function __APP__.next_doc_number(text, text, text) from public, anon, authenticated;
 
 -- ---------------------------------------------------------------- members (§11.4)
--- Data user khusus app. Kolom "milik admin" (team, approval_limit, admin_note) dijaga guard.
+-- Data user khusus app. Kolom "milik admin" (team, approval_limit, admin_note, functions,
+-- location_ids) dijaga guard. functions = fungsi K3 (D1), location_ids = batas site (null = semua).
 create table __APP__.members (
   id              uuid primary key default gen_random_uuid(),
   user_id         uuid not null unique references public.profiles(id) on delete cascade,
   team            text check (length(team) <= 100),
   approval_limit  numeric(18,2) check (approval_limit is null or approval_limit >= 0),
   admin_note      text check (length(admin_note) <= 1000),
+  functions       text[] not null default '{}' check (functions <@ array[
+                    'hse', 'hse_senior', 'manajemen', 'pjo', 'pja', 'pengawas', 'hr', 'maintenance', 'scm',
+                    'kontraktor_admin', 'karyawan', 'auditor']::text[]),
+  location_ids    uuid[] check (location_ids is null or cardinality(location_ids) between 1 and 200),
   preferences     jsonb not null default '{}'::jsonb,
   created_at      timestamptz not null default now(),
   updated_at      timestamptz not null default now()
@@ -205,8 +221,10 @@ begin
   if coalesce((select auth.role()), '') = 'authenticated' and not public.has_app_role('__APP__', 'admin') then
     if tg_op = 'INSERT' then
       new.team := null; new.approval_limit := null; new.admin_note := null;
+      new.functions := '{}'; new.location_ids := null;
     elsif new.team is distinct from old.team or new.approval_limit is distinct from old.approval_limit
-          or new.admin_note is distinct from old.admin_note or new.user_id is distinct from old.user_id then
+          or new.admin_note is distinct from old.admin_note or new.user_id is distinct from old.user_id
+          or new.functions is distinct from old.functions or new.location_ids is distinct from old.location_ids then
       raise exception 'Kolom ini hanya bisa diubah admin app.' using errcode = 'P0001';
     end if;
   end if;

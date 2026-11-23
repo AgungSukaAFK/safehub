@@ -5,11 +5,16 @@
 
 -- ---------- master ----------
 insert into public.departments (code, name) values
-  ('IT', 'IT'), ('PUR', 'Purchasing'), ('FIN', 'Finance'), ('WH', 'Gudang')
+  ('IT', 'IT'), ('PUR', 'Purchasing'), ('FIN', 'Finance'), ('WH', 'Gudang'),
+  ('HSE', 'HSE'), ('HRD', 'HR'), ('SRV', 'Service & Maintenance'), ('SCM', 'SCM / Gudang'), ('OPS', 'Operasional')
 on conflict (code) do nothing;
-insert into public.job_titles (name) values ('Staff'), ('Supervisor'), ('Manager'), ('Direktur')
+insert into public.job_titles (name) values ('Staff'), ('Supervisor'), ('Manager'), ('Direktur'),
+  ('Teknisi AC'), ('HSE Officer'), ('HSE Superintendent'), ('Pengawas Service'), ('PJO'), ('PJA'),
+  ('HR Officer'), ('Planner Maintenance'), ('Site Manager'), ('Admin Kontraktor'), ('Auditor Internal')
 on conflict (name) do nothing;
-insert into public.locations (name) values ('Kantor Pusat Bekasi'), ('Gudang Jatiasih')
+-- Site = public.locations (D2). Site MIFA dari prototipe + satu site kedua untuk uji multi-site.
+insert into public.locations (name) values ('Kantor Pusat Bekasi'), ('Gudang Jatiasih'),
+  ('Site MIFA'), ('Site Demo Kalimantan')
 on conflict (name) do nothing;
 
 -- ---------- user demo ----------
@@ -88,6 +93,62 @@ select pg_temp.demo_user('noaccess@demo.lourdes.test', 'Nora Tanpa Akses',      
 -- Pernah punya akses lalu akunnya dinonaktifkan tim IT (uji kolom/filter status di Pengguna & Akses)
 select pg_temp.demo_user('nonaktif@demo.lourdes.test', 'Tono Nonaktif (GIS)',    'GIS',     'WH',  'Staff',      'viewer');
 update public.profiles set is_active = false where email = 'nonaktif@demo.lourdes.test';
+
+-- ---------- persona K3 (rancangan §4.0 butir 7): satu user per fungsi, company GMI, Site MIFA ----------
+select pg_temp.demo_user('karyawan@demo.lourdes.test',   'Rudi Hartono (Karyawan)',       'GMI', 'SRV', 'Teknisi AC',          'viewer');
+select pg_temp.demo_user('hse@demo.lourdes.test',        'Andi Pratama (HSE)',            'GMI', 'HSE', 'HSE Officer',         'editor');
+select pg_temp.demo_user('hse.senior@demo.lourdes.test', 'Yusuf Ramadhan (HSE Senior)',   'GMI', 'HSE', 'HSE Superintendent',  'editor');
+select pg_temp.demo_user('pengawas@demo.lourdes.test',   'Fajar Nugroho (Pengawas)',      'GMI', 'SRV', 'Pengawas Service',    'editor');
+select pg_temp.demo_user('pjo@demo.lourdes.test',        'Budi Santoso (PJO)',            'GMI', 'OPS', 'PJO',                 'editor');
+select pg_temp.demo_user('pja@demo.lourdes.test',        'Agus Salim (PJA)',              'GMI', 'OPS', 'PJA',                 'editor');
+select pg_temp.demo_user('manajemen@demo.lourdes.test',  'Bambang Sutrisno (Manajemen)',  'GMI', 'OPS', 'Site Manager',        'editor');
+select pg_temp.demo_user('hr@demo.lourdes.test',         'Dewi Lestari (HR)',             'GMI', 'HRD', 'HR Officer',          'editor');
+select pg_temp.demo_user('maintenance@demo.lourdes.test','Hendra Wijaya (Maintenance)',   'GMI', 'SRV', 'Planner Maintenance', 'editor');
+select pg_temp.demo_user('scm@demo.lourdes.test',        'Sari Wulandari (SCM)',          'GMI', 'SCM', 'Staff',               'editor');
+select pg_temp.demo_user('kontraktor@demo.lourdes.test', 'Joko Susilo (Admin Kontraktor)','GMI', 'HSE', 'Admin Kontraktor',    'editor');
+select pg_temp.demo_user('auditor@demo.lourdes.test',    'Lina Marlina (Auditor)',        'GMI', 'FIN', 'Auditor Internal',    'viewer');
+
+update public.profiles set location_id = (select id from public.locations where name = 'Site MIFA')
+ where email in ('karyawan@demo.lourdes.test', 'hse@demo.lourdes.test', 'hse.senior@demo.lourdes.test',
+                 'pengawas@demo.lourdes.test', 'pjo@demo.lourdes.test', 'pja@demo.lourdes.test',
+                 'manajemen@demo.lourdes.test', 'hr@demo.lourdes.test', 'maintenance@demo.lourdes.test',
+                 'scm@demo.lourdes.test', 'kontraktor@demo.lourdes.test');
+
+-- Fungsi K3 + batas site. Karyawan dibatasi ke Site MIFA (uji my_location_scope, D13).
+insert into __APP__.members (user_id, functions, location_ids)
+select p.id, f.functions,
+       case when f.mifa_only then array[(select id from public.locations where name = 'Site MIFA')] end
+  from (values
+    ('karyawan@demo.lourdes.test',    array['karyawan'],              true),
+    ('hse@demo.lourdes.test',         array['hse'],                   false),
+    ('hse.senior@demo.lourdes.test',  array['hse', 'hse_senior'],     false),
+    ('pengawas@demo.lourdes.test',    array['pengawas'],              false),
+    ('pjo@demo.lourdes.test',         array['pjo'],                   false),
+    ('pja@demo.lourdes.test',         array['pja'],                   false),
+    ('manajemen@demo.lourdes.test',   array['manajemen'],             false),
+    ('hr@demo.lourdes.test',          array['hr'],                    false),
+    ('maintenance@demo.lourdes.test', array['maintenance'],           false),
+    ('scm@demo.lourdes.test',         array['scm'],                   false),
+    ('kontraktor@demo.lourdes.test',  array['kontraktor_admin'],      false),
+    ('auditor@demo.lourdes.test',     array['auditor'],               false)
+  ) as f(email, functions, mifa_only)
+  join public.profiles p on p.email = f.email
+on conflict (user_id) do update set functions = excluded.functions, location_ids = excluded.location_ids;
+
+-- Area per site (dari prototipe) + mitra GMI
+insert into __APP__.areas (location_id, name, sort_order)
+select l.id, a.name, a.ord
+  from (values ('Site MIFA', 'Workshop Service', 10), ('Site MIFA', 'Pit Area', 20),
+               ('Site MIFA', 'Hauling Road', 30), ('Site MIFA', 'Bay 3', 40),
+               ('Site Demo Kalimantan', 'Workshop', 10), ('Site Demo Kalimantan', 'Pit Utara', 20)) as a(site, name, ord)
+  join public.locations l on l.name = a.site
+on conflict (location_id, lower(btrim(name))) do nothing;
+
+insert into __APP__.contractors (company_code, name, kind)
+values ('GMI', 'PT Sinar Teknik Mandiri', 'subkontraktor'), ('GMI', 'PT Cipta Lingkungan Aceh', 'subkontraktor'),
+       ('GMI', 'PT Bara Safety Indonesia', 'vendor'), ('GMI', 'PT Samudra Karya Abadi', 'subkontraktor'),
+       ('GMI', 'PT Lintas Energi Servis', 'vendor')
+on conflict (company_code, lower(btrim(name))) do nothing;
 
 -- ---------- konfigurasi approval (tanpa auth.uid → log/CCTV tercatat sebagai sistem) ----------
 insert into __APP__.department_heads (department_id, company_code, user_id)

@@ -4,7 +4,7 @@
 import { z } from "zod";
 import type { StatusColor } from "@/lib/status";
 
-export const MASTER_KINDS = ["area", "kategori-kejadian", "tingkat-risiko", "mitra", "site", "jabatan"] as const;
+export const MASTER_KINDS = ["area", "kategori-kejadian", "kategori-temuan", "tingkat-risiko", "mitra", "site", "jabatan"] as const;
 export type MasterKind = (typeof MASTER_KINDS)[number];
 export type EditableKind = Exclude<MasterKind, "site" | "jabatan">;
 
@@ -96,6 +96,21 @@ export const MASTER_CONFIG: Record<MasterKind, MasterKindConfig> = {
       SORT_FIELD,
     ],
   },
+  "kategori-temuan": {
+    label: "Kategori Temuan",
+    description: "Pilihan kategori di form Temuan. Kode dipakai laporan, jadi tidak bisa diubah.",
+    editable: true,
+    columns: [
+      { key: "code", label: "Kode" },
+      { key: "sort_order", label: "Urutan" },
+    ],
+    fields: [
+      CODE_FIELD,
+      { name: "name", label: "Nama", type: "text", required: true, maxLength: 100 },
+      { name: "description", label: "Keterangan", type: "textarea", maxLength: 500 },
+      SORT_FIELD,
+    ],
+  },
   "tingkat-risiko": {
     label: "Tingkat Risiko",
     description: "Tingkat risiko temuan dan kejadian, dengan warna badge.",
@@ -165,6 +180,7 @@ const isActive = z.boolean().default(true);
 export const MASTER_SCHEMAS = {
   area: z.object({ location_id: z.string().uuid("Pilih site"), name: name(100), sort_order: sortOrder, is_active: isActive }),
   "kategori-kejadian": z.object({ code, name: z.string().trim().min(1, "Wajib diisi").max(100), description, sort_order: sortOrder, is_active: isActive }),
+  "kategori-temuan": z.object({ code, name: z.string().trim().min(1, "Wajib diisi").max(100), description, sort_order: sortOrder, is_active: isActive }),
   "tingkat-risiko": z.object({
     code,
     name: z.string().trim().min(1, "Wajib diisi").max(100),
@@ -182,9 +198,10 @@ export const MASTER_SCHEMAS = {
 } satisfies Record<EditableKind, z.ZodTypeAny>;
 
 /** Tabel + nilai kind master_items per jenis. */
-export const MASTER_TABLES: Record<EditableKind, { table: "areas" | "master_items" | "contractors"; itemKind?: "incident_category" | "risk_level" }> = {
+export const MASTER_TABLES: Record<EditableKind, { table: "areas" | "master_items" | "contractors"; itemKind?: "incident_category" | "finding_category" | "risk_level" }> = {
   area: { table: "areas" },
   "kategori-kejadian": { table: "master_items", itemKind: "incident_category" },
+  "kategori-temuan": { table: "master_items", itemKind: "finding_category" },
   "tingkat-risiko": { table: "master_items", itemKind: "risk_level" },
   mitra: { table: "contractors" },
 };

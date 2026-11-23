@@ -116,7 +116,7 @@ create policy "areas_logs: admin read" on __APP__.areas_logs for select to authe
 -- label, urutan, warna, status aktif boleh diubah admin. Tidak dihapus (nonaktifkan).
 create table __APP__.master_items (
   id           uuid primary key default gen_random_uuid(),
-  kind         text not null check (kind in ('incident_category', 'risk_level')),
+  kind         text not null check (kind in ('incident_category', 'risk_level', 'finding_category')),
   code         text not null check (code ~ '^[a-z][a-z0-9_]{1,40}$'),
   name         text not null check (length(btrim(name)) between 1 and 100),
   description  text check (length(description) <= 500),
@@ -128,7 +128,7 @@ create table __APP__.master_items (
   updated_at   timestamptz not null default now(),
   unique (kind, code)
 );
-comment on table __APP__.master_items is 'Master app berkode: kategori kejadian, tingkat risiko. Kode tetap; label boleh diubah.';
+comment on table __APP__.master_items is 'Master app berkode: kategori kejadian & temuan, tingkat risiko. Kode tetap; label boleh diubah.';
 create unique index master_items_name_uq on __APP__.master_items (kind, lower(btrim(name)));
 
 create table __APP__.master_items_logs (
@@ -186,7 +186,13 @@ insert into __APP__.master_items (kind, code, name, color, sort_order) values
   ('risk_level',        'low',                  'Rendah',                 'green', 10),
   ('risk_level',        'medium',               'Sedang',                 'amber', 20),
   ('risk_level',        'high',                 'Tinggi',                 'orange', 30),
-  ('risk_level',        'critical',             'Kritis',                 'red',   40)
+  ('risk_level',        'critical',             'Kritis',                 'red',   40),
+  ('finding_category',  'operational_safety',   'Keselamatan Operasional', null, 10),
+  ('finding_category',  'occupational_health',  'Kesehatan Kerja',        null, 20),
+  ('finding_category',  'environment',          'Lingkungan',             null, 30),
+  ('finding_category',  'housekeeping',         'Housekeeping',           null, 40),
+  ('finding_category',  'equipment_ppe',        'Peralatan & APD',        null, 50),
+  ('finding_category',  'documents',            'Dokumen & Prosedur',     null, 60)
 on conflict (kind, code) do nothing;
 
 -- ---------------------------------------------------------------- perusahaan mitra (§4.0, §4.7)

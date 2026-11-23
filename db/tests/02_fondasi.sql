@@ -165,7 +165,10 @@ select zz_test.check('F6b baris approval lengkap (href, meta.approval_id)',
 reset role;
 select zz_test.login('karyawan@demo.lourdes.test');
 set role authenticated;
-select zz_test.check('F6c tugas orang lain tidak terlihat', (select count(*) from __APP__.my_tasks()) = 0);
+select zz_test.check('F6c tugas orang lain tidak terlihat',
+  not exists (select 1 from __APP__.my_tasks() where kind = 'approval')
+  and not exists (select 1 from __APP__.my_tasks() t join __APP__.pica_actions a on a.id = t.ref_id
+                   where t.ref_type = 'pica_actions' and a.pic_id <> auth.uid() and a.verifier_id <> auth.uid()));
 reset role;
 
 \echo 'Uji fondasi selesai.'

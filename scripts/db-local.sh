@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Pasang schema boilerplate ke Supabase lokal db-lourdes (container supabase_db_db-lourdes).
 #   scripts/db-local.sh apply   → stub platform + platform + app + seed (sekali; gagal kalau sudah ada)
-#   scripts/db-local.sh reset   → HAPUS schema app + objek platform buatan boilerplate + user demo, lalu apply
-#   scripts/db-local.sh expose  → buka schema app ke PostgREST (pgrst.db_schemas) + reload
+#   scripts/db-local.sh reset   → HAPUS schema app + policy storage app + akses app, lalu apply (user demo tetap)
+#   scripts/db-local.sh expose  → tambahkan schema app ke pgrst.db_schemas (tanpa menghapus app lain) + reload
 # HANYA untuk lokal. Di VPS memakai alur lourdes-db (dry-run → konfirmasi → push).
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -11,8 +11,19 @@ APP=safehub; HOST=safehub; NAME="Safe Hub"
 psqlc() { docker exec -i "$DB" psql -U postgres -d postgres -v ON_ERROR_STOP=1 -q -X "$@"; }
 
 expose() {
+  # Tambahkan schema app ke daftar PostgREST yang SUDAH ada (DB lokal dipakai beberapa app)
   psqlc <<SQL
-alter role authenticator set pgrst.db_schemas = 'public, graphql_public, $APP';
+do \$\$
+declare v_cur text;
+begin
+  select split_part(c, '=', 2) into v_cur
+    from pg_roles r, unnest(r.rolconfig) c where r.rolname = 'authenticator' and c like 'pgrst.db_schemas=%';
+  v_cur := coalesce(nullif(v_cur, ''), 'public, graphql_public');
+  if not ('$APP' = any (string_to_array(replace(v_cur, ' ', ''), ','))) then
+    v_cur := v_cur || ', $APP';
+  end if;
+  execute format('alter role authenticator set pgrst.db_schemas = %L', v_cur);
+end \$\$;
 notify pgrst, 'reload config';
 notify pgrst, 'reload schema';
 SQL
@@ -30,10 +41,10 @@ apply() {
 }
 
 reset() {
+  # Hanya objek app ini. TIDAK menghapus user demo (dipakai app lain di DB lokal yang sama) dan TIDAK
+  # menghapus isi storage (Supabase melarang delete langsung; bucket dibuat ulang dengan on conflict).
   psqlc <<SQL
 drop schema if exists $APP cascade;
-delete from storage.objects where bucket_id in ('$HOST-lampiran', '$HOST-media');
-delete from storage.buckets where id in ('$HOST-lampiran', '$HOST-media');
 do \$\$ declare p record; begin
   for p in select policyname from pg_policies where schemaname = 'storage' and tablename = 'objects'
              and policyname like '$HOST-%' loop
@@ -41,10 +52,8 @@ do \$\$ declare p record; begin
   end loop;
 end \$\$;
 delete from public.app_access where app_id = '$APP';
-delete from public.apps where id = '$APP';
-delete from auth.users where email like '%@demo.lourdes.test';
 SQL
-  echo "schema $APP & user demo dihapus"
+  echo "schema $APP dihapus (user demo & file storage dipertahankan)"
   apply
 }
 

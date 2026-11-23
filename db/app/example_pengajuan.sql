@@ -276,7 +276,8 @@ end $$;
 revoke execute on function __APP__.pengajuan_save(uuid, jsonb) from public, anon;
 
 -- ---------------------------------------------------------------- global search (§10.3)
--- security INVOKER: RLS + scope company berlaku. Tambah union all untuk dokumen/master lain.
+-- security INVOKER: RLS + scope company berlaku. Mendefinisikan ulang versi 11_kejadian_pica (modul K3)
+-- dengan tambahan Pengajuan. Saat contoh dihapus, versi di 11_kejadian_pica yang berlaku.
 create or replace function __APP__.global_search(p_q text, p_limit integer default 5)
 returns table (kind text, id text, title text, subtitle text, status text, amount numeric,
                href text, is_exact boolean)
@@ -287,6 +288,25 @@ language sql stable security invoker set search_path = '' as $$
      from __APP__.pengajuan d, q
     where length(q.t) >= 3 and d.search_text like '%' || q.t || '%'
     order by (lower(coalesce(d.code, '')) = q.t) desc, d.created_at desc
+    limit least(greatest(p_limit, 1), 10))
+  union all
+  (select 'kejadian'::text, i.id::text, i.code, left(i.description, 120), i.status, null::numeric,
+          '/kejadian/' || i.id, lower(i.code) = q.t
+     from __APP__.incidents i, q
+    where length(q.t) >= 3 and i.search_text like '%' || q.t || '%'
+    order by (lower(i.code) = q.t) desc, i.reported_at desc
+    limit least(greatest(p_limit, 1), 10))
+  union all
+  (select 'temuan', f.id::text, f.code, f.title, f.status, null, '/temuan/' || f.id, lower(f.code) = q.t
+     from __APP__.findings f, q
+    where length(q.t) >= 3 and f.search_text like '%' || q.t || '%'
+    order by (lower(f.code) = q.t) desc, f.found_at desc
+    limit least(greatest(p_limit, 1), 10))
+  union all
+  (select 'tindakan', a.id::text, a.code, a.title, a.status, null, __APP__.k3_action_href(a), lower(a.code) = q.t
+     from __APP__.pica_actions a, q
+    where length(q.t) >= 3 and a.search_text like '%' || q.t || '%'
+    order by (lower(a.code) = q.t) desc, a.created_at desc
     limit least(greatest(p_limit, 1), 10))
 $$;
 revoke execute on function __APP__.global_search(text, integer) from public, anon;

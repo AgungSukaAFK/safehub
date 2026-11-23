@@ -150,6 +150,262 @@ values ('GMI', 'PT Sinar Teknik Mandiri', 'subkontraktor'), ('GMI', 'PT Cipta Li
        ('GMI', 'PT Lintas Energi Servis', 'vendor')
 on conflict (company_code, lower(btrim(name))) do nothing;
 
+-- ---------- data DEMO fase 1: kejadian, temuan, tindakan (dari prototipe) ----------
+-- Dibuat lewat RPC sebagai persona (log, notifikasi, nomor wajar), lalu tanggal dimundurkan.
+-- Bukti tindakan = baris storage.objects tanpa file (unduhan menampilkan "file tidak tersedia").
+create or replace function pg_temp.as_user(p_email text) returns uuid language plpgsql as $$
+declare v_id uuid;
+begin
+  select id into v_id from auth.users where email = p_email;
+  perform set_config('request.jwt.claims', json_build_object('sub', v_id, 'role', 'authenticated', 'email', p_email)::text, true);
+  perform set_config('request.jwt.claim.sub', v_id::text, true);
+  perform set_config('request.jwt.claim.role', 'authenticated', true);
+  return v_id;
+end $$;
+
+create or replace function pg_temp.uid(p_email text) returns uuid language sql as $$
+  select id from public.profiles where email = p_email;
+$$;
+
+create or replace function pg_temp.lapor(p_email text, p_area text, p_cat text, p_desc text, p_unit text,
+  p_unit_label text) returns uuid language plpgsql as $$
+declare v_site uuid := (select id from public.locations where name = 'Site MIFA');
+begin
+  perform pg_temp.as_user(p_email);
+  return (__APP__.incident_report(jsonb_build_object(
+    'location_id', v_site, 'area_id', (select id from __APP__.areas where location_id = v_site and name = p_area),
+    'occurred_at', now()::text, 'category', p_cat, 'description', p_desc, 'unit_code', p_unit,
+    'unit_label', p_unit_label, 'supervisor_id', pg_temp.uid('pengawas@demo.lourdes.test'),
+    'persons', jsonb_build_array(jsonb_build_object('role', 'involved', 'name', 'Rudi Hartono', 'company_kind', 'internal',
+                                                    'employment', 'permanent', 'position', 'Teknisi AC'),
+                                 jsonb_build_object('role', 'witness', 'name', 'Dedi Saputra', 'company_kind', 'internal',
+                                                    'position', 'Leading Hand Service')))) ->> 'id')::uuid;
+end $$;
+
+create or replace function pg_temp.klasifikasi(p_id uuid, p_cat text, p_class text, p_sev text, p_pot text)
+returns void language plpgsql as $$
+begin
+  perform pg_temp.as_user('hse@demo.lourdes.test');
+  perform __APP__.incident_classify(p_id, jsonb_build_object('category', p_cat, 'injury_class', p_class,
+    'severity', p_sev, 'potential_severity', p_pot,
+    'ppe', jsonb_build_object('helmet', true, 'glasses', true, 'gloves', false, 'safety_shoes', true, 'ear_plug', true)));
+end $$;
+
+create or replace function pg_temp.investigasi(p_id uuid, p_events text[], p_cause text) returns void language plpgsql as $$
+begin
+  perform pg_temp.as_user('hse@demo.lourdes.test');
+  perform __APP__.incident_set_team(p_id, pg_temp.uid('pengawas@demo.lourdes.test'),
+    array[pg_temp.uid('hse@demo.lourdes.test'), pg_temp.uid('pjo@demo.lourdes.test')]);
+  perform pg_temp.as_user('pengawas@demo.lourdes.test');
+  perform __APP__.incident_save_investigation(p_id, jsonb_build_object(
+    'timeline', (select jsonb_agg(jsonb_build_object('time', split_part(e, '|', 1), 'event', split_part(e, '|', 2)))
+                   from unnest(p_events) e),
+    'causes', jsonb_build_object('unsafe_act', jsonb_build_array(jsonb_build_object('text', p_cause))),
+    'recommendations', jsonb_build_array(jsonb_build_object('text', 'Perbarui JSA dan lakukan toolbox meeting'))));
+end $$;
+
+-- Tindakan; p_state: open | in_progress | waiting | closed
+create or replace function pg_temp.tindakan(p_parent text, p_id uuid, p_title text, p_kind text, p_pic text,
+  p_due integer, p_state text) returns uuid language plpgsql as $$
+declare v_act uuid; v_round integer;
+begin
+  perform pg_temp.as_user('hse@demo.lourdes.test');
+  v_act := (__APP__.pica_create(jsonb_build_object(p_parent || '_id', p_id, 'title', p_title, 'kind', p_kind,
+    'pic_id', pg_temp.uid(p_pic), 'verifier_id', pg_temp.uid('hse@demo.lourdes.test'),
+    'due_date', current_date + greatest(p_due, 0), 'required_evidence', 'Foto setelah perbaikan')) ->> 'id')::uuid;
+  if p_state = 'open' then return v_act; end if;
+  perform pg_temp.as_user(p_pic);
+  perform __APP__.pica_start(v_act);
+  if p_state = 'in_progress' then return v_act; end if;
+  select round into v_round from __APP__.pica_actions where id = v_act;
+  insert into storage.objects (bucket_id, name, owner_id)
+  values ('__HOST__-lampiran', 'pica/' || v_act || '/r' || v_round || '/contoh-bukti.jpg', pg_temp.uid(p_pic)::text);
+  perform __APP__.pica_submit_evidence(v_act, 'Pekerjaan selesai, foto terlampir',
+    array['pica/' || v_act || '/r' || v_round || '/contoh-bukti.jpg']);
+  if p_state = 'waiting' then return v_act; end if;
+  perform pg_temp.as_user('hse@demo.lourdes.test');
+  perform __APP__.pica_verify(v_act, 'accept', 'Sesuai persyaratan tindakan');
+  return v_act;
+end $$;
+
+create or replace function pg_temp.temuan(p_email text, p_area text, p_title text, p_desc text, p_src text,
+  p_ref text, p_cat text, p_risk text, p_pic text, p_due integer, p_source uuid default null)
+returns uuid language plpgsql as $$
+declare v_site uuid := (select id from public.locations where name = 'Site MIFA');
+begin
+  perform pg_temp.as_user(p_email);
+  return (__APP__.finding_save(null, jsonb_build_object(
+    'location_id', v_site, 'area_id', (select id from __APP__.areas where location_id = v_site and name = p_area),
+    'found_at', now()::text, 'title', p_title, 'description', p_desc, 'source_kind', p_src, 'source_ref', p_ref,
+    'source_id', p_source, 'category', p_cat, 'risk_level', p_risk, 'likelihood', 3, 'consequence', 4,
+    'root_causes', jsonb_build_array(jsonb_build_object('factor', 'man', 'text', 'Pemahaman prosedur belum konsisten'),
+                                     jsonb_build_object('factor', 'method', 'text', 'Checklist belum memuat hold point')),
+    'pic_id', pg_temp.uid(p_pic), 'due_date', current_date + greatest(p_due, 0))) ->> 'id')::uuid;
+end $$;
+
+-- Mundurkan tanggal satu record beserta lognya (contoh data terlihat tersebar dalam beberapa bulan)
+create or replace function pg_temp.mundur(p_table text, p_id uuid, p_days integer) returns void language plpgsql as $$
+begin
+  if p_table = 'incidents' then
+    update __APP__.incidents
+       set occurred_at = occurred_at - make_interval(days => p_days, mins => 6),
+           reported_at = reported_at - make_interval(days => p_days),
+           created_at = created_at - make_interval(days => p_days),
+           classified_at = classified_at - make_interval(days => greatest(p_days - 1, 0)),
+           closed_at = closed_at - make_interval(days => greatest(p_days - 20, 0))
+     where id = p_id;
+    update __APP__.incidents_logs set at = at - make_interval(days => p_days) where record_id = p_id;
+  else
+    update __APP__.findings
+       set found_at = found_at - make_interval(days => p_days),
+           created_at = created_at - make_interval(days => p_days),
+           closed_at = closed_at - make_interval(days => greatest(p_days - 12, 0))
+     where id = p_id;
+    update __APP__.findings_logs set at = at - make_interval(days => p_days) where record_id = p_id;
+  end if;
+end $$;
+
+do $$
+declare
+  k1 uuid; k2 uuid; k3 uuid; k4 uuid; k5 uuid; k6 uuid; k7 uuid; k8 uuid;
+  t1 uuid; t2 uuid; t3 uuid; t4 uuid; t5 uuid; t6 uuid; t7 uuid; t8 uuid;
+begin
+  if exists (select 1 from __APP__.incidents) or (select id from public.locations where name = 'Site MIFA') is null then
+    return;
+  end if;
+  -- kejadian (urut lama → baru supaya nomor naik sesuai tanggal)
+  k1 := pg_temp.lapor('karyawan@demo.lourdes.test', 'Bay 3', 'property_damage', 'Kaca unit retak akibat alat kerja terjatuh', 'E5126', 'PC2000');
+  perform pg_temp.klasifikasi(k1, 'property_damage', 'none', 'low', 'medium');
+  perform pg_temp.investigasi(k1, array['09:10|Alat kerja diletakkan di atas kabin', '09:14|Alat jatuh dan mengenai kaca'], 'Alat kerja tidak diamankan');
+  perform pg_temp.tindakan('incident', k1, 'Sediakan tool tray magnetik di kabin', 'corrective', 'maintenance@demo.lourdes.test', 7, 'closed');
+  perform pg_temp.as_user('pengawas@demo.lourdes.test');   perform __APP__.incident_submit_review(k1);
+  perform pg_temp.as_user('hse.senior@demo.lourdes.test'); perform __APP__.incident_review(k1, 'approve', 'Analisis memadai');
+  perform pg_temp.as_user('pjo@demo.lourdes.test');        perform __APP__.incident_review(k1, 'approve');
+
+  k5 := pg_temp.lapor('karyawan@demo.lourdes.test', 'Workshop Service', 'occupational_disease', 'Paparan debu saat pembersihan evaporator', 'E51203', 'PC1250');
+  perform pg_temp.klasifikasi(k5, 'occupational_disease', 'none', 'low', 'medium');
+
+  k4 := pg_temp.lapor('pengawas@demo.lourdes.test', 'Pit Area', 'fire', 'Percikan api pada konektor blower kabin', 'H57197', 'HD785-7');
+  perform pg_temp.klasifikasi(k4, 'fire', 'none', 'medium', 'high');
+  perform pg_temp.investigasi(k4, array['15:20|Blower dinyalakan setelah penggantian konektor', '15:21|Percikan api terlihat di konektor'], 'Konektor tidak sesuai spesifikasi');
+  perform pg_temp.tindakan('incident', k4, 'Ganti konektor blower dengan part OEM', 'corrective', 'maintenance@demo.lourdes.test', 10, 'waiting');
+  perform pg_temp.as_user('pengawas@demo.lourdes.test');   perform __APP__.incident_submit_review(k4);
+  perform pg_temp.as_user('hse.senior@demo.lourdes.test'); perform __APP__.incident_review(k4, 'approve');
+
+  k2 := pg_temp.lapor('pengawas@demo.lourdes.test', 'Bay 3', 'injury', 'Teknisi tersandung kabel ekstensi', null, null);
+  perform pg_temp.klasifikasi(k2, 'injury', 'first_aid', 'low', 'medium');
+  perform pg_temp.investigasi(k2, array['13:02|Kabel ekstensi melintang di jalur jalan', '13:05|Teknisi tersandung, lutut memar'], 'Kabel tidak dirapikan');
+  perform pg_temp.tindakan('incident', k2, 'Pasang cable cover di jalur workshop', 'corrective', 'karyawan@demo.lourdes.test', 5, 'closed');
+  perform pg_temp.as_user('pengawas@demo.lourdes.test');   perform __APP__.incident_submit_review(k2);
+  perform pg_temp.as_user('hse.senior@demo.lourdes.test'); perform __APP__.incident_review(k2, 'approve');
+  perform pg_temp.as_user('manajemen@demo.lourdes.test');  perform __APP__.incident_review(k2, 'approve');
+
+  k3 := pg_temp.lapor('karyawan@demo.lourdes.test', 'Workshop Service', 'environment', 'Tumpahan oli kompresor di area kerja', 'DA54853', 'Mercedes Arocs');
+  perform pg_temp.klasifikasi(k3, 'environment', 'none', 'low', 'low');
+  perform pg_temp.as_user('pjo@demo.lourdes.test');
+  perform __APP__.incident_close_exception(k3, 'Tumpahan kecil, sudah dibersihkan dengan spill kit saat itu juga');
+
+  k6 := pg_temp.lapor('karyawan@demo.lourdes.test', 'Workshop Service', 'near_miss', 'Selang manifold terlepas saat pengisian refrigerant', 'G5809', 'GD825A');
+  perform pg_temp.klasifikasi(k6, 'near_miss', 'none', 'low', 'high');
+  perform pg_temp.investigasi(k6, array['10:00|Pengisian refrigerant dimulai', '10:06|Selang manifold terlepas dari nipple'], 'Coupling selang aus');
+  perform pg_temp.tindakan('incident', k6, 'Ganti set selang manifold', 'corrective', 'maintenance@demo.lourdes.test', 6, 'closed');
+  perform pg_temp.tindakan('incident', k6, 'Tambahkan cek coupling di checklist harian', 'preventive', 'pengawas@demo.lourdes.test', 9, 'waiting');
+  perform pg_temp.as_user('pengawas@demo.lourdes.test');   perform __APP__.incident_submit_review(k6, 'Analisis selesai');
+
+  k7 := pg_temp.lapor('karyawan@demo.lourdes.test', 'Workshop Service', 'injury',
+    'Jari terjepit saat pemasangan kompresor AC unit H57197', 'H57197', 'HD785-7');
+  perform pg_temp.as_user('hse@demo.lourdes.test');
+  perform __APP__.incident_classify(k7, jsonb_build_object('category', 'injury', 'injury_class', 'first_aid',
+    'severity', 'low', 'potential_severity', 'high',
+    'damage_description', 'Tidak ada kerusakan unit. Pekerjaan tertunda 2,5 jam untuk penanganan dan pemeriksaan.',
+    'estimated_cost', 2750000,
+    'ppe', jsonb_build_object('helmet', true, 'glasses', true, 'gloves', false, 'safety_shoes', true, 'ear_plug', true),
+    'restricted', jsonb_build_object('injury_type', 'Memar dan luka ringan', 'body_parts', jsonb_build_array('Jari tangan kanan'),
+      'treatment', 'first_aid', 'facility', 'Ruang P3K Site MIFA', 'lost_days', 0, 'restricted_days', 2)));
+  perform __APP__.incident_set_team(k7, pg_temp.uid('pengawas@demo.lourdes.test'),
+    array[pg_temp.uid('hse@demo.lourdes.test'), pg_temp.uid('pjo@demo.lourdes.test')]);
+  perform pg_temp.as_user('pengawas@demo.lourdes.test');
+  perform __APP__.incident_save_investigation(k7, jsonb_build_object(
+    'timeline', jsonb_build_array(
+      jsonb_build_object('time', '10:15', 'event', 'Persiapan pemasangan kompresor dan pengecekan bracket.'),
+      jsonb_build_object('time', '10:28', 'event', 'Kompresor diangkat manual oleh dua teknisi ke posisi pemasangan.'),
+      jsonb_build_object('time', '10:31', 'event', 'Kompresor bergeser saat bracket dikencangkan; jari korban terjepit.'),
+      jsonb_build_object('time', '10:33', 'event', 'Pekerjaan dihentikan dan korban dibawa ke ruang P3K.')),
+    'reconstruction', 'Rekonstruksi menunjukkan posisi tangan kanan korban berada pada celah antara kompresor dan bracket. Tidak tersedia alat bantu penahan kompresor, sehingga beban ditahan manual selama pengencangan.',
+    'causes', jsonb_build_object(
+      'unsafe_act', jsonb_build_array(
+        jsonb_build_object('text', 'Menempatkan tangan pada titik jepit', 'note', 'Tangan digunakan untuk menahan kompresor selama pengencangan bracket.'),
+        jsonb_build_object('text', 'Pengangkatan kompresor tanpa alat bantu')),
+      'unsafe_condition', jsonb_build_array(jsonb_build_object('text', 'Bracket tidak memiliki penahan sementara')),
+      'job_factor', jsonb_build_array(jsonb_build_object('text', 'JSA belum mencakup risiko titik jepit'),
+                                      jsonb_build_object('text', 'Alat bantu angkat tidak tersedia')),
+      'personal_factor', jsonb_build_array(jsonb_build_object('text', 'Persepsi risiko titik jepit belum memadai'))),
+    'recommendations', jsonb_build_array(
+      jsonb_build_object('text', 'Sediakan lifting aid portabel untuk pemasangan kompresor.'),
+      jsonb_build_object('text', 'Revisi JSA pekerjaan penggantian kompresor dengan kontrol titik jepit.'),
+      jsonb_build_object('text', 'Lakukan refresh training hand safety kepada seluruh teknisi Service AC.'))));
+  perform pg_temp.tindakan('incident', k7, 'Sediakan lifting aid portabel untuk kompresor', 'corrective', 'maintenance@demo.lourdes.test', 4, 'in_progress');
+  perform pg_temp.tindakan('incident', k7, 'Revisi JSA penggantian kompresor', 'preventive', 'pengawas@demo.lourdes.test', 2, 'waiting');
+  perform pg_temp.tindakan('incident', k7, 'Refresh training hand safety', 'preventive', 'pjo@demo.lourdes.test', 1, 'closed');
+
+  k8 := pg_temp.lapor('karyawan@demo.lourdes.test', 'Pit Area', 'near_miss', 'Kebocoran refrigerant saat pemeriksaan unit E51203', 'E51203', 'PC1250');
+
+  -- temuan
+  t8 := pg_temp.temuan('pjo@demo.lourdes.test', 'Workshop Service', 'Penerangan area parkir unit kurang memadai',
+    'Dua lampu sorot area parkir mati.', 'meeting', 'MOM-2026-09', 'operational_safety', 'medium', 'maintenance@demo.lourdes.test', 20);
+  perform pg_temp.tindakan('finding', t8, 'Ganti lampu sorot area parkir', 'corrective', 'maintenance@demo.lourdes.test', 20, 'in_progress');
+  t6 := pg_temp.temuan('hse@demo.lourdes.test', 'Pit Area', 'Guard fan kondensor unit G5809 longgar',
+    'Baut guard fan kondensor kendor, berpotensi lepas saat unit beroperasi.', 'incident', null, 'equipment_ppe', 'high',
+    'maintenance@demo.lourdes.test', 0, k4);
+  t7 := pg_temp.temuan('hse@demo.lourdes.test', 'Workshop Service', 'JSA penggantian kompresor belum memuat titik jepit',
+    'Ditemukan saat audit CSMS dan dikonfirmasi pada investigasi kejadian jari terjepit.', 'audit', 'Audit CSMS', 'documents', 'critical',
+    'pengawas@demo.lourdes.test', 3);
+  perform pg_temp.tindakan('finding', t7, 'Revisi JSA dan sosialisasikan', 'corrective', 'pengawas@demo.lourdes.test', 3, 'closed');
+  perform pg_temp.as_user('hse@demo.lourdes.test');
+  perform __APP__.finding_close(t7, 'JSA revisi sudah disahkan dan disosialisasikan');
+  t2 := pg_temp.temuan('hse@demo.lourdes.test', 'Workshop Service', 'APAR workshop belum diinspeksi bulan September',
+    'Label inspeksi APAR di workshop terakhir bulan Agustus.', 'inspection', 'INS-2026-0228', 'equipment_ppe', 'high', 'hse@demo.lourdes.test', 0);
+  t1 := pg_temp.temuan('hse@demo.lourdes.test', 'Workshop Service', 'Padlock LOTO tidak terpasang saat perbaikan unit E5126',
+    'Saat inspeksi pekerjaan perbaikan AC unit E5126 · PC2000, ditemukan teknisi melakukan pekerjaan pada panel kelistrikan tanpa memasang padlock LOTO. Tag informasi sudah tersedia, namun energi belum diamankan menggunakan padlock personal.',
+    'inspection', 'INS-2026-0230', 'operational_safety', 'critical', 'pengawas@demo.lourdes.test', 2);
+  perform pg_temp.tindakan('finding', t1, 'Pasang padlock LOTO pada seluruh toolkit teknisi', 'corrective', 'pengawas@demo.lourdes.test', 2, 'in_progress');
+  perform pg_temp.tindakan('finding', t1, 'Sosialisasi ulang prosedur LOTO kepada tim Service AC', 'preventive', 'pjo@demo.lourdes.test', 4, 'waiting');
+  perform pg_temp.tindakan('finding', t1, 'Tambahkan pemeriksaan LOTO pada checklist pengawas', 'preventive', 'pengawas@demo.lourdes.test', 1, 'closed');
+  t4 := pg_temp.temuan('hse@demo.lourdes.test', 'Bay 3', 'Housekeeping area penyimpanan refrigerant belum standar',
+    'Tabung refrigerant tidak diikat dan tercampur tabung kosong.', 'inspection', 'INS-2026-0222', 'housekeeping', 'medium', 'scm@demo.lourdes.test', 6);
+  perform pg_temp.tindakan('finding', t4, 'Pasang rak dan rantai pengaman tabung', 'corrective', 'scm@demo.lourdes.test', 6, 'waiting');
+  t3 := pg_temp.temuan('pengawas@demo.lourdes.test', 'Bay 3', 'Kotak P3K kurang perlengkapan',
+    'Plester dan kassa steril habis.', 'observation', 'OBS-2026-0518', 'occupational_health', 'medium', 'hr@demo.lourdes.test', 9);
+  t5 := pg_temp.temuan('pengawas@demo.lourdes.test', 'Hauling Road', 'Checklist harian unit DA54853 belum ditandatangani',
+    'Checklist P2H tiga hari terakhir tanpa tanda tangan pengawas.', 'observation', 'OBS-2026-0509', 'documents', 'low',
+    'karyawan@demo.lourdes.test', 11);
+  perform pg_temp.tindakan('finding', t5, 'Lengkapi tanda tangan checklist P2H', 'corrective', 'karyawan@demo.lourdes.test', 11, 'open');
+
+  perform set_config('request.jwt.claims', '', true);
+  perform set_config('request.jwt.claim.sub', '', true);
+
+  -- tanggal tersebar beberapa bulan (tanpa log baru)
+  alter table __APP__.incidents disable trigger incidents_log;
+  alter table __APP__.findings disable trigger findings_log;
+  perform pg_temp.mundur('incidents', k1, 124); perform pg_temp.mundur('incidents', k5, 90);
+  perform pg_temp.mundur('incidents', k4, 75);  perform pg_temp.mundur('incidents', k2, 67);
+  perform pg_temp.mundur('incidents', k3, 56);  perform pg_temp.mundur('incidents', k6, 43);
+  perform pg_temp.mundur('incidents', k7, 36);  perform pg_temp.mundur('incidents', k8, 24);
+  perform pg_temp.mundur('findings', t8, 25);   perform pg_temp.mundur('findings', t6, 20);
+  perform pg_temp.mundur('findings', t7, 18);   perform pg_temp.mundur('findings', t2, 16);
+  perform pg_temp.mundur('findings', t1, 13);   perform pg_temp.mundur('findings', t4, 11);
+  perform pg_temp.mundur('findings', t3, 9);    perform pg_temp.mundur('findings', t5, 7);
+  -- contoh terlambat (overdue)
+  update __APP__.findings set due_date = current_date - 5 where id = t1;
+  update __APP__.findings set due_date = current_date - 2 where id = t2;
+  update __APP__.findings set due_date = current_date - 6 where id = t6;
+  alter table __APP__.incidents enable trigger incidents_log;
+  alter table __APP__.findings enable trigger findings_log;
+  alter table __APP__.pica_actions disable trigger pica_actions_log;
+  update __APP__.pica_actions set due_date = current_date - 3 where finding_id = t1 and status = 'in_progress';
+  alter table __APP__.pica_actions enable trigger pica_actions_log;
+end $$;
+
 -- ---------- konfigurasi approval (tanpa auth.uid → log/CCTV tercatat sebagai sistem) ----------
 insert into __APP__.department_heads (department_id, company_code, user_id)
 select d.id, c.code, p.id

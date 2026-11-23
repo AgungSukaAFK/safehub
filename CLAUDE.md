@@ -156,9 +156,15 @@ Rancangan modul & keputusan D1–D15 ada di [rancangan-implementasi.md](rancanga
   sampai Pengaturan Pengingat), `RestrictedData`, `KpiHelp`/`KpiStatusBadge`, `SourceChip`. Peta status K3
   (`WORKFLOW_STATUS`, `EXPIRY_STATUS`, `KPI_STATUS`) di `lib/status.ts`.
 - Folder prototipe `GMI Safety Management App/` dikecualikan dari tsconfig & eslint; jangan diimpor.
-- `npm run db:test` butuh Docker. Tanpa Docker, uji yang sama bisa dijalankan dengan cluster Postgres
-  lokal sementara + tiruan role/`auth` Supabase (tidak disimpan di repo). `types/database.ts` lalu
-  diperbarui manual mengikuti format generator.
+- **Top bar HP (< sm)**: breadcrumb disembunyikan; Bantuan Admin & Tampilan pindah ke menu profil
+  (`AccountMenu`, item `sm:hidden`; Tampilan → `/profil#tampilan`; badge Bantuan = titik di avatar).
+  Wadah Cari `min-width:auto` di bawah `lg`, pemilih site `min-w-0 shrink` (label terpotong). QA cek
+  kontrol top bar tidak bertumpuk @360/@390.
+- `npm run db:test` butuh Docker. `types/database.ts` SELALU dari `npm run db:types` (bukan manual).
+- **`db:local` di Supabase lokal bersama** (`db-lourdes` juga dipakai app lain, mis. `boilerplate_demo`):
+  `reset` menghapus SEMUA user `@demo.lourdes.test` (milik app lain juga) → pakai `apply` bila schema
+  belum ada; `expose` menimpa `pgrst.db_schemas` → tambahkan kembali schema app lain. Seed tidak membuat
+  dokumen Pengajuan; QA butuh beberapa (buat lewat `pengajuan_save` sebagai budi/GMI & sari/GIS).
 - **App baru**: `scripts/create-app.sh <app_id> "<Nama>"` (salin, ganti penanda, migration gabungan di
   `db/out/` via mode `migration` = tanpa `09_verify`, `git init`). `09_verify` hanya lewat `--dengan-verifikasi`.
 - **QA**: `npm run qa` (Chrome headless via DevTools Protocol, `scripts/qa/`), jalankan terhadap build

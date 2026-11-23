@@ -5,7 +5,7 @@ Guideline pengembangan fitur berdasarkan prototipe UI Figma di folder
 kode. Detail teknis mengikuti [CLAUDE.md](CLAUDE.md), [frontend-guide.md](frontend-guide.md), dan
 [backend-guide.md](backend-guide.md).
 
-> Status: draf v0.4 (2026-11-23). D1–D5, D7, D14, D15 sudah diputuskan. Fase 0 selesai di cabang
+> Status: draf v0.5 (2026-11-23). D1–D5, D7, D13–D15 sudah diputuskan. Fase 0 selesai di cabang
 > `fase-0-fondasi` (lihat catatan di §4.0). Bagian bertanda **[KEPUTUSAN]** memakai asumsi default. Konfirmasi
 > dulu sebelum modul terkait dikerjakan, lalu ubah tandanya menjadi **[DIPUTUSKAN]**.
 
@@ -457,6 +457,8 @@ Format setiap modul: **Entitas → Status → Peran → Layar → Catatan khusus
   bagian "Safe Hub: fondasi K3"). Persona memakai email per fungsi (`hse@demo.lourdes.test`, dst.)
   supaya user contoh Pengajuan (`andi@`, `budi@`, ...) tidak berubah.
 - "Tab Peran K3" dibuat sebagai kartu di `/pengguna/[id]` (halaman itu berbentuk kartu, bukan tab).
+- Disetujui (2026-11-23): cookie `safehub-site`, `CompanyAccent` tidak dipasang, matriks akses ditunda ke
+  fase 1, kartu Peran K3. Top bar HP: Bantuan & Tampilan pindah ke menu profil (< sm).
 - **Ditunda:** matriks akses fungsi × modul × aksi di `/pengguna` (§4.13). Belum ada modul ber-fungsi,
   jadi matriksnya akan kosong; dibuat bersama modul pertama (fase 1) dari konstanta yang sama dengan
   `NAV_ITEMS`.
@@ -788,6 +790,6 @@ Isi kolom "Keputusan" saat sudah dikonfirmasi, lalu perbarui bagian terkait.
 | D10 | Email sebagai kanal pengingat? (§4.12) | Tidak; in-app + push | |
 | D11 | Ambang KPI kesehatan (CMR ≤ 2,21, dst.) dan target leading indicator: siapa pemilik & di mana diatur? | Kamus KPI (kolom ambang, versi) | |
 | D12 | Sistem maintenance yang ada: schema Lourdes di DB yang sama, API, atau hanya ekspor Excel? Apakah ada URL detail per record? (§4.9) | View read-only lintas schema bila satu DB | |
-| D13 | Perlu pembatasan user per site (`members.location_ids`), atau semua user melihat semua site dalam company-nya? (§2.2) | Kolom disiapkan, default semua site | Default diterapkan di fase 0 (kolom + UI ada); belum dikonfirmasi |
+| D13 | Perlu pembatasan user per site (`members.location_ids`), atau semua user melihat semua site dalam company-nya? (§2.2) | Kolom disiapkan, default semua site | **Setuju default: semua site, batas opsional per user oleh admin** (2026-11-23) |
 | D14 | "Review EHS = hse senior" dibedakan bagaimana? (§4.1) | n/a | **Fungsi K3 baru `hse_senior`** (2026-11-21) |
 | D15 | Field unit sebelum integrasi maintenance (fase 1–4)? (§4.9) | n/a | **Isian bebas kode + label snapshot** (2026-11-21) |

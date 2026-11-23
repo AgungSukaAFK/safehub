@@ -178,7 +178,8 @@ export function ProfileDataCard({ nrp }: { nrp: string | null }) {
 export function AppearanceCard() {
   return (
     <Content title="Tampilan" description="Berlaku di perangkat ini saja.">
-      <div className="space-y-5">
+      {/* target /profil#tampilan dari menu profil HP */}
+      <div id="tampilan" className="scroll-mt-24 space-y-5">
         <div>
           <ThemeModePanel />
         </div>

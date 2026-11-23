@@ -1,11 +1,11 @@
 "use client";
 
 // Isi menu akun (dipakai NavUser di sidebar & TopbarProfile): kepala (avatar, nama, email, role),
-// Profil Saya, Lihat Foto, Keluar (merah, dengan konfirmasi).
+// Profil Saya, Lihat Foto, (< sm) Bantuan Admin & Tampilan, Keluar (merah, dengan konfirmasi).
 
 import { useState, type ReactElement } from "react";
 import Link from "next/link";
-import { ImageIcon, LogOut, SquareUserRound } from "lucide-react";
+import { Headset, ImageIcon, LogOut, Palette, SquareUserRound } from "lucide-react";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { useApp } from "@/components/providers/app-context";
 import {
@@ -52,7 +52,7 @@ export function AccountMenu({
   align?: "start" | "end" | "center";
   side?: "top" | "bottom" | "right" | "left";
 }) {
-  const { access, avatarUrl } = useApp();
+  const { access, avatarUrl, badges } = useApp();
   const [logoutOpen, setLogoutOpen] = useState(false);
   const [viewerOpen, setViewerOpen] = useState(false);
   const name = access.profile.fullName;
@@ -95,6 +95,18 @@ export function AccountMenu({
                 Lihat Foto
               </DropdownMenuItem>
             )}
+            {/* < sm: pengganti tombol Bantuan & Tampilan di top bar */}
+            <DropdownMenuItem className="sm:hidden" render={<Link href="/bantuan" />}>
+              <Headset />
+              <span className="grow">Bantuan Admin</span>
+              {badges.support > 0 && (
+                <span className="rounded-full bg-red-600 px-1.5 text-[11px] font-semibold text-white tabular-nums">{badges.support}</span>
+              )}
+            </DropdownMenuItem>
+            <DropdownMenuItem className="sm:hidden" render={<Link href="/profil#tampilan" />}>
+              <Palette />
+              Tampilan
+            </DropdownMenuItem>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
           <DropdownMenuItem variant="destructive" onClick={() => setLogoutOpen(true)}>

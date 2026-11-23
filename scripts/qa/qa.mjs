@@ -209,6 +209,15 @@ try {
         return hits; })()`);
       check(`top bar @${w}: kontrol tidak bertumpuk`, overlap.length === 0, overlap);
     }
+    // < sm: Bantuan & Tampilan ada di menu profil, nama site terbaca (bukan hanya "K…")
+    const siteW = await page.eval(`Math.round(document.querySelector('[data-app-topbar] [aria-label^="Site:"] .truncate')?.getBoundingClientRect().width ?? 0)`);
+    check("top bar @390: label site cukup lebar (≥ 60 px)", siteW >= 60, siteW);
+    const mp = await page.eval(`(() => { const r = document.querySelector('[aria-label="Menu profil"]').getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; })()`);
+    for (const type of ["mousePressed", "mouseReleased"]) await page.send("Input.dispatchMouseEvent", { type, x: mp.x, y: mp.y, button: "left", clickCount: 1 });
+    await sleep(400);
+    const menu = await page.eval(`[...document.querySelectorAll('[role="menuitem"]')].map(e => e.innerText.trim())`);
+    check("menu profil HP: Bantuan Admin & Tampilan", menu.some((t) => t.startsWith("Bantuan Admin")) && menu.includes("Tampilan"), menu);
+    await page.send("Input.dispatchKeyEvent", { type: "keyDown", key: "Escape", code: "Escape", windowsVirtualKeyCode: 27 });
     await page.viewport(1280, 900);
   });
 

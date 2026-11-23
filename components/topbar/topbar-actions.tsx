@@ -94,17 +94,21 @@ function TopbarAppearance() {
 }
 
 function TopbarProfile() {
-  const { access, avatarUrl } = useApp();
+  const { access, avatarUrl, badges } = useApp();
   return (
     <AccountMenu
       trigger={
         <button
           type="button"
           aria-label="Menu profil"
-          className="flex items-center gap-2 rounded-full p-0.5 transition-colors outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring data-popup-open:bg-accent lg:pr-2.5"
+          className="relative flex items-center gap-2 rounded-full p-0.5 transition-colors outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring data-popup-open:bg-accent lg:pr-2.5"
         >
           <UserAvatar name={access.profile.fullName} src={avatarUrl} className="size-8 sm:size-9" />
           <span className="hidden max-w-32 truncate text-sm font-medium lg:block">{access.profile.fullName}</span>
+          {/* < sm: badge Bantuan ikut pindah ke avatar (tombol Bantuan ada di menu profil) */}
+          {badges.support > 0 && (
+            <span className="pointer-events-none absolute -top-0.5 -right-0.5 size-2.5 rounded-full bg-red-600 ring-2 ring-background sm:hidden" aria-hidden />
+          )}
         </button>
       }
     />
@@ -118,8 +122,11 @@ export function TopbarActions() {
         <CreateMenu />
       </div>
       <TopbarInbox />
-      <TopbarHelp />
-      <TopbarAppearance />
+      {/* < sm: Bantuan & Tampilan pindah ke menu profil supaya nama site di top bar terbaca */}
+      <div className="hidden sm:contents">
+        <TopbarHelp />
+        <TopbarAppearance />
+      </div>
       <div className="mx-1 h-5 w-px bg-border sm:mx-1.5" aria-hidden />
       <TopbarProfile />
     </div>

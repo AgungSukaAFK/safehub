@@ -3,7 +3,7 @@
 // Tabel Pengguna & Akses (list standar §8): kolom di client karena urutannya bisa digeser user.
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Briefcase, Building2, Calendar, Eye, KeyRound, Mail, MapPin, ShieldCheck, UserMinus, UserPlus, Users } from "lucide-react";
+import { Briefcase, Building2, HardHat, Calendar, Eye, KeyRound, Mail, MapPin, ShieldCheck, UserMinus, UserPlus, Users } from "lucide-react";
 import { InfoItem } from "@/components/detail/info-item";
 import { DataTable, RowActionsMenu, type Column } from "@/components/list/data-table";
 import { ExcelDownloadMenu } from "@/components/list/excel-download-menu";
@@ -19,7 +19,8 @@ import { DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdow
 import { UserProfileCard } from "@/components/user/user-profile-card";
 import { formatDate, formatDateTime } from "@/lib/format";
 import type { PenggunaRow } from "@/lib/pengguna";
-import { ACTIVE_OPTIONS, PENGGUNA_SEARCH_FIELDS, ROLE_OPTIONS } from "@/lib/pengguna-rules";
+import { FUNCTION_LABELS } from "@/lib/functions";
+import { ACTIVE_OPTIONS, FUNCTION_OPTIONS, PENGGUNA_SEARCH_FIELDS, ROLE_OPTIONS } from "@/lib/pengguna-rules";
 import { ROLE_LABELS, type Role } from "@/lib/roles";
 import { cn } from "@/lib/utils";
 import { ChangeRoleDialog, GrantAccessDialog, RevokeAccessDialog, type AccessTarget } from "./access-dialogs";
@@ -60,6 +61,23 @@ const COLUMNS: Column<PenggunaRow>[] = [
     cell: (r) => <UserProfileCard userId={r.userId} name={r.name} avatarUrl={r.avatarUrl} subtitle={r.email} size="md" />,
   },
   { id: "role", label: "Role", sort: "asc", className: "w-24", cell: (r) => <RoleBadge role={r.role} /> },
+  {
+    id: "fungsi",
+    label: "Fungsi K3",
+    className: "w-48",
+    cell: (r) =>
+      r.functions.length ? (
+        <span className="flex flex-wrap gap-1">
+          {r.functions.map((f) => (
+            <span key={f} className="rounded border px-1.5 py-0.5 text-[11px] font-medium">
+              {FUNCTION_LABELS[f]}
+            </span>
+          ))}
+        </span>
+      ) : (
+        <span className="text-muted-foreground">-</span>
+      ),
+  },
   {
     id: "perusahaan",
     label: "Perusahaan",
@@ -136,6 +154,7 @@ export function PenggunaTable({
         <FilterPanel chips={chips}>
           <FilterFields>
             <FilterMultiSelect param="role" label="Role" options={ROLE_OPTIONS} />
+            <FilterMultiSelect param="fungsi" label="Fungsi K3" options={FUNCTION_OPTIONS} />
             <FilterMultiSelect param="perusahaan" label="Perusahaan" options={companyOptions} />
             <FilterMultiSelect param="departemen" label="Departemen" options={departmentOptions} />
             <FilterMultiSelect param="lokasi" label="Lokasi" options={locationOptions} />
@@ -159,7 +178,7 @@ export function PenggunaTable({
             ) : undefined
           }
           filtered={filtered}
-          className="min-w-[1100px]"
+          className="min-w-[1300px]"
           actions={(r) => (
             <RowActionsMenu>
               <DropdownMenuItem onClick={() => router.push(`/pengguna/${r.userId}`)}>
@@ -182,6 +201,7 @@ export function PenggunaTable({
         <QuickViewDialog open onOpenChange={(o) => !o && setQuick(null)} title={quick.name} description={quick.email ?? undefined} href={`/pengguna/${quick.userId}`}>
           <div className="space-y-2">
             <InfoItem icon={ShieldCheck} label="Role" value={<RoleBadge role={quick.role} />} />
+            <InfoItem icon={HardHat} label="Fungsi K3" value={quick.functions.map((f) => FUNCTION_LABELS[f]).join(", ") || "-"} />
             <InfoItem icon={Users} label="Status akun" value={<ActiveBadge active={quick.isActive} />} />
             <InfoItem icon={Building2} label="Perusahaan" value={[quick.company, quick.department].filter(Boolean).join(" · ")} />
             <InfoItem icon={Briefcase} label="Jabatan" value={quick.jobTitle} />

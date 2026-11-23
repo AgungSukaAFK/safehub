@@ -5,6 +5,7 @@ import "server-only";
 import type { FilterChip } from "@/components/list/filter-panel";
 import { APP_ID } from "@/lib/app-config";
 import type { ExcelColumn } from "@/lib/excel";
+import { FUNCTION_LABELS, FUNCTIONS, normalizeFunctions, type Fn } from "@/lib/functions";
 import { ACTIVE_STATUSES, PENGGUNA_SORTS } from "@/lib/pengguna-rules";
 import { labelsOf, type Option } from "@/lib/masters";
 import { getPeople, type Person } from "@/lib/people";
@@ -23,6 +24,7 @@ const BATCH = 1000;
 export type PenggunaFilters = {
   q: string;
   roles: Role[];
+  functions: Fn[];
   companies: string[];
   departments: string[];
   locations: string[];
@@ -39,6 +41,7 @@ export function parsePenggunaParams(
   return {
     q: textParam(sp, "q"),
     roles: listParam(sp, "role", ROLES),
+    functions: listParam(sp, "fungsi", FUNCTIONS),
     companies: listParam(sp, "perusahaan", allowed.companies),
     departments: listParam(sp, "departemen", allowed.departments),
     locations: listParam(sp, "lokasi", allowed.locations),
@@ -52,6 +55,8 @@ export function parsePenggunaParams(
 export function penggunaChips(f: PenggunaFilters, masters: { departments: Option[]; locations: Option[] }): FilterChip[] {
   const chips: FilterChip[] = [];
   if (f.roles.length) chips.push({ key: "role", label: "Role", value: f.roles.map((r) => ROLE_LABELS[r]).join(", "), params: ["role"] });
+  if (f.functions.length)
+    chips.push({ key: "fungsi", label: "Fungsi K3", value: f.functions.map((x) => FUNCTION_LABELS[x]).join(", "), params: ["fungsi"] });
   if (f.companies.length) chips.push({ key: "perusahaan", label: "Perusahaan", value: f.companies.join(", "), params: ["perusahaan"] });
   if (f.departments.length)
     chips.push({ key: "departemen", label: "Departemen", value: labelsOf(f.departments, masters.departments), params: ["departemen"] });
@@ -80,6 +85,7 @@ export type PenggunaRow = {
   location: string | null;
   isActive: boolean;
   role: Role;
+  functions: Fn[];
   grantedAt: string;
   grantedBy: Pick<Person, "id" | "name" | "avatarUrl"> | null;
 };
@@ -95,7 +101,8 @@ const SORT_COLUMN: Record<(typeof PENGGUNA_SORTS)[number], string> = {
   diberikan: "granted_at",
 };
 
-function baseQuery(supabase: ServerClient, f: PenggunaFilters, count: boolean) {
+/** userIds: hasil pra-filter fungsi K3 (members ada di schema app, tidak bisa di-embed dari public). */
+function baseQuery(supabase: ServerClient, f: PenggunaFilters, count: boolean, userIds: string[] | null) {
   let q = supabase
     .schema("public")
     .from("app_access")
@@ -108,6 +115,7 @@ function baseQuery(supabase: ServerClient, f: PenggunaFilters, count: boolean) {
     q = q.or(`and(${groups})`, { referencedTable: "profile" });
   }
   if (f.roles.length) q = q.in("role", f.roles);
+  if (userIds) q = q.in("user_id", userIds);
   if (f.companies.length) q = q.in("profile.company", f.companies);
   if (f.departments.length) q = q.in("profile.department_id", f.departments);
   if (f.locations.length) q = q.in("profile.location_id", f.locations);
@@ -137,8 +145,26 @@ type RawRow = {
 
 const one = <T,>(v: T | T[] | null | undefined): T | null => (Array.isArray(v) ? (v[0] ?? null) : (v ?? null));
 
+/** Pra-filter fungsi K3: user yang punya salah satu fungsi terpilih (null = tanpa filter). */
+async function usersWithFunctions(supabase: ServerClient, fns: Fn[]): Promise<string[] | null> {
+  if (!fns.length) return null;
+  const { data, error } = await supabase.from("members").select("user_id").overlaps("functions", fns);
+  if (error) throw error;
+  return (data ?? []).map((m) => m.user_id);
+}
+
+async function functionsOf(supabase: ServerClient, userIds: string[]): Promise<Map<string, Fn[]>> {
+  const map = new Map<string, Fn[]>();
+  for (let i = 0; i < userIds.length; i += BATCH) {
+    const { data, error } = await supabase.from("members").select("user_id, functions").in("user_id", userIds.slice(i, i + BATCH));
+    if (error) throw error;
+    (data ?? []).forEach((m) => map.set(m.user_id, normalizeFunctions(m.functions ?? [])));
+  }
+  return map;
+}
+
 async function hydrate(supabase: ServerClient, raw: RawRow[]): Promise<PenggunaRow[]> {
-  const people = await getPeople(supabase, raw.map((r) => r.granted_by));
+  const [people, fns] = await Promise.all([getPeople(supabase, raw.map((r) => r.granted_by)), functionsOf(supabase, raw.map((r) => r.user_id))]);
   return raw.map((r) => {
     const g = r.granted_by ? people.get(r.granted_by) : null;
     return {
@@ -152,6 +178,7 @@ async function hydrate(supabase: ServerClient, raw: RawRow[]): Promise<PenggunaR
       location: one(r.profile.locations)?.name ?? null,
       isActive: r.profile.is_active,
       role: isRole(r.role) ? r.role : "viewer",
+      functions: fns.get(r.user_id) ?? [],
       grantedAt: r.granted_at,
       grantedBy: g ? { id: g.id, name: g.name, avatarUrl: g.avatarUrl } : null,
     };
@@ -162,10 +189,12 @@ export class TooManyRowsError extends Error {}
 
 /** Satu halaman (tabel) atau semua baris (`all: true`, ekspor) dengan filter yang sama. */
 export async function listPengguna(supabase: ServerClient, f: PenggunaFilters, opts: { all?: boolean } = {}) {
+  const userIds = await usersWithFunctions(supabase, f.functions);
+  if (userIds && !userIds.length) return { rows: [] as PenggunaRow[], total: 0 };
   if (opts.all) {
     const raw: RawRow[] = [];
     for (let from = 0; ; from += BATCH) {
-      const { data, error } = await baseQuery(supabase, f, false).range(from, from + BATCH - 1);
+      const { data, error } = await baseQuery(supabase, f, false, userIds).range(from, from + BATCH - 1);
       if (error) throw error;
       raw.push(...((data ?? []) as unknown as RawRow[]));
       if (raw.length > MAX_EXPORT_ROWS) throw new TooManyRowsError("Terlalu banyak data, persempit filter dulu.");
@@ -174,7 +203,7 @@ export async function listPengguna(supabase: ServerClient, f: PenggunaFilters, o
     return { rows: await hydrate(supabase, raw), total: raw.length };
   }
   const from = (f.page - 1) * f.size;
-  const { data, error, count } = await baseQuery(supabase, f, true).range(from, from + f.size - 1);
+  const { data, error, count } = await baseQuery(supabase, f, true, userIds).range(from, from + f.size - 1);
   if (error) throw error;
   return { rows: await hydrate(supabase, (data ?? []) as unknown as RawRow[]), total: count ?? 0 };
 }
@@ -192,6 +221,7 @@ export const PENGGUNA_EXPORT_COLUMNS: ExcelColumn<PenggunaRow>[] = [
   { header: "Jabatan", value: (r) => r.jobTitle },
   { header: "Lokasi", value: (r) => r.location },
   { header: "Role", value: (r) => ROLE_LABELS[r.role] },
+  { header: "Fungsi K3", value: (r) => r.functions.map((x) => FUNCTION_LABELS[x]).join(", ") || null },
   { header: "Status Akun", value: (r) => (r.isActive ? "Aktif" : "Nonaktif") },
   { header: "Diberikan Oleh", value: (r) => r.grantedBy?.name ?? null },
   { header: "Tanggal Diberikan", type: "datetime", value: (r) => r.grantedAt },
@@ -222,7 +252,15 @@ export async function countOtherActiveAdmins(supabase: ServerClient, exceptUserI
 export type PenggunaDetail = {
   person: Person & { isActive: boolean; nrp: string | null };
   access: { role: Role; grantedAt: string; grantedBy: Pick<Person, "id" | "name" | "avatarUrl"> | null } | null;
-  member: { id: string; team: string | null; approvalLimit: number | null; adminNote: string | null; updatedAt: string } | null;
+  member: {
+    id: string;
+    team: string | null;
+    approvalLimit: number | null;
+    adminNote: string | null;
+    functions: Fn[];
+    locationIds: string[] | null;
+    updatedAt: string;
+  } | null;
 };
 
 export async function getPenggunaDetail(supabase: ServerClient, userId: string): Promise<PenggunaDetail | null> {
@@ -234,7 +272,7 @@ export async function getPenggunaDetail(supabase: ServerClient, userId: string):
       .eq("id", userId)
       .maybeSingle(),
     pub.from("app_access").select("role, granted_at, granted_by").eq("app_id", APP_ID).eq("user_id", userId).maybeSingle(),
-    supabase.from("members").select("id, team, approval_limit, admin_note, updated_at").eq("user_id", userId).maybeSingle(),
+    supabase.from("members").select("id, team, approval_limit, admin_note, functions, location_ids, updated_at").eq("user_id", userId).maybeSingle(),
   ]);
   if (!p.data) return null;
   const granter = a.data?.granted_by ? (await getPeople(supabase, [a.data.granted_by])).get(a.data.granted_by) : null;
@@ -266,6 +304,8 @@ export async function getPenggunaDetail(supabase: ServerClient, userId: string):
           team: m.data.team,
           approvalLimit: m.data.approval_limit === null ? null : Number(m.data.approval_limit),
           adminNote: m.data.admin_note,
+          functions: normalizeFunctions(m.data.functions ?? []),
+          locationIds: m.data.location_ids ?? null,
           updatedAt: m.data.updated_at,
         }
       : null,

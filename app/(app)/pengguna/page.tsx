@@ -10,7 +10,7 @@ import { getDirectoryMasters, listPengguna, parsePenggunaParams, penggunaChips }
 import { createClient } from "@/lib/supabase/server";
 import { GrantAccessButton, PenggunaTable } from "./pengguna-table";
 
-export const metadata: Metadata = { title: "Pengguna & Akses" };
+export const metadata: Metadata = { title: "Pengguna & Peran" };
 
 export default async function PenggunaPage({ searchParams }: PageProps<"/pengguna">) {
   const access = await requireAccess("admin");
@@ -31,8 +31,8 @@ export default async function PenggunaPage({ searchParams }: PageProps<"/penggun
       {/* data orang lain / percakapan pribadi: jangan disimpan untuk offline */}
       <NoOffline />
       <PageHeader
-        title="Pengguna & Akses"
-        description="Siapa saja yang bisa membuka app ini dan role-nya."
+        title="Pengguna & Peran"
+        description="Siapa saja yang bisa membuka app ini, role, dan fungsi K3-nya."
         actions={<GrantAccessButton />}
       />
       <div className="col-span-12 flex gap-3 rounded-lg border bg-muted/40 p-4 text-sm">

@@ -22,7 +22,9 @@ const MAX_TEXT = 120;
 
 function fmt(v: unknown, f: FieldLabel | undefined, people: Record<string, string>): string {
   if (v === null || v === undefined || v === "") return "(kosong)";
-  if (Array.isArray(v)) return v.length ? v.map((x) => fmt(x, { ...f, format: "text" } as FieldLabel, people)).join("; ") : "(kosong)";
+  // elemen array: format "status" tetap dipakai (mis. daftar fungsi K3), selain itu teks
+  if (Array.isArray(v))
+    return v.length ? v.map((x) => fmt(x, { ...f, format: f?.format === "status" ? "status" : "text" } as FieldLabel, people)).join("; ") : "(kosong)";
   switch (f?.format) {
     case "rupiah":
       return formatRupiah(Number(v));

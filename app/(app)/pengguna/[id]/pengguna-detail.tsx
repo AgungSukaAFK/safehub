@@ -21,6 +21,7 @@ import type { PengajuanBrief } from "@/lib/pengajuan";
 import type { PenggunaDetail } from "@/lib/pengguna";
 import { MEMBER_FIELD_LABELS } from "@/lib/pengguna-rules";
 import { DOCUMENT_STATUS } from "@/lib/status";
+import { K3RolesCard } from "./k3-roles-card";
 import { ChangeRoleDialog, GrantAccessDialog, RevokeAccessDialog, type AccessTarget } from "../access-dialogs";
 import { saveMemberAction } from "../actions";
 import { ActiveBadge, RoleBadge } from "../pengguna-table";
@@ -28,10 +29,13 @@ import { ActiveBadge, RoleBadge } from "../pengguna-table";
 export function PenggunaDetailView({
   detail,
   docs,
+  sites,
   currentUserId,
 }: {
   detail: PenggunaDetail;
   docs: { total: number; rows: PengajuanBrief[] };
+  /** Site aktif (public.locations) untuk batas site Peran K3 */
+  sites: { value: string; label: string }[];
   currentUserId: string;
 }) {
   const { person, access, member } = detail;
@@ -39,6 +43,11 @@ export function PenggunaDetailView({
   const [roleTarget, setRoleTarget] = useState<AccessTarget | null>(null);
   const [revokeTarget, setRevokeTarget] = useState<AccessTarget | null>(null);
   const [grantOpen, setGrantOpen] = useState(false);
+  // Riwayat members: nama site untuk kolom location_ids
+  const fieldLabels = {
+    ...MEMBER_FIELD_LABELS,
+    location_ids: { ...MEMBER_FIELD_LABELS.location_ids, statuses: Object.fromEntries(sites.map((s) => [s.value, { label: s.label }])) },
+  };
   const target: AccessTarget | null = access ? { userId: person.id, name: person.name, role: access.role } : null;
 
   return (
@@ -104,7 +113,18 @@ export function PenggunaDetailView({
         )}
       </Content>
 
-      <MemberCard userId={person.id} member={member} />
+      <K3RolesCard
+        key={member?.updatedAt ?? "baru"}
+        userId={person.id}
+        memberId={member?.id ?? null}
+        initialFunctions={member?.functions ?? []}
+        initialLocationIds={member?.locationIds ?? null}
+        sites={sites}
+        hasAccess={!!access}
+        fieldLabels={fieldLabels}
+      />
+
+      <MemberCard userId={person.id} member={member} fieldLabels={fieldLabels} />
 
       <Content
         size="md"
@@ -141,7 +161,7 @@ export function PenggunaDetailView({
   );
 }
 
-function MemberCard({ userId, member }: { userId: string; member: PenggunaDetail["member"] }) {
+function MemberCard({ userId, member, fieldLabels }: { userId: string; member: PenggunaDetail["member"]; fieldLabels: typeof MEMBER_FIELD_LABELS }) {
   const { state, pending, onSubmit } = useFormAction(saveMemberAction);
   useActionToast(state);
   const [limit, setLimit] = useState(member?.approvalLimit !== null && member?.approvalLimit !== undefined ? String(member.approvalLimit) : "");
@@ -156,7 +176,7 @@ function MemberCard({ userId, member }: { userId: string; member: PenggunaDetail
           <ActivityLogDialog
             entity="members"
             recordId={member.id}
-            fieldLabels={MEMBER_FIELD_LABELS}
+            fieldLabels={fieldLabels}
             trigger={
               <Button variant="outline" size="sm">
                 <History /> Riwayat

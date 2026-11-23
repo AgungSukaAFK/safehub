@@ -8,8 +8,9 @@ import { dbError, fail, invalid, NOT_ALLOWED, ok, type FormState } from "@/lib/a
 import { APP_ID } from "@/lib/app-config";
 import { actionAccess } from "@/lib/auth";
 import { cctv } from "@/lib/cctv";
+import { FUNCTION_LABELS, normalizeFunctions, type Fn } from "@/lib/functions";
 import { countOtherActiveAdmins, countPengguna } from "@/lib/pengguna";
-import { memberSchema } from "@/lib/pengguna-rules";
+import { k3RolesSchema, memberSchema } from "@/lib/pengguna-rules";
 import { isRole, ROLE_LABELS, type Role } from "@/lib/roles";
 import { createClient, type ServerClient } from "@/lib/supabase/server";
 import { escapeLike, isUuid } from "@/lib/utils";
@@ -170,4 +171,51 @@ export async function saveMemberAction(_prev: FormState, fd: FormData): Promise<
   if (error) return dbError(error);
   revalidatePath(`/pengguna/${userId}`);
   return ok("Data anggota disimpan.");
+}
+
+/**
+ * Simpan fungsi K3 + batas site satu orang (rancangan §2.1, §2.2). Hanya admin app; members_guard
+ * menolak perubahan oleh non-admin. Log ditulis trigger members_log; CCTV access.change_function.
+ */
+export async function saveK3RolesAction(userId: string, input: { functions: string[]; location_ids: string[] | null }): Promise<FormState> {
+  const me = await actionAccess("admin");
+  if (!me || !isUuid(userId)) return NOT_ALLOWED;
+  const parsed = k3RolesSchema.safeParse(input);
+  if (!parsed.success) return invalid(parsed.error);
+  const functions = normalizeFunctions(parsed.data.functions);
+  const locationIds = parsed.data.location_ids ? [...new Set(parsed.data.location_ids)] : null;
+
+  const supabase = await createClient();
+  const [person, before, sites] = await Promise.all([
+    profileName(supabase, userId),
+    supabase.from("members").select("functions, location_ids").eq("user_id", userId).maybeSingle(),
+    locationIds ? supabase.schema("public").from("locations").select("id").in("id", locationIds) : Promise.resolve({ data: [] as { id: string }[] }),
+  ]);
+  if (!person) return fail("Orang ini tidak ada di direktori.");
+  if (locationIds && (sites.data ?? []).length !== locationIds.length) return fail("Ada site yang tidak dikenal. Muat ulang halaman.");
+
+  const prevFns = normalizeFunctions(before.data?.functions ?? []);
+  const prevSites = before.data?.location_ids ?? null;
+  const sameFns = prevFns.join() === functions.join();
+  const sameSites = JSON.stringify(prevSites ? [...prevSites].sort() : null) === JSON.stringify(locationIds ? [...locationIds].sort() : null);
+  if (sameFns && sameSites) return ok("Tidak ada perubahan.");
+
+  const { error } = await supabase.from("members").upsert({ user_id: userId, functions, location_ids: locationIds }, { onConflict: "user_id" });
+  if (error) return dbError(error);
+
+  const label = (fns: Fn[]) => (fns.length ? fns.map((f) => FUNCTION_LABELS[f]).join(", ") : "tanpa fungsi");
+  await cctv({
+    category: "access",
+    action: "access.change_function",
+    severity: "notice",
+    summary: `Mengubah peran K3 ${person.full_name}: ${label(prevFns)} → ${label(functions)}${sameSites ? "" : " (batas site diubah)"}`,
+    entity: "members",
+    recordId: userId,
+    recordLabel: person.full_name,
+    companyCode: person.company ?? undefined,
+    url: `/pengguna/${userId}`,
+    metadata: { dari: prevFns, ke: functions, site_dari: prevSites, site_ke: locationIds },
+  });
+  revalidate(userId);
+  return ok(`Peran K3 ${person.full_name} disimpan.`, { self: userId === me.userId });
 }

@@ -3,7 +3,7 @@ import { NoOffline } from "@/components/pwa/pwa-support";
 import { notFound } from "next/navigation";
 import { requireAccess } from "@/lib/auth";
 import { listPengajuanByUser } from "@/lib/pengajuan";
-import { getPenggunaDetail } from "@/lib/pengguna";
+import { getDirectoryMasters, getPenggunaDetail } from "@/lib/pengguna";
 import { createClient } from "@/lib/supabase/server";
 import { isUuid } from "@/lib/utils";
 import { PenggunaDetailView } from "./pengguna-detail";
@@ -23,13 +23,13 @@ export default async function PenggunaDetailPage({ params }: PageProps<"/penggun
   const { id } = await params;
   if (!isUuid(id)) notFound();
   const supabase = await createClient();
-  const [detail, docs] = await Promise.all([getPenggunaDetail(supabase, id), listPengajuanByUser(supabase, id)]);
+  const [detail, docs, masters] = await Promise.all([getPenggunaDetail(supabase, id), listPengajuanByUser(supabase, id), getDirectoryMasters(supabase)]);
   if (!detail) notFound();
 
   return (
     <>
       <NoOffline />
-      <PenggunaDetailView detail={detail} docs={docs} currentUserId={access.userId} />
+      <PenggunaDetailView detail={detail} docs={docs} sites={masters.locations} currentUserId={access.userId} />
     </>
   );
 }

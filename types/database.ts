@@ -3,93 +3,238 @@ export type Json = string | number | boolean | null | { [key: string]: Json | un
 
 export type Database = {
   
-  "safehub": {
+  "public": {
           Tables: {
-            "areas": {
+            "app_access": {
                   Row: {
-                    "created_at": string,"created_by": string | null,"id": string,"is_active": boolean,"location_id": string,"name": string,"sort_order": number,"updated_at": string
+                    "app_id": string,"granted_at": string,"granted_by": string | null,"role": string,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"created_by"?: string | null,"id"?: string,"is_active"?: boolean,"location_id": string,"name": string,"sort_order"?: number,"updated_at"?: string
+                    "app_id": string,"granted_at"?: string,"granted_by"?: string | null,"role": string,"user_id": string
                   }
                   Update: {
-                    "created_at"?: string,"created_by"?: string | null,"id"?: string,"is_active"?: boolean,"location_id"?: string,"name"?: string,"sort_order"?: number,"updated_at"?: string
+                    "app_id"?: string,"granted_at"?: string,"granted_by"?: string | null,"role"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "app_access_app_id_fkey"
+      columns: ["app_id"]
+isOneToOne: false
+      referencedRelation: "apps"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "app_access_granted_by_fkey"
+      columns: ["granted_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "app_access_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"apps": {
+                  Row: {
+                    "created_at": string,"description": string | null,"id": string,"is_active": boolean,"name": string,"url": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"description"?: string | null,"id": string,"is_active"?: boolean,"name": string,"url"?: string | null
+                  }
+                  Update: {
+                    "created_at"?: string,"description"?: string | null,"id"?: string,"is_active"?: boolean,"name"?: string,"url"?: string | null
                   }
                   Relationships: [
                     
                   ]
-                },"areas_logs": {
+                },"audit_log": {
                   Row: {
-                    "action": string,"actor_id": string | null,"at": string,"changes": Json | null,"id": number,"note": string | null,"record_id": string
+                    "action": string,"actor_id": string | null,"at": string,"id": number,"new_data": Json | null,"old_data": Json | null,"record_id": string | null,"table_name": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "action": string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id": string
+                    "action": string,"actor_id"?: string | null,"at"?: string,"id"?: never,"new_data"?: Json | null,"old_data"?: Json | null,"record_id"?: string | null,"table_name": string
                   }
                   Update: {
-                    "action"?: string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id"?: string
+                    "action"?: string,"actor_id"?: string | null,"at"?: string,"id"?: never,"new_data"?: Json | null,"old_data"?: Json | null,"record_id"?: string | null,"table_name"?: string
                   }
                   Relationships: [
                     
                   ]
-                },"contractors": {
+                },"cctv_events": {
                   Row: {
-                    "company_code": string,"created_at": string,"created_by": string | null,"id": string,"is_active": boolean,"kind": string,"name": string,"updated_at": string
+                    "action": string,"actor_id": string | null,"actor_name": string | null,"app_id": string,"at": string,"category": string,"changes": Json | null,"client": Json | null,"company_code": string | null,"entity": string | null,"id": number,"metadata": Json | null,"record_id": string | null,"record_label": string | null,"severity": string,"summary": string,"url": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "company_code": string,"created_at"?: string,"created_by"?: string | null,"id"?: string,"is_active"?: boolean,"kind"?: string,"name": string,"updated_at"?: string
+                    "action": string,"actor_id"?: string | null,"actor_name"?: string | null,"app_id": string,"at"?: string,"category": string,"changes"?: Json | null,"client"?: Json | null,"company_code"?: string | null,"entity"?: string | null,"id"?: never,"metadata"?: Json | null,"record_id"?: string | null,"record_label"?: string | null,"severity"?: string,"summary": string,"url"?: string | null
                   }
                   Update: {
-                    "company_code"?: string,"created_at"?: string,"created_by"?: string | null,"id"?: string,"is_active"?: boolean,"kind"?: string,"name"?: string,"updated_at"?: string
+                    "action"?: string,"actor_id"?: string | null,"actor_name"?: string | null,"app_id"?: string,"at"?: string,"category"?: string,"changes"?: Json | null,"client"?: Json | null,"company_code"?: string | null,"entity"?: string | null,"id"?: never,"metadata"?: Json | null,"record_id"?: string | null,"record_label"?: string | null,"severity"?: string,"summary"?: string,"url"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "cctv_events_actor_id_fkey"
+      columns: ["actor_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "cctv_events_app_id_fkey"
+      columns: ["app_id"]
+isOneToOne: false
+      referencedRelation: "apps"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"companies": {
+                  Row: {
+                    "accent": string,"address": string | null,"code": string,"created_at": string,"email": string | null,"is_active": boolean,"is_group": boolean,"logo_landscape_url": string | null,"logo_url": string | null,"name": string,"phone": string | null,"short_name": string,"sort_order": number,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "accent"?: string,"address"?: string | null,"code": string,"created_at"?: string,"email"?: string | null,"is_active"?: boolean,"is_group"?: boolean,"logo_landscape_url"?: string | null,"logo_url"?: string | null,"name": string,"phone"?: string | null,"short_name": string,"sort_order"?: number,"updated_at"?: string
+                  }
+                  Update: {
+                    "accent"?: string,"address"?: string | null,"code"?: string,"created_at"?: string,"email"?: string | null,"is_active"?: boolean,"is_group"?: boolean,"logo_landscape_url"?: string | null,"logo_url"?: string | null,"name"?: string,"phone"?: string | null,"short_name"?: string,"sort_order"?: number,"updated_at"?: string
                   }
                   Relationships: [
                     
                   ]
-                },"contractors_logs": {
+                },"departments": {
                   Row: {
-                    "action": string,"actor_id": string | null,"at": string,"changes": Json | null,"id": number,"note": string | null,"record_id": string
+                    "code": string | null,"id": string,"is_active": boolean,"name": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "action": string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id": string
+                    "code"?: string | null,"id"?: string,"is_active"?: boolean,"name": string
                   }
                   Update: {
-                    "action"?: string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id"?: string
+                    "code"?: string | null,"id"?: string,"is_active"?: boolean,"name"?: string
                   }
                   Relationships: [
                     
                   ]
-                },"master_items": {
+                },"job_titles": {
                   Row: {
-                    "code": string,"color": string | null,"created_at": string,"created_by": string | null,"description": string | null,"id": string,"is_active": boolean,"kind": string,"name": string,"sort_order": number,"updated_at": string
+                    "id": string,"is_active": boolean,"name": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "code": string,"color"?: string | null,"created_at"?: string,"created_by"?: string | null,"description"?: string | null,"id"?: string,"is_active"?: boolean,"kind": string,"name": string,"sort_order"?: number,"updated_at"?: string
+                    "id"?: string,"is_active"?: boolean,"name": string
                   }
                   Update: {
-                    "code"?: string,"color"?: string | null,"created_at"?: string,"created_by"?: string | null,"description"?: string | null,"id"?: string,"is_active"?: boolean,"kind"?: string,"name"?: string,"sort_order"?: number,"updated_at"?: string
+                    "id"?: string,"is_active"?: boolean,"name"?: string
                   }
                   Relationships: [
                     
                   ]
-                },"master_items_logs": {
+                },"locations": {
                   Row: {
-                    "action": string,"actor_id": string | null,"at": string,"changes": Json | null,"id": number,"note": string | null,"record_id": string
+                    "id": string,"is_active": boolean,"name": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "action": string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id": string
+                    "id"?: string,"is_active"?: boolean,"name": string
                   }
                   Update: {
-                    "action"?: string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id"?: string
+                    "id"?: string,"is_active"?: boolean,"name"?: string
                   }
                   Relationships: [
                     
                   ]
-                },"approval_doc_types": {
+                },"maintenance_runs": {
+                  Row: {
+                    "id": number,"ran_at": string,"result": NonNullable<Json>
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "id"?: never,"ran_at"?: string,"result": NonNullable<Json>
+                  }
+                  Update: {
+                    "id"?: never,"ran_at"?: string,"result"?: NonNullable<Json>
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"profiles": {
+                  Row: {
+                    "avatar_url": string | null,"company": string | null,"created_at": string,"department_id": string | null,"email": string | null,"full_name": string,"id": string,"is_active": boolean,"job_title_id": string | null,"location_id": string | null,"nrp_gis": string | null,"nrp_gmi": string | null,"phone": string | null,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "avatar_url"?: string | null,"company"?: string | null,"created_at"?: string,"department_id"?: string | null,"email"?: string | null,"full_name": string,"id": string,"is_active"?: boolean,"job_title_id"?: string | null,"location_id"?: string | null,"nrp_gis"?: string | null,"nrp_gmi"?: string | null,"phone"?: string | null,"updated_at"?: string
+                  }
+                  Update: {
+                    "avatar_url"?: string | null,"company"?: string | null,"created_at"?: string,"department_id"?: string | null,"email"?: string | null,"full_name"?: string,"id"?: string,"is_active"?: boolean,"job_title_id"?: string | null,"location_id"?: string | null,"nrp_gis"?: string | null,"nrp_gmi"?: string | null,"phone"?: string | null,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "profiles_company_fkey"
+      columns: ["company"]
+isOneToOne: false
+      referencedRelation: "companies"
+      referencedColumns: ["code"]
+    },{
+      foreignKeyName: "profiles_department_id_fkey"
+      columns: ["department_id"]
+isOneToOne: false
+      referencedRelation: "departments"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "profiles_job_title_id_fkey"
+      columns: ["job_title_id"]
+isOneToOne: false
+      referencedRelation: "job_titles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "profiles_location_id_fkey"
+      columns: ["location_id"]
+isOneToOne: false
+      referencedRelation: "locations"
+      referencedColumns: ["id"]
+    }
+                  ]
+                }
+          }
+          Views: {
+            [_ in never]: never
+          }
+          Functions: {
+            "cctv_log":
+{ Args: { "p_action": string,"p_app": string,"p_category": string,"p_changes"?: Json,"p_client"?: Json,"p_company_code"?: string,"p_entity"?: string,"p_metadata"?: Json,"p_record_id"?: string,"p_record_label"?: string,"p_severity"?: string,"p_summary": string,"p_url"?: string }; Returns: number
+                           },
+"has_app_role":
+{ Args: { "p_app": string,"p_role": string }; Returns: boolean
+                           },
+"is_platform_admin":
+{ Args: Record<PropertyKey, never>; Returns: boolean
+                           },
+"my_apps":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "description": string,"id": string,"name": string,"role": string,"url": string
+            }[]
+                           },
+"role_rank":
+{ Args: { "p_role": string }; Returns: number
+                           },
+"run_maintenance_all":
+{ Args: Record<PropertyKey, never>; Returns: Json
+                           }
+          }
+          Enums: {
+            [_ in never]: never
+          }
+          CompositeTypes: {
+            [_ in never]: never
+          }
+        },"safehub": {
+          Tables: {
+            "approval_doc_types": {
                   Row: {
                     "code": string,"context_fn": unknown,"href_prefix": string,"is_active": boolean,"label": string,"on_done_fn": unknown,"table_name": string
                   }
@@ -183,6 +328,62 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"areas": {
+                  Row: {
+                    "created_at": string,"created_by": string | null,"id": string,"is_active": boolean,"location_id": string,"name": string,"sort_order": number,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"created_by"?: string | null,"id"?: string,"is_active"?: boolean,"location_id": string,"name": string,"sort_order"?: number,"updated_at"?: string
+                  }
+                  Update: {
+                    "created_at"?: string,"created_by"?: string | null,"id"?: string,"is_active"?: boolean,"location_id"?: string,"name"?: string,"sort_order"?: number,"updated_at"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"areas_logs": {
+                  Row: {
+                    "action": string,"actor_id": string | null,"at": string,"changes": Json | null,"id": number,"note": string | null,"record_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "action": string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id": string
+                  }
+                  Update: {
+                    "action"?: string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"contractors": {
+                  Row: {
+                    "company_code": string,"created_at": string,"created_by": string | null,"id": string,"is_active": boolean,"kind": string,"name": string,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "company_code": string,"created_at"?: string,"created_by"?: string | null,"id"?: string,"is_active"?: boolean,"kind"?: string,"name": string,"updated_at"?: string
+                  }
+                  Update: {
+                    "company_code"?: string,"created_at"?: string,"created_by"?: string | null,"id"?: string,"is_active"?: boolean,"kind"?: string,"name"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"contractors_logs": {
+                  Row: {
+                    "action": string,"actor_id": string | null,"at": string,"changes": Json | null,"id": number,"note": string | null,"record_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "action": string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id": string
+                  }
+                  Update: {
+                    "action"?: string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
                 },"department_heads": {
                   Row: {
                     "company_code": string,"department_id": string,"id": string,"updated_at": string,"user_id": string
@@ -269,6 +470,34 @@ isOneToOne: false
                   }
                   Update: {
                     "id"?: never,"ran_at"?: string,"result"?: NonNullable<Json>
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"master_items": {
+                  Row: {
+                    "code": string,"color": string | null,"created_at": string,"created_by": string | null,"description": string | null,"id": string,"is_active": boolean,"kind": string,"name": string,"sort_order": number,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "code": string,"color"?: string | null,"created_at"?: string,"created_by"?: string | null,"description"?: string | null,"id"?: string,"is_active"?: boolean,"kind": string,"name": string,"sort_order"?: number,"updated_at"?: string
+                  }
+                  Update: {
+                    "code"?: string,"color"?: string | null,"created_at"?: string,"created_by"?: string | null,"description"?: string | null,"id"?: string,"is_active"?: boolean,"kind"?: string,"name"?: string,"sort_order"?: number,"updated_at"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"master_items_logs": {
+                  Row: {
+                    "action": string,"actor_id": string | null,"at": string,"changes": Json | null,"id": number,"note": string | null,"record_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "action": string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id": string
+                  }
+                  Update: {
+                    "action"?: string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id"?: string
                   }
                   Relationships: [
                     
@@ -617,6 +846,9 @@ isOneToOne: false
 "location_visible":
 { Args: { "p_location": string }; Returns: boolean
                            },
+"my_company_scope":
+{ Args: Record<PropertyKey, never>; Returns: (string)[]
+                           },
 "my_functions":
 { Args: Record<PropertyKey, never>; Returns: (string)[]
                            },
@@ -632,9 +864,6 @@ isOneToOne: false
 { Args: { "p_limit"?: number }; Returns: {
               "code": string,"due_at": string,"href": string,"kind": string,"meta": Json,"ref_id": string,"ref_type": string,"status": string,"task_group": string,"title": string,"waiting_since": string
             }[]
-                           },
-"my_company_scope":
-{ Args: Record<PropertyKey, never>; Returns: (string)[]
                            },
 "next_doc_number":
 { Args: { "p_company": string,"p_prefix": string,"p_reset"?: string }; Returns: string
@@ -725,235 +954,6 @@ isOneToOne: false
             "approval_context": {
                         "requester_id": string | null,"company_code": string | null,"department_id": string | null,"amount": number | null,"code": string | null,"status": string | null
                       }
-          }
-        },"public": {
-          Tables: {
-            "app_access": {
-                  Row: {
-                    "app_id": string,"granted_at": string,"granted_by": string | null,"role": string,"user_id": string
-                  }
-                  ComputedFields: never
-                  Insert: {
-                    "app_id": string,"granted_at"?: string,"granted_by"?: string | null,"role": string,"user_id": string
-                  }
-                  Update: {
-                    "app_id"?: string,"granted_at"?: string,"granted_by"?: string | null,"role"?: string,"user_id"?: string
-                  }
-                  Relationships: [
-                    {
-      foreignKeyName: "app_access_app_id_fkey"
-      columns: ["app_id"]
-isOneToOne: false
-      referencedRelation: "apps"
-      referencedColumns: ["id"]
-    },{
-      foreignKeyName: "app_access_granted_by_fkey"
-      columns: ["granted_by"]
-isOneToOne: false
-      referencedRelation: "profiles"
-      referencedColumns: ["id"]
-    },{
-      foreignKeyName: "app_access_user_id_fkey"
-      columns: ["user_id"]
-isOneToOne: false
-      referencedRelation: "profiles"
-      referencedColumns: ["id"]
-    }
-                  ]
-                },"apps": {
-                  Row: {
-                    "created_at": string,"description": string | null,"id": string,"is_active": boolean,"name": string,"url": string | null
-                  }
-                  ComputedFields: never
-                  Insert: {
-                    "created_at"?: string,"description"?: string | null,"id": string,"is_active"?: boolean,"name": string,"url"?: string | null
-                  }
-                  Update: {
-                    "created_at"?: string,"description"?: string | null,"id"?: string,"is_active"?: boolean,"name"?: string,"url"?: string | null
-                  }
-                  Relationships: [
-                    
-                  ]
-                },"audit_log": {
-                  Row: {
-                    "action": string,"actor_id": string | null,"at": string,"id": number,"new_data": Json | null,"old_data": Json | null,"record_id": string | null,"table_name": string
-                  }
-                  ComputedFields: never
-                  Insert: {
-                    "action": string,"actor_id"?: string | null,"at"?: string,"id"?: never,"new_data"?: Json | null,"old_data"?: Json | null,"record_id"?: string | null,"table_name": string
-                  }
-                  Update: {
-                    "action"?: string,"actor_id"?: string | null,"at"?: string,"id"?: never,"new_data"?: Json | null,"old_data"?: Json | null,"record_id"?: string | null,"table_name"?: string
-                  }
-                  Relationships: [
-                    
-                  ]
-                },"cctv_events": {
-                  Row: {
-                    "action": string,"actor_id": string | null,"actor_name": string | null,"app_id": string,"at": string,"category": string,"changes": Json | null,"client": Json | null,"company_code": string | null,"entity": string | null,"id": number,"metadata": Json | null,"record_id": string | null,"record_label": string | null,"severity": string,"summary": string,"url": string | null
-                  }
-                  ComputedFields: never
-                  Insert: {
-                    "action": string,"actor_id"?: string | null,"actor_name"?: string | null,"app_id": string,"at"?: string,"category": string,"changes"?: Json | null,"client"?: Json | null,"company_code"?: string | null,"entity"?: string | null,"id"?: never,"metadata"?: Json | null,"record_id"?: string | null,"record_label"?: string | null,"severity"?: string,"summary": string,"url"?: string | null
-                  }
-                  Update: {
-                    "action"?: string,"actor_id"?: string | null,"actor_name"?: string | null,"app_id"?: string,"at"?: string,"category"?: string,"changes"?: Json | null,"client"?: Json | null,"company_code"?: string | null,"entity"?: string | null,"id"?: never,"metadata"?: Json | null,"record_id"?: string | null,"record_label"?: string | null,"severity"?: string,"summary"?: string,"url"?: string | null
-                  }
-                  Relationships: [
-                    {
-      foreignKeyName: "cctv_events_actor_id_fkey"
-      columns: ["actor_id"]
-isOneToOne: false
-      referencedRelation: "profiles"
-      referencedColumns: ["id"]
-    },{
-      foreignKeyName: "cctv_events_app_id_fkey"
-      columns: ["app_id"]
-isOneToOne: false
-      referencedRelation: "apps"
-      referencedColumns: ["id"]
-    }
-                  ]
-                },"companies": {
-                  Row: {
-                    "accent": string,"address": string | null,"code": string,"created_at": string,"email": string | null,"is_active": boolean,"is_group": boolean,"logo_landscape_url": string | null,"logo_url": string | null,"name": string,"phone": string | null,"short_name": string,"sort_order": number,"updated_at": string
-                  }
-                  ComputedFields: never
-                  Insert: {
-                    "accent"?: string,"address"?: string | null,"code": string,"created_at"?: string,"email"?: string | null,"is_active"?: boolean,"is_group"?: boolean,"logo_landscape_url"?: string | null,"logo_url"?: string | null,"name": string,"phone"?: string | null,"short_name": string,"sort_order"?: number,"updated_at"?: string
-                  }
-                  Update: {
-                    "accent"?: string,"address"?: string | null,"code"?: string,"created_at"?: string,"email"?: string | null,"is_active"?: boolean,"is_group"?: boolean,"logo_landscape_url"?: string | null,"logo_url"?: string | null,"name"?: string,"phone"?: string | null,"short_name"?: string,"sort_order"?: number,"updated_at"?: string
-                  }
-                  Relationships: [
-                    
-                  ]
-                },"departments": {
-                  Row: {
-                    "code": string | null,"id": string,"is_active": boolean,"name": string
-                  }
-                  ComputedFields: never
-                  Insert: {
-                    "code"?: string | null,"id"?: string,"is_active"?: boolean,"name": string
-                  }
-                  Update: {
-                    "code"?: string | null,"id"?: string,"is_active"?: boolean,"name"?: string
-                  }
-                  Relationships: [
-                    
-                  ]
-                },"job_titles": {
-                  Row: {
-                    "id": string,"is_active": boolean,"name": string
-                  }
-                  ComputedFields: never
-                  Insert: {
-                    "id"?: string,"is_active"?: boolean,"name": string
-                  }
-                  Update: {
-                    "id"?: string,"is_active"?: boolean,"name"?: string
-                  }
-                  Relationships: [
-                    
-                  ]
-                },"locations": {
-                  Row: {
-                    "id": string,"is_active": boolean,"name": string
-                  }
-                  ComputedFields: never
-                  Insert: {
-                    "id"?: string,"is_active"?: boolean,"name": string
-                  }
-                  Update: {
-                    "id"?: string,"is_active"?: boolean,"name"?: string
-                  }
-                  Relationships: [
-                    
-                  ]
-                },"maintenance_runs": {
-                  Row: {
-                    "id": number,"ran_at": string,"result": NonNullable<Json>
-                  }
-                  ComputedFields: never
-                  Insert: {
-                    "id"?: never,"ran_at"?: string,"result": NonNullable<Json>
-                  }
-                  Update: {
-                    "id"?: never,"ran_at"?: string,"result"?: NonNullable<Json>
-                  }
-                  Relationships: [
-                    
-                  ]
-                },"profiles": {
-                  Row: {
-                    "avatar_url": string | null,"company": string | null,"created_at": string,"department_id": string | null,"email": string | null,"full_name": string,"id": string,"is_active": boolean,"job_title_id": string | null,"location_id": string | null,"nrp_gis": string | null,"nrp_gmi": string | null,"phone": string | null,"updated_at": string
-                  }
-                  ComputedFields: never
-                  Insert: {
-                    "avatar_url"?: string | null,"company"?: string | null,"created_at"?: string,"department_id"?: string | null,"email"?: string | null,"full_name": string,"id": string,"is_active"?: boolean,"job_title_id"?: string | null,"location_id"?: string | null,"nrp_gis"?: string | null,"nrp_gmi"?: string | null,"phone"?: string | null,"updated_at"?: string
-                  }
-                  Update: {
-                    "avatar_url"?: string | null,"company"?: string | null,"created_at"?: string,"department_id"?: string | null,"email"?: string | null,"full_name"?: string,"id"?: string,"is_active"?: boolean,"job_title_id"?: string | null,"location_id"?: string | null,"nrp_gis"?: string | null,"nrp_gmi"?: string | null,"phone"?: string | null,"updated_at"?: string
-                  }
-                  Relationships: [
-                    {
-      foreignKeyName: "profiles_company_fkey"
-      columns: ["company"]
-isOneToOne: false
-      referencedRelation: "companies"
-      referencedColumns: ["code"]
-    },{
-      foreignKeyName: "profiles_department_id_fkey"
-      columns: ["department_id"]
-isOneToOne: false
-      referencedRelation: "departments"
-      referencedColumns: ["id"]
-    },{
-      foreignKeyName: "profiles_job_title_id_fkey"
-      columns: ["job_title_id"]
-isOneToOne: false
-      referencedRelation: "job_titles"
-      referencedColumns: ["id"]
-    },{
-      foreignKeyName: "profiles_location_id_fkey"
-      columns: ["location_id"]
-isOneToOne: false
-      referencedRelation: "locations"
-      referencedColumns: ["id"]
-    }
-                  ]
-                }
-          }
-          Views: {
-            [_ in never]: never
-          }
-          Functions: {
-            "cctv_log":
-{ Args: { "p_action": string,"p_app": string,"p_category": string,"p_changes"?: Json,"p_client"?: Json,"p_company_code"?: string,"p_entity"?: string,"p_metadata"?: Json,"p_record_id"?: string,"p_record_label"?: string,"p_severity"?: string,"p_summary": string,"p_url"?: string }; Returns: number
-                           },
-"has_app_role":
-{ Args: { "p_app": string,"p_role": string }; Returns: boolean
-                           },
-"is_platform_admin":
-{ Args: Record<PropertyKey, never>; Returns: boolean
-                           },
-"my_apps":
-{ Args: Record<PropertyKey, never>; Returns: {
-              "description": string,"id": string,"name": string,"role": string,"url": string
-            }[]
-                           },
-"role_rank":
-{ Args: { "p_role": string }; Returns: number
-                           },
-"run_maintenance_all":
-{ Args: Record<PropertyKey, never>; Returns: Json
-                           }
-          }
-          Enums: {
-            [_ in never]: never
-          }
-          CompositeTypes: {
-            [_ in never]: never
           }
         }
 }
@@ -1064,11 +1064,11 @@ export type CompositeTypes<
   : never
 
 export const Constants = {
-  "safehub": {
+  "public": {
           Enums: {
             
           }
-        },"public": {
+        },"safehub": {
           Enums: {
             
           }

@@ -51,8 +51,8 @@ export function SitePicker() {
   // Satu site saja: tampilkan sebagai label, bukan menu
   if (sites.length === 1) {
     return (
-      <span className="hidden items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium text-muted-foreground sm:inline-flex" title="Site">
-        <MapPin className="size-3.5" /> {label}
+      <span className="hidden min-w-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium text-muted-foreground sm:inline-flex" title="Site">
+        <MapPin className="size-3.5 shrink-0" /> <span className="truncate">{label}</span>
       </span>
     );
   }
@@ -65,13 +65,13 @@ export function SitePicker() {
             variant="outline"
             size="sm"
             aria-label={`Site: ${label}. Ganti site`}
-            className="h-8 max-w-36 gap-1.5 rounded-full px-2.5 text-xs shadow-none sm:max-w-48"
+            className="h-8 min-w-0 max-w-36 shrink gap-1.5 rounded-full px-2.5 text-xs shadow-none sm:max-w-48"
           />
         }
       >
-        {pending ? <Loader2 className="size-3.5 animate-spin" /> : <MapPin className="size-3.5" />}
+        {pending ? <Loader2 className="size-3.5 shrink-0 animate-spin" /> : <MapPin className="size-3.5 shrink-0" />}
         <span className="truncate">{label}</span>
-        <ChevronDown className="size-3.5 opacity-60" />
+        <ChevronDown className="size-3.5 shrink-0 opacity-60" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-56">
         <DropdownMenuGroup>

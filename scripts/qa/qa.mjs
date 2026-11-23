@@ -104,9 +104,9 @@ try {
   await run("Peran & company", async () => {
     await loginPage(page, BASE, USER("admin"));
     await visit(page, "/pengajuan");
-    detailPath = await page.eval(`(document.querySelector('tbody a[href^="/pengajuan/"]') || {}).getAttribute?.("href") || null`);
+    detailPath = await page.eval(`(document.querySelector('tbody a[href^="/pengajuan/"]:not([href="/pengajuan/baru"])') || {}).getAttribute?.("href") || null`);
     await visit(page, "/pengajuan?perusahaan=GMI");
-    gmiDetail = await page.eval(`(document.querySelector('tbody a[href^="/pengajuan/"]') || {}).getAttribute?.("href") || null`);
+    gmiDetail = await page.eval(`(document.querySelector('tbody a[href^="/pengajuan/"]:not([href="/pengajuan/baru"])') || {}).getAttribute?.("href") || null`);
     check("ada dokumen contoh untuk diuji (detail)", !!detailPath, detailPath);
     check("admin: menu Admin terlihat", (await page.text()).includes("Pengguna & Peran"));
 
@@ -191,6 +191,25 @@ try {
     await visit(page, "/pengguna?fungsi=hse_senior");
     const pt = await page.text();
     check("pengguna: filter fungsi K3", pt.includes("Yusuf Ramadhan") && !pt.includes("Rudi Hartono"));
+
+    // top bar HP: pemilih site, tombol cari, dan aksi tidak saling tumpuk (scroll horizontal tidak menangkapnya)
+    for (const w of [360, 390]) {
+      await page.viewport(w, 844, { mobile: true, touch: true });
+      await visit(page, "/");
+      const overlap = await page.eval(`(() => {
+        const bar = document.querySelector('[data-app-topbar] > div');
+        const els = [...bar.querySelectorAll('button, a')].filter(e => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(e).visibility !== 'hidden'; });
+        const hits = [];
+        for (let i = 0; i < els.length; i++) for (let j = i + 1; j < els.length; j++) {
+          if (els[i].contains(els[j]) || els[j].contains(els[i])) continue;
+          const a = els[i].getBoundingClientRect(), b = els[j].getBoundingClientRect();
+          const x = Math.min(a.right, b.right) - Math.max(a.left, b.left), y = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+          if (x > 1 && y > 1) hits.push((els[i].getAttribute('aria-label') || els[i].innerText || els[i].tagName).trim().slice(0, 30) + ' × ' + (els[j].getAttribute('aria-label') || els[j].innerText || els[j].tagName).trim().slice(0, 30));
+        }
+        return hits; })()`);
+      check(`top bar @${w}: kontrol tidak bertumpuk`, overlap.length === 0, overlap);
+    }
+    await page.viewport(1280, 900);
   });
 
   // ------------------------------------------------------------------ 4 mode × 3 aksen

@@ -46,7 +46,8 @@ export function Breadcrumbs() {
   if (crumbs.length === 0) crumbs.push({ href: "/", label: "Beranda" });
 
   return (
-    <Breadcrumb className="min-w-0">
+    // < sm: disembunyikan (judul halaman sudah di konten); ruang top bar HP untuk nama site
+    <Breadcrumb className="hidden min-w-0 sm:block">
       <BreadcrumbList className="flex-nowrap overflow-hidden">
         <BreadcrumbItem className="hidden shrink-0 md:inline-flex">
           <BreadcrumbLink render={<Link href="/" />}>{APP_SHORT_NAME}</BreadcrumbLink>

@@ -28,7 +28,8 @@ export function Topbar() {
             <SitePicker />
           </Suspense>
         </div>
-        <div className="-mr-1 flex min-w-0 flex-1 justify-end lg:mr-0 lg:justify-center lg:px-2">
+        {/* < lg: min-width auto (= ikon Cari) supaya grup kiri (pemilih site) yang menyusut, bukan ikon yang meluber */}
+        <div className="-mr-1 flex flex-1 justify-end lg:mr-0 lg:min-w-0 lg:justify-center lg:px-2">
           <TopbarSearch />
         </div>
         <div className="shrink-0 pr-2 md:pr-3">

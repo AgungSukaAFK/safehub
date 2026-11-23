@@ -43,7 +43,7 @@ export const ABOUT = {
   ],
   features: [
     { icon: FileText, title: "Pengajuan", desc: "Buat pengajuan dengan daftar barang, lampiran, dan panel Ringkasan yang menuntun.", points: ["Draft tersimpan di perangkat", "Nomor otomatis saat diajukan", "Lampiran file & link"] },
-    { icon: ClipboardCheck, title: "Approval", desc: "Persetujuan berjenjang sesuai template, dengan follow-up dan alasan penolakan.", points: ["Antrian Approval Saya", "Follow-up ke approver", "Jalur approval terlihat jelas"] },
+    { icon: ClipboardCheck, title: "Approval", desc: "Persetujuan berjenjang sesuai template, dengan follow-up dan alasan penolakan.", points: ["Antrian di Tugas Saya", "Follow-up ke approver", "Jalur approval terlihat jelas"] },
     { icon: Inbox, title: "Notifikasi", desc: "Kabar langsung saat ada yang perlu Anda kerjakan, di app maupun di HP.", points: ["Inbox & badge real-time", "Notifikasi HP (Web Push)", "Suara bisa diatur"] },
     { icon: FileSpreadsheet, title: "Laporan & cetak", desc: "Unduh Excel sesuai filter dan cetak dokumen resmi dengan kop perusahaan.", points: ["Excel = isi tabel", "Cetak dengan QR verifikasi", "Nama file otomatis"] },
     { icon: FolderSearch, title: "Cari & lacak", desc: "Temukan dokumen dari mana saja dan lihat riwayat setiap perubahan.", points: ["Pencarian global (Ctrl+K)", "Filter & urutan tersimpan di URL", "Riwayat aktivitas lama → baru"] },

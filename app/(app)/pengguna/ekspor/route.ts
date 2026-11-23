@@ -34,8 +34,8 @@ export async function GET(request: Request) {
   if (rows.length === 0) return new Response(null, { status: 204 });
 
   const filters = mode === "semua" ? "Semua data (tanpa filter)" : penggunaFilterText(f, masters);
-  const buffer = await buildWorkbook([{ name: "Pengguna & Akses", columns: PENGGUNA_EXPORT_COLUMNS, rows }], {
-    title: "Daftar Pengguna & Akses",
+  const buffer = await buildWorkbook([{ name: "Pengguna & Peran", columns: PENGGUNA_EXPORT_COLUMNS, rows }], {
+    title: "Daftar Pengguna & Peran",
     scope: "Semua perusahaan",
     filters,
     exportedBy: { name: access.profile.fullName, email: access.email },
@@ -44,7 +44,7 @@ export async function GET(request: Request) {
   await cctv({
     category: "export",
     action: "export.excel",
-    summary: `Mengunduh Excel Pengguna & Akses (${rows.length} baris)`,
+    summary: `Mengunduh Excel Pengguna & Peran (${rows.length} baris)`,
     entity: "app_access",
     metadata: { baris: rows.length, mode, filter: filters },
   });

@@ -108,13 +108,13 @@ try {
     await visit(page, "/pengajuan?perusahaan=GMI");
     gmiDetail = await page.eval(`(document.querySelector('tbody a[href^="/pengajuan/"]') || {}).getAttribute?.("href") || null`);
     check("ada dokumen contoh untuk diuji (detail)", !!detailPath, detailPath);
-    check("admin: menu Admin terlihat", (await page.text()).includes("Pengguna & Akses"));
+    check("admin: menu Admin terlihat", (await page.text()).includes("Pengguna & Peran"));
 
     await loginPage(page, BASE, USER("viewer"));
     await visit(page, "/pengajuan");
     const vt = await page.text();
     check("viewer: tombol Buat Pengajuan tidak tampil", !vt.includes("Buat Pengajuan"));
-    check("viewer: menu Admin tidak tampil", !vt.includes("Pengguna & Akses"));
+    check("viewer: menu Admin tidak tampil", !vt.includes("Pengguna & Peran"));
     await visit(page, "/pengguna", 2500);
     check("viewer: /pengguna ditolak (dikembalikan ke beranda)", (await page.eval("location.pathname")) === "/" && !(await page.text()).includes("Tambah Akses"), await page.eval("location.href"));
 
@@ -122,7 +122,7 @@ try {
     await visit(page, "/pengajuan");
     const bt = await page.text();
     check("editor: tombol Buat Pengajuan tampil", bt.includes("Buat Pengajuan"));
-    check("editor: menu Admin tidak tampil", !bt.includes("Pengguna & Akses"));
+    check("editor: menu Admin tidak tampil", !bt.includes("Pengguna & Peran"));
     const budiCo = await page.eval(COMPANY_CELLS);
     check("company GMI: list hanya GMI + grup (tanpa GIS)", budiCo.length > 0 && !budiCo.includes("GIS"), [...new Set(budiCo)]);
 
@@ -160,13 +160,46 @@ try {
   }
   if (mobileShots.length) await contactSheet(path.join(OUT, "lembar-390.png"), mobileShots, { cols: 6, width: 260 });
 
+  // ------------------------------------------------------------------ fondasi K3 (rancangan §4.0)
+  await run("Fondasi K3: fungsi, site, Tugas Saya, Master", async () => {
+    await page.viewport(1280, 900);
+    await setAppearance(page, { mode: "light" });
+    await loginPage(page, BASE, USER("karyawan"));
+    await visit(page, "/");
+    const kt = await page.text();
+    check("karyawan: menu Tugas Saya tampil", kt.includes("Tugas Saya"));
+    check("karyawan: menu Admin tidak tampil", !kt.includes("Master Data") && !kt.includes("Pengguna & Peran"));
+    check("karyawan (dibatasi 1 site): label Site MIFA", kt.includes("Site MIFA"));
+    const accent = await page.eval("document.documentElement.className");
+    check("aksen default app = GMI K3", accent.includes("theme-gmi-k3"), accent);
+    await visit(page, "/approval", 2000);
+    check("/approval dialihkan ke /tugas", (await page.eval("location.pathname")) === "/tugas", await page.eval("location.href"));
+
+    await loginPage(page, BASE, USER("hse"));
+    await visit(page, "/");
+    const ht = await page.text();
+    check("hse: pemilih site default = site profil", ht.includes("Site MIFA"));
+
+    await loginPage(page, BASE, USER("admin"));
+    await visit(page, "/master");
+    const mt = await page.text();
+    check("master: area per site tampil", mt.includes("Workshop Service") && mt.includes("Site MIFA"));
+    await visit(page, "/master?jenis=tingkat-risiko");
+    check("master: tingkat risiko dari seed", (await page.text()).includes("Kritis"));
+    await visit(page, "/master?jenis=site");
+    check("master: site baca saja (tanpa tombol Tambah)", !(await page.text()).includes("Tambah"));
+    await visit(page, "/pengguna?fungsi=hse_senior");
+    const pt = await page.text();
+    check("pengguna: filter fungsi K3", pt.includes("Yusuf Ramadhan") && !pt.includes("Rudi Hartono"));
+  });
+
   // ------------------------------------------------------------------ 4 mode × 3 aksen
   await run("Tema: 4 mode × 3 aksen", async () => {
     await page.viewport(1280, 900);
     const shots = [];
     const bgs = new Set();
     for (const mode of ["light", "soft-light", "dark", "soft-dark"]) {
-      for (const accent of [null, "gmi", "blue"]) {
+      for (const accent of [null, "zinc", "blue"]) {
         await setAppearance(page, { mode, accent });
         await visit(page, detailPath || "/pengajuan", 1500);
         const st = await page.eval(`(() => { const d = document.documentElement; return { cls: d.className, bg: getComputedStyle(document.body).backgroundColor, primary: getComputedStyle(d).getPropertyValue("--primary").trim() }; })()`);
@@ -314,7 +347,7 @@ try {
       await off.goto(BASE + "/pengguna");
       check("offline: halaman x-no-offline → fallback", await off.waitText("belum pernah dibuka", 5000));
       await chrome.setOffline(off, false);
-      check("online lagi: fallback muat ulang sendiri", await off.waitText("Pengguna & Akses", 30000));
+      check("online lagi: fallback muat ulang sendiri", await off.waitText("Pengguna & Peran", 30000));
       check("tidak ada exception JavaScript (tab offline)", off.errors.length === 0, off.errors.slice(0, 3));
     });
 

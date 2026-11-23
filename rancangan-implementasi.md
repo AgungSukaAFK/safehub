@@ -5,7 +5,8 @@ Guideline pengembangan fitur berdasarkan prototipe UI Figma di folder
 kode. Detail teknis mengikuti [CLAUDE.md](CLAUDE.md), [frontend-guide.md](frontend-guide.md), dan
 [backend-guide.md](backend-guide.md).
 
-> Status: draf v0.3 (2026-11-21). D1–D5, D7, D14, D15 sudah diputuskan. Bagian bertanda **[KEPUTUSAN]** memakai asumsi default. Konfirmasi
+> Status: draf v0.4 (2026-11-23). D1–D5, D7, D14, D15 sudah diputuskan. Fase 0 selesai di cabang
+> `fase-0-fondasi` (lihat catatan di §4.0). Bagian bertanda **[KEPUTUSAN]** memakai asumsi default. Konfirmasi
 > dulu sebelum modul terkait dikerjakan, lalu ubah tandanya menjadi **[DIPUTUSKAN]**.
 
 ---
@@ -149,7 +150,8 @@ Akan ada **banyak site**. Master lokasi sudah ada di platform (`public.locations
   - Opsinya = site dalam `my_location_scope()` yang aktif, ditambah "Semua site" bila user boleh
     melihat lebih dari satu.
   - Pilihan disimpan per perangkat lewat `lib/storage.ts` (`site`) dan dikirim sebagai param URL
-    `site` ke loader.
+    `site` ke loader. Implementasi: pilihan juga dicerminkan ke cookie `safehub-site` supaya loader
+    server membacanya saat URL belum punya `site` (tanpa navigasi ulang).
   - Default = `profiles.location_id` user, atau site pertama bila kosong.
 - **Agregasi:**
   - Dashboard & Laporan Periode menerima `site` = satu site atau semua.
@@ -449,6 +451,17 @@ Format setiap modul: **Entitas → Status → Peran → Layar → Catatan khusus
 6. `my_tasks()` + halaman `/tugas` (awal: hanya approval, lalu diperluas tiap modul).
 7. Seed DEMO: satu user per fungsi K3 dengan persona prototipe (Rudi = Karyawan, Andi = HSE,
    Fajar = Pengawas, Budi = PJO, Dewi = HR, Hendra = Maintenance, Sari = SCM).
+
+**Catatan pelaksanaan fase 0 (2026-11-23):**
+- Selesai: butir 1–7 (DB `db/app/10_fondasi.sql` + uji `db/tests/02_fondasi.sql`; detail di CLAUDE.md
+  bagian "Safe Hub: fondasi K3"). Persona memakai email per fungsi (`hse@demo.lourdes.test`, dst.)
+  supaya user contoh Pengajuan (`andi@`, `budi@`, ...) tidak berubah.
+- "Tab Peran K3" dibuat sebagai kartu di `/pengguna/[id]` (halaman itu berbentuk kartu, bukan tab).
+- **Ditunda:** matriks akses fungsi × modul × aksi di `/pengguna` (§4.13). Belum ada modul ber-fungsi,
+  jadi matriksnya akan kosong; dibuat bersama modul pertama (fase 1) dari konstanta yang sama dengan
+  `NAV_ITEMS`.
+- Ambang `ExpiryChip` sementara 30 hari (`DEFAULT_EXPIRY_WARN_DAYS`) sampai Pengaturan Pengingat (§4.12).
+- `KpiHelp` siap dipakai; datanya dari Kamus KPI (fase 2).
 
 ### 4.1 Lapor Kejadian & Kejadian & Investigasi (fase 1)
 
@@ -775,6 +788,6 @@ Isi kolom "Keputusan" saat sudah dikonfirmasi, lalu perbarui bagian terkait.
 | D10 | Email sebagai kanal pengingat? (§4.12) | Tidak; in-app + push | |
 | D11 | Ambang KPI kesehatan (CMR ≤ 2,21, dst.) dan target leading indicator: siapa pemilik & di mana diatur? | Kamus KPI (kolom ambang, versi) | |
 | D12 | Sistem maintenance yang ada: schema Lourdes di DB yang sama, API, atau hanya ekspor Excel? Apakah ada URL detail per record? (§4.9) | View read-only lintas schema bila satu DB | |
-| D13 | Perlu pembatasan user per site (`members.location_ids`), atau semua user melihat semua site dalam company-nya? (§2.2) | Kolom disiapkan, default semua site | |
+| D13 | Perlu pembatasan user per site (`members.location_ids`), atau semua user melihat semua site dalam company-nya? (§2.2) | Kolom disiapkan, default semua site | Default diterapkan di fase 0 (kolom + UI ada); belum dikonfirmasi |
 | D14 | "Review EHS = hse senior" dibedakan bagaimana? (§4.1) | n/a | **Fungsi K3 baru `hse_senior`** (2026-11-21) |
 | D15 | Field unit sebelum integrasi maintenance (fase 1–4)? (§4.9) | n/a | **Isian bebas kode + label snapshot** (2026-11-21) |

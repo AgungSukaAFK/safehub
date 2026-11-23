@@ -38,10 +38,30 @@ User DEMO (password `Demo12345!`):
 | `noaccess@demo.lourdes.test` | GMI | – | Tanpa akses (uji `/no-access`) |
 | `nonaktif@demo.lourdes.test` | GIS | viewer | Akun nonaktif (uji status di Pengguna & Akses) |
 
+Persona K3 Safe Hub (semua GMI, site profil `Site MIFA`; fungsi di `members.functions`):
+
+| Email | Nama | Role app | Fungsi K3 |
+|---|---|---|---|
+| `karyawan@demo.lourdes.test` | Rudi Hartono | viewer | karyawan (dibatasi Site MIFA) |
+| `hse@demo.lourdes.test` | Andi Pratama | editor | hse |
+| `hse.senior@demo.lourdes.test` | Yusuf Ramadhan | editor | hse, hse_senior |
+| `pengawas@demo.lourdes.test` | Fajar Nugroho | editor | pengawas |
+| `pjo@demo.lourdes.test` | Budi Santoso | editor | pjo |
+| `pja@demo.lourdes.test` | Agus Salim | editor | pja |
+| `manajemen@demo.lourdes.test` | Bambang Sutrisno | editor | manajemen |
+| `hr@demo.lourdes.test` | Dewi Lestari | editor | hr |
+| `maintenance@demo.lourdes.test` | Hendra Wijaya | editor | maintenance |
+| `scm@demo.lourdes.test` | Sari Wulandari | editor | scm |
+| `kontraktor@demo.lourdes.test` | Joko Susilo | editor | kontraktor_admin |
+| `auditor@demo.lourdes.test` | Lina Marlina | viewer | auditor |
+
+Site DEMO: `Site MIFA` (area Workshop Service, Pit Area, Hauling Road, Bay 3) dan `Site Demo Kalimantan`.
+
 ## Urutan file app
 
 `00_schema` → `01_base` → `02_notifications` → `03_approval` → `04_support` → `05_feedback` →
-`06_updates` → `07_storage` → `08_maintenance` → `example_pengajuan` → `09_verify` (opsional).
+`06_updates` → `07_storage` → `08_maintenance` → `10_fondasi` (Safe Hub: fungsi K3, scope site, area,
+master, mitra, `my_tasks`) → `example_pengajuan` → `09_verify` (opsional).
 
 `00_schema.sql` adalah **rekonstruksi** `lourdes-db/templates/new_app.sql`. Saat membuat app, pakai isi
 template asli untuk bagian schema + grant + registry.

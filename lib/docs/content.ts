@@ -141,12 +141,12 @@ export const DOCS: DocsContent = {
           icon: BellRing,
           actors: ["sistem"],
           summary: "Approver mendapat notifikasi di Inbox, suara, dan Notifikasi HP (kalau diaktifkan).",
-          details: ["Badge Approval Saya di sidebar bertambah tanpa perlu memuat ulang.", "Aktifkan Notifikasi HP di Profil supaya kabar tetap sampai saat app ditutup."],
+          details: ["Badge Tugas Saya di sidebar bertambah tanpa perlu memuat ulang.", "Aktifkan Notifikasi HP di Profil supaya kabar tetap sampai saat app ditutup."],
           visual: {
             window: "Inbox",
             blocks: [
               { kind: "notification", title: "Perlu persetujuan Anda", body: "PJ/GMI/2611/0001 · Penggantian ban forklift gudang A" },
-              { kind: "row", title: "Approval Saya", sub: "1 dokumen menunggu", highlight: true },
+              { kind: "row", title: "Tugas Saya", sub: "1 dokumen menunggu", highlight: true },
             ],
           },
         },
@@ -155,8 +155,8 @@ export const DOCS: DocsContent = {
           title: "Periksa & putuskan",
           icon: ClipboardCheck,
           actors: ["approver"],
-          summary: "Buka dokumen dari Approval Saya, periksa isi dan lampiran, lalu setujui atau tolak dengan alasan.",
-          menu: "Approval Saya",
+          summary: "Buka dokumen dari Tugas Saya, periksa isi dan lampiran, lalu setujui atau tolak dengan alasan.",
+          menu: "Tugas Saya",
           details: ["Menolak wajib menulis alasan (minimal 5 karakter) supaya pemohon tahu yang harus diperbaiki.", "Setelah Anda menyetujui, approver berikutnya diberi tahu otomatis."],
           status: { map: "approval", from: "pending", to: "approved" },
           visual: {
@@ -285,7 +285,7 @@ export const DOCS: DocsContent = {
           icon: KeyRound,
           actors: ["admin"],
           summary: "Tambahkan karyawan yang boleh membuka app dan pilih role-nya: Viewer, Editor, atau Admin.",
-          menu: "Admin → Pengguna & Akses",
+          menu: "Admin → Pengguna & Peran",
           details: ["Akun baru dan reset password dibuat tim IT di konsol platform.", "Admin aktif terakhir tidak bisa diturunkan atau dicabut."],
           visual: {
             window: "Tambah Akses",

@@ -110,9 +110,55 @@ saat tersedia.
   FAQ; mock UI tiap langkah = data `MockBlock`). `DocsView` (client) mengimpor data sendiri karena berisi
   komponen ikon (tidak bisa dioper dari server). Deep link `#alur-<id>-langkah-<n>`. Isi contoh = alur
   Pengajuan: ganti bersama contoh Pengajuan.
-- Approval: `lib/approval.ts` (`getMyQueue`, `getMyDecisions`, template, kepala departemen;
+- Approval: `lib/approval.ts` (`getMyQueue`, `getMyDecisions`, `getDocSummaries`, template, kepala departemen;
   `DOC_SUMMARY` per doc_type → tambah baris untuk dokumen baru), `lib/approval-template-rules.ts`
   (`pickTemplate` = cermin urutan `approval_start`).
+
+## Safe Hub: fondasi K3 (fase 0, rancangan-implementasi.md)
+
+Rancangan modul & keputusan D1–D15 ada di [rancangan-implementasi.md](rancangan-implementasi.md).
+
+- **Fungsi K3** (D1, D14): role app tetap `viewer<editor<admin`; lapis kedua `members.functions text[]`
+  (daftar di `lib/functions.ts` HARUS sama dengan constraint di `db/app/01_base.sql`, termasuk `hse_senior`).
+  Kolom `functions`/`location_ids` dijaga `members_guard` (hanya admin). DB: `my_functions()`,
+  `has_function()`, `has_any_function()`; policy pakai `'x' = any ((select my_functions())::text[])` (K8).
+  App: `access.functions` (dibaca sekali di `getAccessResult`), `hasFunction()`, `NavItem.functions`.
+  Diatur di `/pengguna/[id]` kartu "Peran K3" (`saveK3RolesAction`, CCTV `access.change_function`).
+- **Site** (D2, D13): site = `public.locations` (baca saja). Batas opsional `members.location_ids`
+  (null = semua); `my_location_scope()` (`'{*}'` = semua), `location_visible()`, `my_sites()`. Tabel
+  operasional: `location_id` + policy scope company **dan** scope site. Pemilih site di top bar
+  (`components/topbar/site-picker.tsx`): localStorage `site` + **cookie `safehub-site`** (penyimpangan:
+  supaya loader server membaca pilihan tanpa navigasi ulang) + param URL `site` (`semua` = semua).
+  Loader: `parseSiteParam(sp, access)` (`lib/sites.ts`) → URL → cookie → site profil → site pertama.
+- **Master app** (`db/app/10_fondasi.sql`): `areas` (per site), `master_items` (kind
+  `incident_category`/`risk_level`; `code` tetap, guard), `contractors` (mitra per company). Tidak ada
+  DELETE (nonaktifkan). Log config + CCTV lewat `log_changes('config')`. UI generik `/master`
+  (`lib/master-rules.ts` = konfigurasi per jenis + zod, `lib/master.ts`, `saveMasterAction`). Site &
+  jabatan hanya ditampilkan; unit dibaca dari sistem maintenance (D7, D15: sebelum fase 5 isian bebas
+  `unit_code` + `unit_label`).
+- **Penomoran** (D3, menyimpang dari backend-guide §5): `next_doc_number(prefix, company, 'year')` →
+  `KJD-2026-0001`, reset tahunan per prefix per company (period `Y2026`). Mode `'month'` (default) tetap
+  untuk contoh Pengajuan. Nomor unik per `(company_code, code)`.
+- **Tugas Saya** (`/tugas`, menggantikan `/approval` yang kini redirect): SATU sumber RPC `my_tasks()`
+  (`kind, task_group, ref_type, ref_id, code, title, status, due_at, waiting_since, href, meta`). Modul baru
+  menambah cabang `union all` di `my_tasks`; `lib/tasks.ts` mengelompokkan (action/verification/approval/
+  scheduled), approval diperkaya `getDocSummaries`. Badge menu = `tasks` (`lib/badges.ts`).
+- **Nav**: grup `menu/k3lh/people/dokumen/maintenance/laporan/inbox/admin/bantuan` (`NAV_GROUP_ORDER`);
+  `createHref`/`createLabel`/`createMin` → tombol "Buat ▾" (`components/topbar/create-menu.tsx`).
+- **Tab bawah HP** (D4, penyimpangan standar §8): `components/shell/mobile-tabs.tsx` (< md): Beranda ·
+  Tugas · Lapor (hanya bila ada menu dengan `createHref: "/kejadian/lapor"`) · Notifikasi · Profil.
+  Konten diberi `pb` setinggi tab; toast HP digeser ke atas (`mobileOffset`).
+- **Aksen default app = `gmi-k3`** (#0B4F7C; sidebar navy #0B2238 hanya di mode Terang, token di dalam
+  `[data-sidebar="sidebar"]` ikut diganti). `zinc` = token dasar `:root` (`BASE_ACCENT`, tanpa class).
+  Aksen prediktif per company (`CompanyAccent`) **tidak dipasang** di layout supaya default app berlaku.
+- **Komponen generik K3**: `WorkflowStepper` (`components/detail/`, langkah disusun server),
+  `ExpiryChip` + `expiryOf()` (`lib/expiry.ts`, status dihitung di loader; ambang 30 hari sementara
+  sampai Pengaturan Pengingat), `RestrictedData`, `KpiHelp`/`KpiStatusBadge`, `SourceChip`. Peta status K3
+  (`WORKFLOW_STATUS`, `EXPIRY_STATUS`, `KPI_STATUS`) di `lib/status.ts`.
+- Folder prototipe `GMI Safety Management App/` dikecualikan dari tsconfig & eslint; jangan diimpor.
+- `npm run db:test` butuh Docker. Tanpa Docker, uji yang sama bisa dijalankan dengan cluster Postgres
+  lokal sementara + tiruan role/`auth` Supabase (tidak disimpan di repo). `types/database.ts` lalu
+  diperbarui manual mengikuti format generator.
 - **App baru**: `scripts/create-app.sh <app_id> "<Nama>"` (salin, ganti penanda, migration gabungan di
   `db/out/` via mode `migration` = tanpa `09_verify`, `git init`). `09_verify` hanya lewat `--dengan-verifikasi`.
 - **QA**: `npm run qa` (Chrome headless via DevTools Protocol, `scripts/qa/`), jalankan terhadap build
@@ -153,7 +199,7 @@ baris log yang sama (satu aksi = satu baris log); `verify_token` tidak ikut riwa
 npm run dev | build | lint | typecheck
 npm run db:test            # uji semua SQL (container sekali pakai)
 npm run db:local -- apply  # pasang ke Supabase lokal db-lourdes
-npm run db:types           # generate types/database.ts
+npm run db:types           # generate types/database.ts (butuh Supabase lokal)
 ```
 
 Detail `db/`: [db/README.md](db/README.md).

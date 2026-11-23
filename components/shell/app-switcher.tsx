@@ -19,7 +19,9 @@ import { isRole, ROLE_LABELS } from "@/lib/roles";
 export function AppSwitcher() {
   const { myApps, access } = useApp();
   const { isMobile } = useSidebar();
-  const others = myApps.filter((a) => a.id !== APP_ID && a.id !== "platform" && a.url);
+  const others = myApps.filter(
+    (a) => a.id !== APP_ID && a.id !== "platform" && a.id !== "boilerplate_demo" && a.url,
+  );
 
   return (
     <SidebarMenu>

@@ -299,7 +299,12 @@ bagian (A-E); **bagian A selesai** (Manpower, Kompetensi, MCU, Permit).
 - **UI**: `QuickSheet` (`components/form/quick-sheet.tsx`) = form sheet deklaratif (daftar field → satu Server Action) dipakai untuk entri
   master/data kecil; `app/(app)/manpower/people-sheets.tsx`. Halaman: `/manpower`, `/manpower/[id]` (tab `?tab=`), `/kompetensi`, `/mcu`.
 - Helper DB: `people_manager()` (hr/hse/admin), `medical_viewer()` (hr/hse), `employee_visible()`. Menu grup `people`.
-- **Belum (fase 4)**: Pelatihan (B), Kontraktor & PJO/PJA (C), Dokumen (D), Impor Data + pengingat kedaluwarsa (E).
+- **Pelatihan (B)** (`db/app/18_pelatihan.sql`, `/pelatihan`, `/pelatihan/[id]`): `trainings` (`TRN-YYYY-NNNN`, `planned > done | cancelled`) +
+  `training_participants` (`registered/present/absent`). Tulis HANYA lewat RPC `training_*`; selesai = lewat tanggal mulai + semua kehadiran
+  tercatat (kunci rencana & peserta), batal = alasan >= 10. Peserta = karyawan aktif site itu; peserta berakun dinotifikasi (kategori
+  `pelatihan`, push lewat `notificationIds`). Tidak menerbitkan sertifikat otomatis (Y3). Bukti Storage `pelatihan/<id>/`; riwayat di tab
+  Pelatihan profil karyawan (`employee_trainings`). Lib: `lib/pelatihan-rules.ts`, `lib/pelatihan.ts`; UI `app/(app)/pelatihan/`.
+- **Belum (fase 4)**: Kontraktor & PJO/PJA (C), Dokumen (D), Impor Data + pengingat kedaluwarsa (E).
 
 ## Koreksi terhadap guide (sudah diterapkan di `db/`)
 

@@ -41,7 +41,12 @@ export default async function KompetensiPage({ searchParams }: PageProps<"/kompe
       <PageHeader
         title="Kompetensi & Sertifikat"
         description={`Matriks kompetensi karyawan aktif · ${label}`}
-        actions={canManage ? <CompetencySheet trigger={<Button variant="outline"><Plus /> Tambah Kompetensi</Button>} jobTitles={jobTitles} /> : null}
+        actions={
+          <>
+            <Link href="/pelatihan" className="text-sm underline underline-offset-2">Rencana Pelatihan</Link>
+            {canManage && <CompetencySheet trigger={<Button variant="outline"><Plus /> Tambah Kompetensi</Button>} jobTitles={jobTitles} />}
+          </>
+        }
       />
       <div className="col-span-12 flex flex-wrap items-center gap-1.5" aria-label="Filter">
         {MATRIX_STATE_FILTERS.map((s) => (

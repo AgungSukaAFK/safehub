@@ -90,7 +90,7 @@ async function contactSheet(file, items, { cols = 4, width = 420 } = {}) {
   return file;
 }
 
-const APP_PAGES = ["/", "/tugas", "/kejadian", "/kejadian/lapor", "/temuan", "/temuan/baru", "/inspeksi", "/inspeksi/template", "/observasi", "/observasi/baru", "/kpi", "/kpi/jam-kerja", "/tsp", "/pengingat", "/audit", "/laporan", "/manpower", "/kompetensi", "/mcu", "/master", "/notifikasi", "/pengajuan", "/pengajuan/baru", "__DETAIL__", "/pengguna", "/approval/template", "/approval/kepala-departemen", "/bantuan", "/bantuan/kelola", "/feedback", "/feedback/kelola", "/pembaruan", "/pembaruan/baru", "/dokumentasi", "/tentang", "/profil"];
+const APP_PAGES = ["/", "/tugas", "/kejadian", "/kejadian/lapor", "/temuan", "/temuan/baru", "/inspeksi", "/inspeksi/template", "/observasi", "/observasi/baru", "/kpi", "/kpi/jam-kerja", "/tsp", "/pengingat", "/audit", "/laporan", "/manpower", "/kompetensi", "/pelatihan", "/mcu", "/master", "/notifikasi", "/pengajuan", "/pengajuan/baru", "__DETAIL__", "/pengguna", "/approval/template", "/approval/kepala-departemen", "/bantuan", "/bantuan/kelola", "/feedback", "/feedback/kelola", "/pembaruan", "/pembaruan/baru", "/dokumentasi", "/tentang", "/profil"];
 
 const chrome = await launch();
 const page = await chrome.newPage();
@@ -409,6 +409,20 @@ try {
     await loginPage(page, BASE, USER("karyawan"));
     await visit(page, "/manpower", 2500);
     check("manpower: karyawan dialihkan ke Beranda", (await page.eval("location.pathname")) === "/", await page.eval("location.href"));
+
+    // ---- Pelatihan: daftar, detail, peserta + kehadiran
+    await loginPage(page, BASE, USER("hr"));
+    await visit(page, "/pelatihan", 2500);
+    const tl = await page.text();
+    check("pelatihan: daftar + tombol rencanakan", tl.includes("Daftar Pelatihan") && tl.includes("BMC Refresh Batch 2") && tl.includes("Rencanakan Pelatihan"), tl.slice(0, 160));
+    const hrDb2 = await asUser(USER("hr"), APP_ID);
+    const { data: trn } = await hrDb2.from("trainings").select("id").eq("title", "K3 Umum Kemnaker").maybeSingle();
+    await visit(page, `/pelatihan/${trn?.id}`, 2500);
+    const td = await page.text();
+    check("pelatihan: detail menampilkan peserta, kehadiran, status Selesai", td.includes("Peserta & Kehadiran") && td.includes("Hendra Wijaya") && td.includes("Hadir") && td.includes("Selesai"), td.slice(0, 160));
+    await loginPage(page, BASE, USER("karyawan"));
+    await visit(page, "/pelatihan", 2500);
+    check("pelatihan: karyawan dialihkan ke Beranda", (await page.eval("location.pathname")) === "/", await page.eval("location.href"));
 
     // ---- Laporan Periode: daftar + detail (laporan dibuat lewat RPC, bulan lalu, template PJO)
     await loginPage(page, BASE, USER("hse"));

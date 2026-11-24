@@ -1470,6 +1470,66 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"training_participants": {
+                  Row: {
+                    "attendance": string,"employee_id": string,"note": string | null,"training_id": string,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "attendance"?: string,"employee_id": string,"note"?: string | null,"training_id": string,"updated_at"?: string
+                  }
+                  Update: {
+                    "attendance"?: string,"employee_id"?: string,"note"?: string | null,"training_id"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "training_participants_employee_id_fkey"
+      columns: ["employee_id"]
+isOneToOne: false
+      referencedRelation: "employees"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "training_participants_training_id_fkey"
+      columns: ["training_id"]
+isOneToOne: false
+      referencedRelation: "trainings"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"trainings": {
+                  Row: {
+                    "capacity": number | null,"code": string,"company_code": string,"competency_id": string | null,"created_at": string,"created_by": string | null,"ends_on": string,"evidence_count": number,"id": string,"location_id": string,"notes": string | null,"provider": string | null,"starts_on": string,"status": string,"title": string,"updated_at": string,"venue": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "capacity"?: number | null,"code": string,"company_code": string,"competency_id"?: string | null,"created_at"?: string,"created_by"?: string | null,"ends_on": string,"evidence_count"?: number,"id"?: string,"location_id": string,"notes"?: string | null,"provider"?: string | null,"starts_on": string,"status"?: string,"title": string,"updated_at"?: string,"venue"?: string | null
+                  }
+                  Update: {
+                    "capacity"?: number | null,"code"?: string,"company_code"?: string,"competency_id"?: string | null,"created_at"?: string,"created_by"?: string | null,"ends_on"?: string,"evidence_count"?: number,"id"?: string,"location_id"?: string,"notes"?: string | null,"provider"?: string | null,"starts_on"?: string,"status"?: string,"title"?: string,"updated_at"?: string,"venue"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "trainings_competency_id_fkey"
+      columns: ["competency_id"]
+isOneToOne: false
+      referencedRelation: "competencies"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"trainings_logs": {
+                  Row: {
+                    "action": string,"actor_id": string | null,"at": string,"changes": Json | null,"id": number,"note": string | null,"record_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "action": string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id": string
+                  }
+                  Update: {
+                    "action"?: string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
                 },"tsp_evaluations": {
                   Row: {
                     "company_code": string,"created_at": string,"decided_at": string | null,"decided_by": string | null,"decision_note": string | null,"id": string,"location_id": string,"month": number,"prepared_by": string | null,"status": string,"submitted_at": string | null,"summary": Json | null,"updated_at": string,"year": number
@@ -1791,6 +1851,11 @@ isOneToOne: false
                            },
 "employee_save":
 { Args: { "p": Json,"p_id": string }; Returns: Json
+                           },
+"employee_trainings":
+{ Args: { "p_employee": string }; Returns: {
+              "attendance": string,"code": string,"ends_on": string,"starts_on": string,"status": string,"title": string,"training_id": string
+            }[]
                            },
 "employee_visible":
 { Args: { "p_id": string }; Returns: boolean
@@ -2147,6 +2212,27 @@ isOneToOne: false
                            },
 "today_wib":
 { Args: Record<PropertyKey, never>; Returns: string
+                           },
+"training_attendance_set":
+{ Args: { "p_attendance": string,"p_employee": string,"p_id": string,"p_note"?: string }; Returns: Json
+                           },
+"training_log":
+{ Args: { "p_action": string,"p_id": string,"p_note": string }; Returns: undefined
+                           },
+"training_participants_set":
+{ Args: { "p_employee_ids": (string)[],"p_id": string }; Returns: Json
+                           },
+"training_save":
+{ Args: { "p": Json,"p_id": string }; Returns: Json
+                           },
+"training_set_status":
+{ Args: { "p_id": string,"p_note"?: string,"p_status": string }; Returns: Json
+                           },
+"training_sync_evidence":
+{ Args: { "p_id": string }; Returns: Json
+                           },
+"training_visible":
+{ Args: { "p_id": string }; Returns: boolean
                            },
 "tsp_count_files":
 { Args: { "p_prefix": string }; Returns: number

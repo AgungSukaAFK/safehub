@@ -848,3 +848,30 @@ begin
   alter table __APP__.competencies enable trigger competencies_log;
   alter table __APP__.position_requirements enable trigger position_requirements_log;
 end $$;
+
+-- ---------- data DEMO fase 4B: pelatihan (dari prototipe people-compliance) ----------
+do $$
+declare
+  v_site uuid := (select id from public.locations where name = 'Site MIFA');
+  v_hr uuid := (select id from public.profiles where email = 'hr@demo.lourdes.test');
+  v_id uuid;
+  r record;
+begin
+  if v_site is null or v_hr is null or exists (select 1 from __APP__.trainings) then return; end if;
+  alter table __APP__.trainings disable trigger trainings_log;
+  for r in
+    select * from (values
+      ('BMC Refresh Batch 2', 'bmc', 'PT MIFA Bersaudara', 'Ruang Training MIFA', current_date + 12, current_date + 12, 'planned', array['GMI-0017', 'GMI-0004', 'GMI-0024']),
+      ('P3K & Pemadam Dasar', 'p3k', 'PMI Aceh Barat', 'Aula Site', current_date + 30, current_date + 31, 'planned', array['GMI-0017', 'GMI-0030', 'GMI-0031']),
+      ('K3 Umum Kemnaker', 'k3_umum', 'Kemnaker RI', 'Online', current_date - 20, current_date - 18, 'done', array['GMI-0011', 'GMI-0021'])
+    ) as t(title, comp, provider, venue, s, e, st, niks)
+  loop
+    v_id := gen_random_uuid();
+    insert into __APP__.trainings (id, company_code, location_id, code, title, competency_id, provider, venue, starts_on, ends_on, capacity, status, created_by)
+    values (v_id, 'GMI', v_site, __APP__.next_doc_number('TRN', 'GMI', 'year'), r.title, (select id from __APP__.competencies where code = r.comp),
+            r.provider, r.venue, r.s, r.e, 20, r.st, v_hr);
+    insert into __APP__.training_participants (training_id, employee_id, attendance)
+    select v_id, e.id, case when r.st = 'done' then 'present' else 'registered' end from __APP__.employees e where e.code = any (r.niks);
+  end loop;
+  alter table __APP__.trainings enable trigger trainings_log;
+end $$;

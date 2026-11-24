@@ -13,6 +13,8 @@ import { requireAccess } from "@/lib/auth";
 import { formatDate } from "@/lib/format";
 import { getContractorOptions } from "@/lib/k3";
 import { getEmployeeDetail, listCompetencies } from "@/lib/manpower";
+import { getEmployeeTrainings } from "@/lib/pelatihan";
+import { ATTENDANCE, TRAINING_STATUS } from "@/lib/pelatihan-rules";
 import { COMPETENCY_STATE, EMPLOYEE_STATUS, MCU_RESULT, PEOPLE_FIELD_LABELS } from "@/lib/people-rules";
 import { createClient } from "@/lib/supabase/server";
 import { cn, isUuid } from "@/lib/utils";
@@ -21,6 +23,7 @@ import { CertificateSheet, EmployeeSheet, EvidenceSheet, McuSheet, PermitSheet }
 const TABS = [
   { key: "ringkasan", label: "Ringkasan" },
   { key: "kompetensi", label: "Kompetensi & Sertifikat" },
+  { key: "pelatihan", label: "Pelatihan" },
   { key: "mcu", label: "MCU" },
   { key: "permit", label: "Permit Site" },
 ] as const;
@@ -44,11 +47,12 @@ export default async function EmployeePage({ params, searchParams }: PageProps<"
   const tab = TABS.find((t) => t.key === sp.tab)?.key ?? "ringkasan";
   const canMedical = access.functions.includes("hr") || access.functions.includes("hse");
   const supabase = await createClient();
-  const [e, comps, contractors, jt] = await Promise.all([
+  const [e, comps, contractors, jt, trainings] = await Promise.all([
     getEmployeeDetail(supabase, id, canMedical),
     listCompetencies(supabase),
     getContractorOptions(supabase),
     supabase.from("position_requirements").select("job_title"),
+    tab === "pelatihan" ? getEmployeeTrainings(supabase, id) : Promise.resolve([]),
   ]);
   if (!e) notFound();
   const canManage = isAdmin || (!access.functions.includes("auditor") && (access.functions.includes("hr") || access.functions.includes("hse")));
@@ -145,6 +149,29 @@ export default async function EmployeePage({ params, searchParams }: PageProps<"
                 </tbody>
               </table>
             </div>
+          )}
+        </Content>
+      )}
+
+      {tab === "pelatihan" && (
+        <Content title="Riwayat Pelatihan" description={`${trainings.length} pelatihan`}>
+          {trainings.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Belum pernah terdaftar pelatihan.</p>
+          ) : (
+            <ul className="divide-y rounded-lg border">
+              {trainings.map((x) => (
+                <li key={x.id} className="flex flex-wrap items-center justify-between gap-2 p-3 text-sm">
+                  <span>
+                    <Link href={`/pelatihan/${x.id}`} className="font-medium underline underline-offset-2">{x.title}</Link>
+                    <small className="ml-2 text-muted-foreground">{x.code} · {formatDate(x.startsOn)}</small>
+                  </span>
+                  <span className="flex items-center gap-2">
+                    <StatusBadge value={x.status} map={TRAINING_STATUS} />
+                    {x.status !== "cancelled" && <StatusBadge value={x.attendance} map={ATTENDANCE} />}
+                  </span>
+                </li>
+              ))}
+            </ul>
           )}
         </Content>
       )}

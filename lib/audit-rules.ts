@@ -16,6 +16,7 @@ export const AUDIT_ENTITIES: Record<string, { label: string; href?: (id: string)
   competencies: { label: "Kompetensi", href: () => "/kompetensi" },
   certificates: { label: "Sertifikat", href: () => "/kompetensi" },
   mcu_records: { label: "MCU", href: () => "/mcu" },
+  trainings: { label: "Pelatihan", href: (id) => `/pelatihan/${id}` },
   site_permits: { label: "Permit site", href: () => "/manpower" },
   position_requirements: { label: "Kebutuhan manpower", href: () => "/manpower" },
   reports: { label: "Laporan Periode", href: (id) => `/laporan/${id}` },

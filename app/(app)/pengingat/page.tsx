@@ -3,13 +3,11 @@ import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/page-header";
 import { requireAccess } from "@/lib/auth";
 import { normalizeFunctions } from "@/lib/functions";
-import { PLANNED_REMINDER_KINDS, type ReminderKind } from "@/lib/pengingat-rules";
+import { PLANNED_REMINDER_KINDS, REMINDER_ORDER as ORDER, type ReminderKind } from "@/lib/pengingat-rules";
 import { createClient } from "@/lib/supabase/server";
 import { RuleCard, type RuleView } from "./rule-card";
 
 export const metadata: Metadata = { title: "Pengaturan Pengingat" };
-
-const ORDER: ReminderKind[] = ["pica_due", "inspection_due", "tsp_evaluation"];
 
 // Aturan pengingat (rancangan §4.12). Semua staf K3 boleh membaca; hanya admin app yang mengubah.
 export default async function PengingatPage() {
@@ -32,7 +30,7 @@ export default async function PengingatPage() {
           <RuleCard key={r.id} rule={r} canEdit={isAdmin} />
         ))}
         <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
-          Jenis berikut menyusul bersama modulnya (fase 4-5): {PLANNED_REMINDER_KINDS.join(", ")}.
+          Jenis berikut menyusul: {PLANNED_REMINDER_KINDS.join(", ")}.
         </p>
       </div>
     </>

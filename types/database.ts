@@ -866,6 +866,20 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"import_jobs": {
+                  Row: {
+                    "created_at": string,"created_by": string | null,"errors": NonNullable<Json>,"failed_count": number,"filename": string | null,"id": string,"location_id": string | null,"mode": string,"ok_count": number,"target": string,"total": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"created_by"?: string | null,"errors"?: NonNullable<Json>,"failed_count": number,"filename"?: string | null,"id"?: string,"location_id"?: string | null,"mode": string,"ok_count": number,"target": string,"total": number
+                  }
+                  Update: {
+                    "created_at"?: string,"created_by"?: string | null,"errors"?: NonNullable<Json>,"failed_count"?: number,"filename"?: string | null,"id"?: string,"location_id"?: string | null,"mode"?: string,"ok_count"?: number,"target"?: string,"total"?: number
+                  }
+                  Relationships: [
+                    
+                  ]
                 },"incident_costs": {
                   Row: {
                     "estimated_cost": number | null,"incident_id": string,"updated_at": string
@@ -2367,6 +2381,15 @@ isOneToOne: false
 "has_function":
 { Args: { "p_function": string }; Returns: boolean
                            },
+"import_commit":
+{ Args: { "p_company": string,"p_filename": string,"p_location": string,"p_mode": string,"p_rows": Json,"p_target": string }; Returns: Json
+                           },
+"import_employee_id":
+{ Args: { "p_company": string,"p_nik": string }; Returns: string
+                           },
+"import_row":
+{ Args: { "d": Json,"p_company": string,"p_location": string,"p_mode": string,"p_target": string }; Returns: undefined
+                           },
 "incident_classify":
 { Args: { "p": Json,"p_id": string }; Returns: Json
                            },
@@ -2654,10 +2677,16 @@ isOneToOne: false
 "request_followup":
 { Args: { "p_approval_id": string }; Returns: Json
                            },
+"run_expiry_reminders":
+{ Args: { "p_today"?: string }; Returns: Json
+                           },
 "run_maintenance":
 { Args: Record<PropertyKey, never>; Returns: Json
                            },
 "run_reminders":
+{ Args: { "p_today"?: string }; Returns: Json
+                           },
+"run_reminders_core":
 { Args: { "p_today"?: string }; Returns: Json
                            },
 "safety_activity_save":

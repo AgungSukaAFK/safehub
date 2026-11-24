@@ -90,7 +90,7 @@ async function contactSheet(file, items, { cols = 4, width = 420 } = {}) {
   return file;
 }
 
-const APP_PAGES = ["/", "/tugas", "/kejadian", "/kejadian/lapor", "/temuan", "/temuan/baru", "/inspeksi", "/inspeksi/template", "/observasi", "/observasi/baru", "/kpi", "/kpi/jam-kerja", "/tsp", "/pengingat", "/audit", "/laporan", "/manpower", "/kompetensi", "/pelatihan", "/kontraktor", "/pjo-pja", "/dokumen", "/peraturan", "/ko", "/mcu", "/master", "/notifikasi", "/pengajuan", "/pengajuan/baru", "__DETAIL__", "/pengguna", "/approval/template", "/approval/kepala-departemen", "/bantuan", "/bantuan/kelola", "/feedback", "/feedback/kelola", "/pembaruan", "/pembaruan/baru", "/dokumentasi", "/tentang", "/profil"];
+const APP_PAGES = ["/", "/tugas", "/kejadian", "/kejadian/lapor", "/temuan", "/temuan/baru", "/inspeksi", "/inspeksi/template", "/observasi", "/observasi/baru", "/kpi", "/kpi/jam-kerja", "/tsp", "/pengingat", "/audit", "/laporan", "/manpower", "/kompetensi", "/pelatihan", "/kontraktor", "/pjo-pja", "/dokumen", "/peraturan", "/ko", "/impor", "/mcu", "/master", "/notifikasi", "/pengajuan", "/pengajuan/baru", "__DETAIL__", "/pengguna", "/approval/template", "/approval/kepala-departemen", "/bantuan", "/bantuan/kelola", "/feedback", "/feedback/kelola", "/pembaruan", "/pembaruan/baru", "/dokumentasi", "/tentang", "/profil"];
 
 const chrome = await launch();
 const page = await chrome.newPage();
@@ -461,7 +461,7 @@ try {
     await visit(page, "/peraturan", 2500);
     const prt = await page.text();
     check("peraturan: evaluasi + tombol jadikan temuan", prt.includes("PP 50 Tahun 2012") && prt.includes("Tidak Sesuai") && prt.includes("Jadikan Temuan"), prt.slice(0, 160));
-    await visit(page, "/koTxt", 2500);
+    await visit(page, "/ko", 2500);
     const koTxt = await page.text();
     check("koTxt: register + status masa berlaku", koTxt.includes("Daftar Item KO") && koTxt.includes("Kedaluwarsa") && koTxt.includes("Tambah Item KO"), koTxt.slice(0, 160));
     await loginPage(page, BASE, USER("karyawan"));
@@ -472,6 +472,20 @@ try {
     check("dokumen: karyawan melihat tombol pengakuan baca, bukan riwayat revisi", (await page.text()).includes("Saya sudah membaca") && !(await page.text()).includes("Riwayat Revisi"));
     await visit(page, "/peraturan", 2500);
     check("peraturan: karyawan dialihkan ke Beranda", (await page.eval("location.pathname")) === "/", await page.eval("location.href"));
+
+    // ---- Impor Data (wizard) + pengingat kedaluwarsa
+    await loginPage(page, BASE, USER("hr"));
+    await visit(page, "/impor", 2500);
+    const ipImp = await page.text();
+    check("impor: wizard 4 langkah, pilihan target, riwayat", ipImp.includes("Unggah File") && ipImp.includes("Pemetaan Kolom") && ipImp.includes("Pratinjau & Validasi") && ipImp.includes("Manpower (karyawan & tenaga mitra)") && ipImp.includes("Riwayat Impor"), ipImp.slice(0, 160));
+    const tplImp = await page.eval(`fetch("/impor/template?target=certificates").then(r => r.status + "|" + r.headers.get("content-type"))`);
+    check("impor: template Excel bisa diunduh", String(tplImp).startsWith("200|") && String(tplImp).includes("spreadsheetml"), String(tplImp));
+    await visit(page, "/pengingat", 2500);
+    const pgPeng = await page.text();
+    check("pengingat: jenis kedaluwarsa baru tampil (MCU, sertifikat, izin kontraktor, review dokumen, KO)", pgPeng.includes("MCU akan berakhir") && pgPeng.includes("Sertifikat kompetensi") && pgPeng.includes("Izin kontraktor") && pgPeng.includes("Review dokumen") && pgPeng.includes("Register KO"), pgPeng.slice(0, 160));
+    await loginPage(page, BASE, USER("pengawas"));
+    await visit(page, "/impor", 2500);
+    check("impor: pengawas dialihkan ke Beranda", (await page.eval("location.pathname")) === "/", await page.eval("location.href"));
 
     // ---- Laporan Periode: daftar + detail (laporan dibuat lewat RPC, bulan lalu, template PJO)
     await loginPage(page, BASE, USER("hse"));

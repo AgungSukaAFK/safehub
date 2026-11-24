@@ -7,8 +7,8 @@ Langkah 0 (rancangan §3) untuk §4.6-§4.8 dan §2.12. Dikerjakan per bagian; k
 | A | Manpower, Kompetensi & Sertifikat, MCU (+ data terbatas), Permit Site | **selesai** |
 | B | Pelatihan (rencana, kalender, peserta, kehadiran, bukti) | **selesai** |
 | C | Kontraktor & Legalitas, PJO/PJA | **selesai** |
-| D | Prosedur & Dokumen (approval jenis A), Evaluasi Peraturan, Register KO | **selesai** (QA browser belum dijalankan) |
-| E | Impor Data (wizard) + pengingat kedaluwarsa (MCU, sertifikat, izin, dokumen) | belum |
+| D | Prosedur & Dokumen (approval jenis A), Evaluasi Peraturan, Register KO | **selesai** |
+| E | Impor Data (wizard) + pengingat kedaluwarsa (MCU, sertifikat, izin, dokumen) | **selesai** |
 
 ## Bagian A (selesai)
 
@@ -84,3 +84,20 @@ Tulis lewat RPC `document_save`, `document_revision_start/save`, `document_withd
 `regulation_make_finding`, `ko_save`, `dokumen_sync_evidence`; hook `document_revision_context` / `document_revision_on_approval` (`db/app/20_dokumen.sql`).
 Baca: `document_overview`, `document_compliance`. Uji: `db/tests/12_dokumen.sql` (D1-D9). Belum dibangun: cabang `my_tasks` untuk pengakuan yang tertunda
 (hanya banner di /dokumen), pengingat review/KO kedaluwarsa (bagian E), blok Beranda kepatuhan dokumen, pemilih orang untuk distribusi.
+
+## Bagian E: Impor Data & Pengingat Kedaluwarsa (keputusan sendiri E1-E8, menunggu konfirmasi)
+
+| # | Keputusan | Alasan |
+|---|---|---|
+| E1 | Target impor awal: Manpower, Sertifikat, MCU, Permit site. TSP, PS/backlog (rancangan §2.12) belum: TSP sudah punya input langsung, PS/backlog menunggu fase 5 | Data awal people paling mendesak |
+| E2 | File dibaca di Server Action langsung dari upload (.xlsx, maks. 5 MB, maks. 1000 baris), TIDAK disimpan di Storage `imports/<uid>/` | Rancangan menyebut file di Storage; tanpa menyimpan file, tidak ada data pribadi tersisa. Riwayat tetap di `import_jobs` |
+| E3 | Wizard 4 langkah di satu halaman `/impor`; pemetaan kolom otomatis dari nama header (alias), bisa diubah. Validasi bentuk (zod) jalan di browser DAN diulang di server; aturan bisnis diperiksa RPC simpan yang sudah ada per baris | Satu sumber aturan, tidak menduplikasi |
+| E4 | Commit = SATU RPC `import_commit` (maks. 1000 baris), tiap baris di sub-transaksi: baris gagal tidak membatalkan baris lain (rancangan menyebut "transaksi", tapi semua-atau-tidak sama sekali menyulitkan data awal besar) | Hasil per baris dilaporkan ke UI |
+| E5 | Mode `insert` menolak kunci yang sudah ada; `upsert` memperbarui. Kunci: NIK; sertifikat = NIK+kompetensi+nomor; MCU = NIK+tanggal; permit = NIK+nama+nomor. Upsert tidak menghapus data yang tidak ada di file (akun tertaut, mitra, diagnosis MCU, kolom kosong) | Aman untuk impor ulang |
+| E6 | Diagnosis/catatan medis TIDAK bisa diimpor (data terbatas); MCU hanya bisa diimpor HR/HSE | Rancangan §2.7 |
+| E7 | Pengingat kedaluwarsa: 6 jenis baru di `reminder_rules` (MCU, sertifikat, permit site, izin kontraktor, review dokumen, KO), offset bawaan 30/14/7 (permit 14/7/1), hanya item TERBARU per karyawan/nama (yang sudah punya penerus tidak diingatkan). Hanya in-app (sama dengan V8) | Pola run_reminders |
+| E8 | `run_reminders` dibungkus (inti diganti nama `run_reminders_core`) supaya `run_maintenance` tidak didefinisikan ulang lagi | Mengurangi salinan fungsi besar |
+
+Tulis lewat RPC `import_commit` (hanya HR/HSE/admin); `import_row` internal memanggil `employee_save`, `certificate_save`, `mcu_save`, `site_permit_save`. Setiap impor dicatat di `import_jobs`
+dan CCTV `import.commit`. Uji: `db/tests/13_impor_pengingat.sql` (E1-E7, P1-P3). **Belum dibangun:** impor TSP/PS-backlog, pengingat laporan periode belum diajukan, ambang ExpiryChip
+yang membaca aturan pengingat (masih 30 hari), push untuk pengingat, unduhan daftar baris gagal sebagai Excel.

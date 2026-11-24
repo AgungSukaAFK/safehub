@@ -315,7 +315,13 @@ bagian (A-E); **bagian A selesai** (Manpower, Kompetensi, MCU, Permit).
   `regulation_make_finding` → `k3_finding_insert`), `ko_register`. Pengelola `document_manager()` = hse/hse_senior/admin. Dokumen terbit terbaca SEMUA pengguna app
   (draf/revisi berjalan hanya staf K3). Policy dokumen<->revisi memakai `document_in_scope()` (definer) untuk menghindari rekursi RLS. File revisi `dokumen/<revisi>/`
   (wajib >= 1 saat diajukan), KO `ko/<id>/`. Lib: `lib/dokumen-rules.ts`, `lib/dokumen.ts`; UI `app/(app)/dokumen/` (+ `peraturan/`, `ko/`). KPI `document_compliance` draf.
-- **Belum (fase 4)**: Impor Data + pengingat kedaluwarsa (E; termasuk MCU, sertifikat, permit, izin kontraktor, review dokumen, KO).
+- **Impor Data & pengingat kedaluwarsa (E)** (`db/app/21_impor_pengingat.sql`, `/impor`): kit `lib/import/targets.ts` (kolom, alias, zod, kunci, `validateRows`; aman client) +
+  `lib/import/parse.ts` (exceljs, server). Wizard 4 langkah (`app/(app)/impor/import-wizard.tsx`); file dibaca Server Action (tidak disimpan); commit = RPC `import_commit`
+  (HR/HSE/admin, maks. 1000 baris, sub-transaksi per baris, tulis lewat RPC simpan yang ada, `import_jobs` + CCTV `import.commit`). Target: employees, certificates, mcu (tanpa
+  diagnosis), site_permits. Target baru = tambah entri di `IMPORT_TARGETS` + cabang di `import_row` + check `import_jobs.target`. Pengingat kedaluwarsa: `run_expiry_reminders`
+  dipanggil lewat pembungkus `run_reminders` (inti = `run_reminders_core`); jenis baru = tambah di check `reminder_rules.kind` + cabang di `run_expiry_reminders` + `REMINDER_KINDS`.
+  Kategori notifikasi `compliance`.
+- **Fase 4 selesai** (A-E). **Belum**: impor TSP/PS-backlog, pengingat laporan periode, push untuk pengingat, ambang ExpiryChip dari aturan pengingat.
 
 ## Koreksi terhadap guide (sudah diterapkan di `db/`)
 

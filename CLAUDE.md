@@ -285,6 +285,22 @@ Spesifikasi & keputusan sendiri V1-V7: [docs/spec/fase-3-tsp-laporan.md](docs/sp
 - **Belum dibangun (fase 3, sengaja)**: rich text narasi laporan (teks biasa, W2), UI pengelola template laporan (W3), push untuk pengingat
   (V8), cetak evaluasi TSP, tautan aktivitas ke Leading Indicator.
 
+## Safe Hub: People & Compliance, Kontraktor, Dokumen, Impor (fase 4)
+
+Spesifikasi & keputusan sendiri X1-X7: [docs/spec/fase-4-people-kontraktor-dokumen.md](docs/spec/fase-4-people-kontraktor-dokumen.md). Dikerjakan per
+bagian (A-E); **bagian A selesai** (Manpower, Kompetensi, MCU, Permit).
+
+- **People (A)** (`db/app/17_people.sql`): `employees` (jabatan = teks snapshot, `contractor_id` = tenaga mitra), `position_requirements`,
+  `competencies` (`job_titles` = jabatan yang WAJIB), `certificates`, `mcu_records` + `mcu_restricted` (diagnosis hanya `hr`/`hse`, tidak dilog,
+  loader `getEmployeeDetail(canSeeMedical)` mengosongkan bila tak berhak lalu UI `RestrictedData`), `site_permits`. Status masa berlaku turunan:
+  `expiry_state()` di DB, `expiryOf()` di TS (ambang 30 hari). Matriks = RPC `competency_matrix`, ringkasan = `employee_overview` /
+  `manpower_summary` (SATU sumber; Beranda/Laporan nanti memakai yang sama). Bukti = Storage `sertifikat/<id>/`, `mcu/<id>/` (policy lampiran
+  didefinisikan ulang di 17; MCU hanya HR/HSE); jumlah file dihitung `people_sync_evidence`.
+- **UI**: `QuickSheet` (`components/form/quick-sheet.tsx`) = form sheet deklaratif (daftar field → satu Server Action) dipakai untuk entri
+  master/data kecil; `app/(app)/manpower/people-sheets.tsx`. Halaman: `/manpower`, `/manpower/[id]` (tab `?tab=`), `/kompetensi`, `/mcu`.
+- Helper DB: `people_manager()` (hr/hse/admin), `medical_viewer()` (hr/hse), `employee_visible()`. Menu grup `people`.
+- **Belum (fase 4)**: Pelatihan (B), Kontraktor & PJO/PJA (C), Dokumen (D), Impor Data + pengingat kedaluwarsa (E).
+
 ## Koreksi terhadap guide (sudah diterapkan di `db/`)
 
 | # | Masalah di guide | Perbaikan |

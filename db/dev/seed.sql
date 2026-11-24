@@ -750,3 +750,101 @@ begin
            (v_tpl, 3, 'menyetujui', 'user', (select id from public.profiles where email = 'manajemen@demo.lourdes.test'), 72);
   end if;
 end $$;
+
+-- ---------- data DEMO fase 4A: manpower, kompetensi, sertifikat, MCU, permit (dari prototipe people-compliance) ----------
+do $$
+declare
+  v_site uuid := (select id from public.locations where name = 'Site MIFA');
+  v_hr uuid := (select id from public.profiles where email = 'hr@demo.lourdes.test');
+  e record;
+  c record;
+begin
+  if v_site is null or v_hr is null or exists (select 1 from __APP__.employees) then return; end if;
+  alter table __APP__.employees disable trigger employees_log;
+  alter table __APP__.certificates disable trigger certificates_log;
+  alter table __APP__.mcu_records disable trigger mcu_records_log;
+  alter table __APP__.site_permits disable trigger site_permits_log;
+  alter table __APP__.competencies disable trigger competencies_log;
+  alter table __APP__.position_requirements disable trigger position_requirements_log;
+
+  insert into __APP__.competencies (code, name, job_titles, sort_order) values
+    ('k3_umum', 'K3 Umum', array['Teknisi AC', 'Pengawas Service', 'HSE Officer', 'Planner', 'Admin Gudang', 'Mekanik'], 10),
+    ('p3k', 'P3K', array['Teknisi AC', 'Pengawas Service', 'HSE Officer', 'Mekanik'], 20),
+    ('pemadam', 'Pemadam Kebakaran', array['Teknisi AC', 'Pengawas Service', 'HSE Officer'], 30),
+    ('teknisi_refrigerasi', 'Teknisi Refrigerasi/AC', array['Teknisi AC'], 40),
+    ('pengawas_pertama', 'Pengawas Operasional Pertama', array['Pengawas Service'], 50),
+    ('bmc', 'BMC', array['Teknisi AC', 'Pengawas Service', 'HSE Officer', 'Planner', 'Mekanik'], 60);
+
+  insert into __APP__.position_requirements (company_code, location_id, job_title, required) values
+    ('GMI', v_site, 'Teknisi AC', 12), ('GMI', v_site, 'Mekanik', 8), ('GMI', v_site, 'Planner', 3),
+    ('GMI', v_site, 'Admin Gudang', 4), ('GMI', v_site, 'HSE Officer', 3), ('GMI', v_site, 'Pengawas Service', 5);
+
+  for e in
+    select * from (values
+      ('GMI-0017', 'Rudi Hartono',   'Teknisi AC',       'Service AC',     'PKWT',  date '2024-02-12', 'karyawan@demo.lourdes.test'),
+      ('GMI-0004', 'Fajar Nugroho',  'Pengawas Service', 'Service AC',     'PKWTT', date '2021-01-03', 'pengawas@demo.lourdes.test'),
+      ('GMI-0008', 'Andi Pratama',   'HSE Officer',      'HSE',            'PKWTT', date '2022-03-15', 'hse@demo.lourdes.test'),
+      ('GMI-0011', 'Hendra Wijaya',  'Planner',          'Planner',        'PKWTT', date '2022-08-08', 'maintenance@demo.lourdes.test'),
+      ('GMI-0021', 'Sari Wulandari', 'Admin Gudang',     'Warehouse/SCM',  'PKWTT', date '2023-05-02', 'scm@demo.lourdes.test'),
+      ('GMI-0024', 'Agus Setiawan',  'Teknisi AC',       'Service AC',     'PKWTT', date '2023-09-18', null),
+      ('GMI-0030', 'Bayu Kurniawan', 'Mekanik',          'Workshop',       'PKWT',  date '2025-01-06', null),
+      ('GMI-0031', 'Dedi Saputra',   'Mekanik',          'Workshop',       'PKWT',  date '2025-01-06', null)
+    ) as t(code, name, job, dept, emp, joined, email)
+  loop
+    insert into __APP__.employees (company_code, location_id, code, name, job_title, department, employment, join_date, profile_id, created_by)
+    values ('GMI', v_site, e.code, e.name, e.job, e.dept, e.emp, e.joined, (select id from public.profiles where email = e.email), v_hr);
+  end loop;
+
+  for c in
+    select * from (values
+      ('GMI-0017', 'teknisi_refrigerasi', 'BNSP-TRU-2024-01872', 'BNSP', date '2024-03-15', current_date + 500),
+      ('GMI-0017', 'k3_umum', 'K3U/2024/0912', 'Kemnaker RI', date '2024-04-20', current_date + 535),
+      ('GMI-0017', 'pemadam', 'DAMKAR-D/2025/027', 'Disnaker Aceh Barat', date '2025-02-10', current_date + 467),
+      ('GMI-0017', 'bmc', 'BMC-2025-1182', 'PT MIFA Bersaudara', date '2025-06-05', current_date + 14),
+      ('GMI-0004', 'k3_umum', 'K3U/2023/0455', 'Kemnaker RI', date '2023-02-01', current_date + 700),
+      ('GMI-0004', 'p3k', 'P3K/2024/118', 'PMI', date '2024-05-01', current_date + 400),
+      ('GMI-0004', 'pemadam', 'DAMKAR-D/2024/009', 'Disnaker', date '2024-06-01', current_date + 450),
+      ('GMI-0004', 'pengawas_pertama', 'POP/2022/771', 'Kemnaker RI', date '2022-07-01', current_date + 480),
+      ('GMI-0004', 'bmc', 'BMC-2025-0990', 'PT MIFA Bersaudara', date '2025-03-01', current_date + 25),
+      ('GMI-0008', 'k3_umum', 'K3U/2022/0111', 'Kemnaker RI', date '2022-03-01', current_date + 900),
+      ('GMI-0008', 'bmc', 'BMC-2025-0770', 'PT MIFA Bersaudara', date '2025-08-01', current_date + 300),
+      ('GMI-0011', 'k3_umum', 'K3U/2021/0600', 'Kemnaker RI', date '2021-03-01', current_date - 30),
+      ('GMI-0011', 'bmc', 'BMC-2025-0881', 'PT MIFA Bersaudara', date '2025-09-01', current_date + 330),
+      ('GMI-0021', 'k3_umum', 'K3U/2023/0777', 'Kemnaker RI', date '2023-06-01', current_date + 20),
+      ('GMI-0024', 'k3_umum', 'K3U/2024/0333', 'Kemnaker RI', date '2024-02-01', current_date + 400),
+      ('GMI-0024', 'p3k', 'P3K/2024/200', 'PMI', date '2024-02-01', current_date + 400),
+      ('GMI-0024', 'pemadam', 'DAMKAR-D/2024/050', 'Disnaker', date '2024-02-01', current_date + 18),
+      ('GMI-0024', 'teknisi_refrigerasi', 'BNSP-TRU-2024-02000', 'BNSP', date '2024-02-01', current_date + 400),
+      ('GMI-0024', 'bmc', 'BMC-2025-1000', 'PT MIFA Bersaudara', date '2025-02-01', current_date + 400)
+    ) as t(nik, comp, num, issuer, issued, until)
+  loop
+    insert into __APP__.certificates (employee_id, competency_id, number, issuer, issued_on, valid_until, created_by)
+    values ((select id from __APP__.employees where code = c.nik), (select id from __APP__.competencies where code = c.comp), c.num, c.issuer, c.issued, c.until, v_hr);
+  end loop;
+
+  for c in
+    select * from (values
+      ('GMI-0017', current_date - 350, current_date + 18,  'fit',      null),
+      ('GMI-0004', current_date - 240, current_date + 125, 'fit',      null),
+      ('GMI-0008', current_date - 124, current_date + 241, 'fit',      null),
+      ('GMI-0011', current_date - 311, current_date + 54,  'fit_note', 'Hipertensi derajat 1, kontrol rutin'),
+      ('GMI-0021', current_date - 400, current_date - 35,  'fit',      null)
+    ) as t(nik, checked, until, res, diag)
+  loop
+    with m as (insert into __APP__.mcu_records (employee_id, checked_on, valid_until, result, created_by)
+               values ((select id from __APP__.employees where code = c.nik), c.checked, c.until, c.res, v_hr) returning id)
+    insert into __APP__.mcu_restricted (mcu_id, diagnosis) select m.id, c.diag from m;
+  end loop;
+
+  insert into __APP__.site_permits (employee_id, name, number, valid_until, created_by)
+  select e2.id, 'Izin Masuk Site', 'IMS/' || e2.code,
+         current_date + (case e2.code when 'GMI-0017' then 64 when 'GMI-0004' then 21 when 'GMI-0008' then 186 else 90 end), v_hr
+    from __APP__.employees e2;
+
+  alter table __APP__.employees enable trigger employees_log;
+  alter table __APP__.certificates enable trigger certificates_log;
+  alter table __APP__.mcu_records enable trigger mcu_records_log;
+  alter table __APP__.site_permits enable trigger site_permits_log;
+  alter table __APP__.competencies enable trigger competencies_log;
+  alter table __APP__.position_requirements enable trigger position_requirements_log;
+end $$;

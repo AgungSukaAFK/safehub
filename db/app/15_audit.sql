@@ -162,6 +162,48 @@ begin
         and (p_actor is null or l.actor_id = p_actor) and (p_action is null or l.action = p_action)
         and (p_before is null or l.at < p_before)
       order by l.at desc, l.id desc limit least(greatest(p_limit, 1), 200) + 1)
+    union all
+    (select 'employees'::text as entity, l.id, l.record_id, l.at, l.actor_id, l.action, l.note, l.changes
+       from __APP__.employees_logs l
+      where (p_entities is null or 'employees' = any (p_entities)) and l.at >= p_from and l.at < p_to
+        and (p_actor is null or l.actor_id = p_actor) and (p_action is null or l.action = p_action)
+        and (p_before is null or l.at < p_before)
+      order by l.at desc, l.id desc limit least(greatest(p_limit, 1), 200) + 1)
+    union all
+    (select 'position_requirements'::text as entity, l.id, l.record_id, l.at, l.actor_id, l.action, l.note, l.changes
+       from __APP__.position_requirements_logs l
+      where (p_entities is null or 'position_requirements' = any (p_entities)) and l.at >= p_from and l.at < p_to
+        and (p_actor is null or l.actor_id = p_actor) and (p_action is null or l.action = p_action)
+        and (p_before is null or l.at < p_before)
+      order by l.at desc, l.id desc limit least(greatest(p_limit, 1), 200) + 1)
+    union all
+    (select 'competencies'::text as entity, l.id, l.record_id, l.at, l.actor_id, l.action, l.note, l.changes
+       from __APP__.competencies_logs l
+      where (p_entities is null or 'competencies' = any (p_entities)) and l.at >= p_from and l.at < p_to
+        and (p_actor is null or l.actor_id = p_actor) and (p_action is null or l.action = p_action)
+        and (p_before is null or l.at < p_before)
+      order by l.at desc, l.id desc limit least(greatest(p_limit, 1), 200) + 1)
+    union all
+    (select 'certificates'::text as entity, l.id, l.record_id, l.at, l.actor_id, l.action, l.note, l.changes
+       from __APP__.certificates_logs l
+      where (p_entities is null or 'certificates' = any (p_entities)) and l.at >= p_from and l.at < p_to
+        and (p_actor is null or l.actor_id = p_actor) and (p_action is null or l.action = p_action)
+        and (p_before is null or l.at < p_before)
+      order by l.at desc, l.id desc limit least(greatest(p_limit, 1), 200) + 1)
+    union all
+    (select 'mcu_records'::text as entity, l.id, l.record_id, l.at, l.actor_id, l.action, l.note, l.changes
+       from __APP__.mcu_records_logs l
+      where (p_entities is null or 'mcu_records' = any (p_entities)) and l.at >= p_from and l.at < p_to
+        and (p_actor is null or l.actor_id = p_actor) and (p_action is null or l.action = p_action)
+        and (p_before is null or l.at < p_before)
+      order by l.at desc, l.id desc limit least(greatest(p_limit, 1), 200) + 1)
+    union all
+    (select 'site_permits'::text as entity, l.id, l.record_id, l.at, l.actor_id, l.action, l.note, l.changes
+       from __APP__.site_permits_logs l
+      where (p_entities is null or 'site_permits' = any (p_entities)) and l.at >= p_from and l.at < p_to
+        and (p_actor is null or l.actor_id = p_actor) and (p_action is null or l.action = p_action)
+        and (p_before is null or l.at < p_before)
+      order by l.at desc, l.id desc limit least(greatest(p_limit, 1), 200) + 1)
   ) u
   order by u.at desc, u.id desc
   limit least(greatest(p_limit, 1), 200) + 1;

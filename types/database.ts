@@ -356,6 +356,74 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"certificates": {
+                  Row: {
+                    "competency_id": string,"created_at": string,"created_by": string | null,"employee_id": string,"evidence_count": number,"id": string,"issued_on": string | null,"issuer": string | null,"number": string | null,"updated_at": string,"valid_until": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "competency_id": string,"created_at"?: string,"created_by"?: string | null,"employee_id": string,"evidence_count"?: number,"id"?: string,"issued_on"?: string | null,"issuer"?: string | null,"number"?: string | null,"updated_at"?: string,"valid_until"?: string | null
+                  }
+                  Update: {
+                    "competency_id"?: string,"created_at"?: string,"created_by"?: string | null,"employee_id"?: string,"evidence_count"?: number,"id"?: string,"issued_on"?: string | null,"issuer"?: string | null,"number"?: string | null,"updated_at"?: string,"valid_until"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "certificates_competency_id_fkey"
+      columns: ["competency_id"]
+isOneToOne: false
+      referencedRelation: "competencies"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "certificates_employee_id_fkey"
+      columns: ["employee_id"]
+isOneToOne: false
+      referencedRelation: "employees"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"certificates_logs": {
+                  Row: {
+                    "action": string,"actor_id": string | null,"at": string,"changes": Json | null,"id": number,"note": string | null,"record_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "action": string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id": string
+                  }
+                  Update: {
+                    "action"?: string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"competencies": {
+                  Row: {
+                    "code": string,"created_at": string,"id": string,"is_active": boolean,"job_titles": (string)[],"name": string,"sort_order": number,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "code": string,"created_at"?: string,"id"?: string,"is_active"?: boolean,"job_titles"?: (string)[],"name": string,"sort_order"?: number,"updated_at"?: string
+                  }
+                  Update: {
+                    "code"?: string,"created_at"?: string,"id"?: string,"is_active"?: boolean,"job_titles"?: (string)[],"name"?: string,"sort_order"?: number,"updated_at"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"competencies_logs": {
+                  Row: {
+                    "action": string,"actor_id": string | null,"at": string,"changes": Json | null,"id": number,"note": string | null,"record_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "action": string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id": string
+                  }
+                  Update: {
+                    "action"?: string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
                 },"contractors": {
                   Row: {
                     "company_code": string,"created_at": string,"created_by": string | null,"id": string,"is_active": boolean,"kind": string,"name": string,"updated_at": string
@@ -422,6 +490,40 @@ isOneToOne: false
                   }
                   Update: {
                     "company_code"?: string,"last_no"?: number,"period"?: string,"prefix"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"employees": {
+                  Row: {
+                    "code": string,"company_code": string,"contractor_id": string | null,"created_at": string,"created_by": string | null,"department": string | null,"employment": string,"id": string,"job_title": string,"join_date": string | null,"location_id": string,"name": string,"profile_id": string | null,"search_text": string | null,"status": string,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "code": string,"company_code": string,"contractor_id"?: string | null,"created_at"?: string,"created_by"?: string | null,"department"?: string | null,"employment"?: string,"id"?: string,"job_title": string,"join_date"?: string | null,"location_id": string,"name": string,"profile_id"?: string | null,"search_text"?: string | null,"status"?: string,"updated_at"?: string
+                  }
+                  Update: {
+                    "code"?: string,"company_code"?: string,"contractor_id"?: string | null,"created_at"?: string,"created_by"?: string | null,"department"?: string | null,"employment"?: string,"id"?: string,"job_title"?: string,"join_date"?: string | null,"location_id"?: string,"name"?: string,"profile_id"?: string | null,"search_text"?: string | null,"status"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "employees_contractor_id_fkey"
+      columns: ["contractor_id"]
+isOneToOne: false
+      referencedRelation: "contractors"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"employees_logs": {
+                  Row: {
+                    "action": string,"actor_id": string | null,"at": string,"changes": Json | null,"id": number,"note": string | null,"record_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "action": string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id": string
+                  }
+                  Update: {
+                    "action"?: string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id"?: string
                   }
                   Relationships: [
                     
@@ -844,6 +946,60 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"mcu_records": {
+                  Row: {
+                    "checked_on": string,"created_at": string,"created_by": string | null,"employee_id": string,"evidence_count": number,"id": string,"result": string,"updated_at": string,"valid_until": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "checked_on": string,"created_at"?: string,"created_by"?: string | null,"employee_id": string,"evidence_count"?: number,"id"?: string,"result": string,"updated_at"?: string,"valid_until": string
+                  }
+                  Update: {
+                    "checked_on"?: string,"created_at"?: string,"created_by"?: string | null,"employee_id"?: string,"evidence_count"?: number,"id"?: string,"result"?: string,"updated_at"?: string,"valid_until"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "mcu_records_employee_id_fkey"
+      columns: ["employee_id"]
+isOneToOne: false
+      referencedRelation: "employees"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"mcu_records_logs": {
+                  Row: {
+                    "action": string,"actor_id": string | null,"at": string,"changes": Json | null,"id": number,"note": string | null,"record_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "action": string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id": string
+                  }
+                  Update: {
+                    "action"?: string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"mcu_restricted": {
+                  Row: {
+                    "diagnosis": string | null,"mcu_id": string,"note": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "diagnosis"?: string | null,"mcu_id": string,"note"?: string | null
+                  }
+                  Update: {
+                    "diagnosis"?: string | null,"mcu_id"?: string,"note"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "mcu_restricted_mcu_id_fkey"
+      columns: ["mcu_id"]
+isOneToOne: true
+      referencedRelation: "mcu_records"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"members": {
                   Row: {
                     "admin_note": string | null,"approval_limit": number | null,"created_at": string,"functions": (string)[],"id": string,"location_ids": (string)[] | null,"preferences": NonNullable<Json>,"team": string | null,"updated_at": string,"user_id": string
@@ -1034,6 +1190,34 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"position_requirements": {
+                  Row: {
+                    "company_code": string,"created_at": string,"id": string,"job_title": string,"location_id": string,"required": number,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "company_code": string,"created_at"?: string,"id"?: string,"job_title": string,"location_id": string,"required": number,"updated_at"?: string
+                  }
+                  Update: {
+                    "company_code"?: string,"created_at"?: string,"id"?: string,"job_title"?: string,"location_id"?: string,"required"?: number,"updated_at"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"position_requirements_logs": {
+                  Row: {
+                    "action": string,"actor_id": string | null,"at": string,"changes": Json | null,"id": number,"note": string | null,"record_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "action": string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id": string
+                  }
+                  Update: {
+                    "action"?: string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
                 },"push_subscriptions": {
                   Row: {
                     "auth": string,"created_at": string,"endpoint": string,"id": string,"last_used_at": string,"p256dh": string,"user_agent": string | null,"user_id": string
@@ -1191,6 +1375,40 @@ isOneToOne: false
     }
                   ]
                 },"safety_activities_logs": {
+                  Row: {
+                    "action": string,"actor_id": string | null,"at": string,"changes": Json | null,"id": number,"note": string | null,"record_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "action": string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id": string
+                  }
+                  Update: {
+                    "action"?: string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"site_permits": {
+                  Row: {
+                    "created_at": string,"created_by": string | null,"employee_id": string,"id": string,"name": string,"number": string | null,"updated_at": string,"valid_until": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"created_by"?: string | null,"employee_id": string,"id"?: string,"name": string,"number"?: string | null,"updated_at"?: string,"valid_until": string
+                  }
+                  Update: {
+                    "created_at"?: string,"created_by"?: string | null,"employee_id"?: string,"id"?: string,"name"?: string,"number"?: string | null,"updated_at"?: string,"valid_until"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "site_permits_employee_id_fkey"
+      columns: ["employee_id"]
+isOneToOne: false
+      referencedRelation: "employees"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"site_permits_logs": {
                   Row: {
                     "action": string,"actor_id": string | null,"at": string,"changes": Json | null,"id": number,"note": string | null,"record_id": string
                   }
@@ -1536,8 +1754,19 @@ isOneToOne: false
 "cctv_redact":
 { Args: { "p": Json }; Returns: Json
                            },
+"certificate_save":
+{ Args: { "p": Json,"p_id": string }; Returns: Json
+                           },
 "company_visible":
 { Args: { "p_company": string }; Returns: boolean
+                           },
+"competency_matrix":
+{ Args: { "p_location"?: string }; Returns: {
+              "certificate_id": string,"competency_id": string,"employee_id": string,"state": string,"valid_until": string
+            }[]
+                           },
+"competency_save":
+{ Args: { "p": Json,"p_id": string }; Returns: Json
                            },
 "dashboard_by_department":
 { Args: { "p_company"?: string,"p_from": string,"p_to": string }; Returns: {
@@ -1554,6 +1783,20 @@ isOneToOne: false
                            },
 "dashboard_summary":
 { Args: { "p_company"?: string,"p_from": string,"p_to": string }; Returns: Json
+                           },
+"employee_overview":
+{ Args: { "p_location"?: string }; Returns: {
+              "comp_ok": number,"comp_required": number,"employee_id": string,"mcu_result": string,"mcu_until": string,"permit_until": string
+            }[]
+                           },
+"employee_save":
+{ Args: { "p": Json,"p_id": string }; Returns: Json
+                           },
+"employee_visible":
+{ Args: { "p_id": string }; Returns: boolean
+                           },
+"expiry_state":
+{ Args: { "p_today"?: string,"p_until": string,"p_warn"?: number }; Returns: string
                            },
 "feedback_set_status":
 { Args: { "p_admin_note"?: string,"p_id": string,"p_status": string }; Returns: Json
@@ -1714,6 +1957,17 @@ isOneToOne: false
 "location_visible":
 { Args: { "p_location": string }; Returns: boolean
                            },
+"manpower_summary":
+{ Args: { "p_location"?: string }; Returns: {
+              "available": number,"job_title": string,"required": number
+            }[]
+                           },
+"mcu_save":
+{ Args: { "p": Json,"p_id": string }; Returns: Json
+                           },
+"medical_viewer":
+{ Args: Record<PropertyKey, never>; Returns: boolean
+                           },
 "my_company_scope":
 { Args: Record<PropertyKey, never>; Returns: (string)[]
                            },
@@ -1767,6 +2021,15 @@ isOneToOne: false
 "pengajuan_save":
 { Args: { "p": Json,"p_id": string }; Returns: string
                            },
+"people_company":
+{ Args: { "p": Json }; Returns: string
+                           },
+"people_manager":
+{ Args: Record<PropertyKey, never>; Returns: boolean
+                           },
+"people_sync_evidence":
+{ Args: { "p_id": string,"p_kind": string }; Returns: Json
+                           },
 "pica_change_due":
 { Args: { "p_due": string,"p_id": string,"p_reason": string }; Returns: Json
                            },
@@ -1784,6 +2047,9 @@ isOneToOne: false
                            },
 "pica_verify":
 { Args: { "p_decision": string,"p_id": string,"p_note": string }; Returns: Json
+                           },
+"position_requirement_save":
+{ Args: { "p": Json }; Returns: Json
                            },
 "push_prune":
 { Args: { "p_endpoints": (string)[] }; Returns: number
@@ -1854,6 +2120,9 @@ isOneToOne: false
                            },
 "set_log_extra":
 { Args: { "p_extra": Json }; Returns: undefined
+                           },
+"site_permit_save":
+{ Args: { "p": Json,"p_id": string }; Returns: Json
                            },
 "support_assign":
 { Args: { "p_admin_id": string,"p_thread_id": string }; Returns: Json

@@ -90,7 +90,7 @@ async function contactSheet(file, items, { cols = 4, width = 420 } = {}) {
   return file;
 }
 
-const APP_PAGES = ["/", "/tugas", "/kejadian", "/kejadian/lapor", "/temuan", "/temuan/baru", "/inspeksi", "/inspeksi/template", "/observasi", "/observasi/baru", "/kpi", "/kpi/jam-kerja", "/tsp", "/pengingat", "/audit", "/laporan", "/master", "/notifikasi", "/pengajuan", "/pengajuan/baru", "__DETAIL__", "/pengguna", "/approval/template", "/approval/kepala-departemen", "/bantuan", "/bantuan/kelola", "/feedback", "/feedback/kelola", "/pembaruan", "/pembaruan/baru", "/dokumentasi", "/tentang", "/profil"];
+const APP_PAGES = ["/", "/tugas", "/kejadian", "/kejadian/lapor", "/temuan", "/temuan/baru", "/inspeksi", "/inspeksi/template", "/observasi", "/observasi/baru", "/kpi", "/kpi/jam-kerja", "/tsp", "/pengingat", "/audit", "/laporan", "/manpower", "/kompetensi", "/mcu", "/master", "/notifikasi", "/pengajuan", "/pengajuan/baru", "__DETAIL__", "/pengguna", "/approval/template", "/approval/kepala-departemen", "/bantuan", "/bantuan/kelola", "/feedback", "/feedback/kelola", "/pembaruan", "/pembaruan/baru", "/dokumentasi", "/tentang", "/profil"];
 
 const chrome = await launch();
 const page = await chrome.newPage();
@@ -388,6 +388,28 @@ try {
     await loginPage(page, BASE, USER("hse"));
     await visit(page, "/", 2500);
     check("beranda: blok Pencapaian TSP per Elemen", (await page.text()).includes("Pencapaian TSP per Elemen"));
+    // ---- People: manpower, kompetensi, MCU (data terbatas)
+    await loginPage(page, BASE, USER("hr"));
+    await visit(page, "/manpower", 2500);
+    const mp = await page.text();
+    check("manpower: KPI, kebutuhan vs tersedia, daftar", mp.includes("Pemenuhan") && mp.includes("Kebutuhan vs Tersedia") && mp.includes("Rudi Hartono") && mp.includes("Tambah Karyawan"), mp.slice(0, 160));
+    await visit(page, "/kompetensi", 2500);
+    const kmat = await page.text();
+    check("kompetensi: matriks dengan status teks", kmat.includes("Matriks Kompetensi") && kmat.includes("Kedaluwarsa") && kmat.includes("Belum Ada"), kmat.slice(0, 160));
+    await visit(page, "/mcu", 2500);
+    check("mcu: daftar + status masa berlaku", (await page.text()).includes("Daftar MCU") && (await page.text()).includes("Fit"));
+    const hrDb = await asUser(USER("hr"), APP_ID);
+    const { data: hendra } = await hrDb.from("employees").select("id").eq("code", "GMI-0011").maybeSingle();
+    await visit(page, `/manpower/${hendra?.id}?tab=mcu`, 2500);
+    check("manpower: HR melihat diagnosis di profil", (await page.text()).includes("Hipertensi"));
+    await loginPage(page, BASE, USER("pengawas"));
+    await visit(page, `/manpower/${hendra?.id}?tab=mcu`, 2500);
+    const pm = await page.text();
+    check("manpower: pengawas TIDAK melihat diagnosis (data terbatas)", !pm.includes("Hipertensi") && pm.includes("Hanya"), pm.slice(0, 160));
+    await loginPage(page, BASE, USER("karyawan"));
+    await visit(page, "/manpower", 2500);
+    check("manpower: karyawan dialihkan ke Beranda", (await page.eval("location.pathname")) === "/", await page.eval("location.href"));
+
     // ---- Laporan Periode: daftar + detail (laporan dibuat lewat RPC, bulan lalu, template PJO)
     await loginPage(page, BASE, USER("hse"));
     const repDb = await asUser(USER("hse"), APP_ID);

@@ -252,7 +252,7 @@ Spesifikasi & keputusan sendiri T1-T9: [docs/spec/fase-2-inspeksi-dashboard.md](
 ## Safe Hub: TSP & Aktivitas, Pengingat, Audit Trail, Laporan Periode (fase 3)
 
 Spesifikasi & keputusan sendiri V1-V7: [docs/spec/fase-3-tsp-laporan.md](docs/spec/fase-3-tsp-laporan.md). Dikerjakan berurutan;
-**TSP & Aktivitas selesai**, tiga bagian lain belum.
+**TSP & Aktivitas, Pengingat, dan Audit Trail selesai**; Laporan Periode belum.
 
 - **TSP** (`db/app/13_tsp.sql`, jenis B): `tsp_programs` (rencana per bulan = `plan smallint[12]`), `tsp_realizations`, `safety_activities`
   (`AKT-YYYY-NNNN`), `tsp_evaluations` (HSE ajukan → PJO setujui/kembalikan, snapshot `summary`). Tulis HANYA lewat RPC `tsp_*` /
@@ -264,7 +264,14 @@ Spesifikasi & keputusan sendiri V1-V7: [docs/spec/fase-3-tsp-laporan.md](docs/sp
   `tsp-matrix.tsx` + sheet realisasi, `program-sheet.tsx`, `activity-sheet.tsx`, `evaluation-panel.tsx`, `ekspor/route.ts`).
   Hanya staf K3 (bukan Karyawan) yang melihat; menu `TSP & Aktivitas` (grup k3lh). `my_tasks` punya cabang `tsp_approve` (PJO).
 - Helper DB baru: `k3_staff()` (staf K3 / admin), `tsp_recorder()` (hse/pengawas/pjo, bukan auditor). Kategori notifikasi `tsp`.
-- **Belum dibangun (fase 3)**: Pengingat (`reminder_rules`), Audit Trail, Laporan Periode, blok Beranda TSP.
+- **Pengingat** (`db/app/14_pengingat.sql`, `/pengingat`): `reminder_rules` (satu baris per jenis: `pica_due`, `inspection_due`,
+  `tsp_evaluation`; admin mengubah lewat RPC `reminder_rule_save`, staf K3 membaca) + `reminder_sent` (idempoten per aturan/record/offset/jatuh
+  tempo). Eksekusi = `run_reminders()` dipanggil `run_maintenance()` (08 didefinisikan ulang di 14). Kanal HANYA in-app: DB tidak bisa
+  mengirim push (tab terbuka tetap menerima lewat realtime). Jenis MCU/sertifikat/izin/dokumen menyusul bersama modulnya (ubah check `kind`).
+  `ExpiryChip` masih 30 hari (belum membaca aturan: belum ada data kedaluwarsa).
+- **Audit Trail** (`db/app/15_audit.sql`, `/audit`): RPC `audit_trail` = UNION semua `<entitas>_logs` (security invoker, hanya admin app
+  dan Auditor, kursor `sebelum`). Entitas log baru = tambah satu cabang di 15 + `lib/audit-rules.ts` + `LOG_ENTITIES`.
+- **Belum dibangun (fase 3)**: Laporan Periode, blok Beranda TSP.
 
 ## Koreksi terhadap guide (sudah diterapkan di `db/`)
 

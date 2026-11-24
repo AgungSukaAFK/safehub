@@ -6,7 +6,7 @@ sendiri ditandai **[V#]**. Keputusan pengguna (2026-11-24): urutan TSP → Pengi
 D9 = template approval + kepala departemen yang sudah ada; data awal TSP = seed prototipe + input manual;
 D10 = pengingat in-app + push saja (tanpa email).
 
-Status pengerjaan: **bagian 1 (TSP & Aktivitas) selesai**; bagian 2-4 belum.
+Status pengerjaan: **bagian 1 (TSP & Aktivitas), 2 (Pengingat), 3 (Audit Trail) selesai**; bagian 4 (Laporan Periode) belum.
 
 ## 1. TSP & Aktivitas (selesai)
 
@@ -49,6 +49,14 @@ capaian, program tercapai/tertinggal, kelengkapan bukti. Halaman, evaluasi, dan 
 | V5 | Evaluasi per site; tampilan "Semua site" hanya membaca | Satu evaluasi = satu site + satu bulan (selaras Laporan Periode §2.2) |
 | V6 | Daftar jenis aktivitas tetap (check constraint), bukan master `/master` | Hanya 7 jenis dari prototipe; menambah master butuh perubahan constraint fase 0 |
 | V7 | Program disusun per tahun; tahun baru = program baru (belum ada "salin dari tahun lalu") | Tidak diminta; bisa ditambah bila perlu |
+
+## 2b. Pengingat dan Audit Trail (selesai)
+
+- **Pengingat**: tiga jenis yang sumber datanya sudah ada (PICA, inspeksi, evaluasi TSP). **[V8]** Kanal in-app saja, push tidak dikirim dari
+  DB (D10 menyebut in-app + push; push dari job DB tidak mungkin tanpa server app). **[V9]** Jenis fase 4-5 ditambahkan bersama modulnya.
+  **[V10]** Aturan bawaan: PICA 7/3/1/0 hari, inspeksi 1/0 hari, evaluasi TSP 3 dan 7 hari setelah akhir bulan (ke HSE).
+- **Audit Trail**: **[V11]** admin app dan Auditor; mengikuti RLS log tiap entitas (jadi Auditor tidak melihat log yang RLS-nya admin saja).
+  Filter entitas/pelaku/aksi/periode, paginasi kursor 50 baris.
 
 ## 3. Belum dibangun
 Blok Beranda "Pencapaian TSP per elemen", tautan aktivitas ke Leading Indicator dashboard, salin program antar tahun,

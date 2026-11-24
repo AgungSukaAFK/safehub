@@ -1048,6 +1048,54 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"reminder_rules": {
+                  Row: {
+                    "created_at": string,"id": string,"is_active": boolean,"kind": string,"name": string,"notify_assignee": boolean,"notify_functions": (string)[],"offsets": (number)[],"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"id"?: string,"is_active"?: boolean,"kind": string,"name": string,"notify_assignee"?: boolean,"notify_functions"?: (string)[],"offsets": (number)[],"updated_at"?: string
+                  }
+                  Update: {
+                    "created_at"?: string,"id"?: string,"is_active"?: boolean,"kind"?: string,"name"?: string,"notify_assignee"?: boolean,"notify_functions"?: (string)[],"offsets"?: (number)[],"updated_at"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"reminder_rules_logs": {
+                  Row: {
+                    "action": string,"actor_id": string | null,"at": string,"changes": Json | null,"id": number,"note": string | null,"record_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "action": string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id": string
+                  }
+                  Update: {
+                    "action"?: string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"reminder_sent": {
+                  Row: {
+                    "due_on": string,"offset_days": number,"ref_id": string,"rule_id": string,"sent_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "due_on": string,"offset_days": number,"ref_id": string,"rule_id": string,"sent_at"?: string
+                  }
+                  Update: {
+                    "due_on"?: string,"offset_days"?: number,"ref_id"?: string,"rule_id"?: string,"sent_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "reminder_sent_rule_id_fkey"
+      columns: ["rule_id"]
+isOneToOne: false
+      referencedRelation: "reminder_rules"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"safety_activities": {
                   Row: {
                     "activity_date": string,"area_id": string,"code": string,"company_code": string,"created_at": string,"created_by": string | null,"evidence_count": number,"id": string,"leader_id": string,"location_id": string,"notes": string | null,"participant_count": number,"program_id": string | null,"search_text": string | null,"type_code": string,"updated_at": string
@@ -1412,6 +1460,11 @@ isOneToOne: false
         isOneToOne: true
         isSetofReturn: false
       } },
+"audit_trail":
+{ Args: { "p_action"?: string,"p_actor"?: string,"p_before"?: string,"p_entities"?: (string)[],"p_from"?: string,"p_limit"?: number,"p_to"?: string }; Returns: {
+              "action": string,"actor_id": string,"at": string,"changes": Json,"entity": string,"id": number,"note": string,"record_id": string
+            }[]
+                           },
 "cctv_redact":
 { Args: { "p": Json }; Returns: Json
                            },
@@ -1675,11 +1728,17 @@ isOneToOne: false
               "auth": string,"body": string,"endpoint": string,"href": string,"notification_id": string,"p256dh": string,"tag": string,"title": string
             }[]
                            },
+"reminder_rule_save":
+{ Args: { "p": Json,"p_id": string }; Returns: Json
+                           },
 "request_followup":
 { Args: { "p_approval_id": string }; Returns: Json
                            },
 "run_maintenance":
 { Args: Record<PropertyKey, never>; Returns: Json
+                           },
+"run_reminders":
+{ Args: { "p_today"?: string }; Returns: Json
                            },
 "safety_activity_save":
 { Args: { "p": Json }; Returns: Json

@@ -90,7 +90,7 @@ async function contactSheet(file, items, { cols = 4, width = 420 } = {}) {
   return file;
 }
 
-const APP_PAGES = ["/", "/tugas", "/kejadian", "/kejadian/lapor", "/temuan", "/temuan/baru", "/inspeksi", "/inspeksi/template", "/observasi", "/observasi/baru", "/kpi", "/kpi/jam-kerja", "/tsp", "/master", "/notifikasi", "/pengajuan", "/pengajuan/baru", "__DETAIL__", "/pengguna", "/approval/template", "/approval/kepala-departemen", "/bantuan", "/bantuan/kelola", "/feedback", "/feedback/kelola", "/pembaruan", "/pembaruan/baru", "/dokumentasi", "/tentang", "/profil"];
+const APP_PAGES = ["/", "/tugas", "/kejadian", "/kejadian/lapor", "/temuan", "/temuan/baru", "/inspeksi", "/inspeksi/template", "/observasi", "/observasi/baru", "/kpi", "/kpi/jam-kerja", "/tsp", "/pengingat", "/audit", "/master", "/notifikasi", "/pengajuan", "/pengajuan/baru", "__DETAIL__", "/pengguna", "/approval/template", "/approval/kepala-departemen", "/bantuan", "/bantuan/kelola", "/feedback", "/feedback/kelola", "/pembaruan", "/pembaruan/baru", "/dokumentasi", "/tentang", "/profil"];
 
 const chrome = await launch();
 const page = await chrome.newPage();
@@ -365,6 +365,24 @@ try {
     await loginPage(page, BASE, USER("karyawan"));
     await visit(page, "/tsp", 2500);
     check("tsp: karyawan dialihkan ke Beranda", (await page.eval("location.pathname")) === "/", await page.eval("location.href"));
+
+    // ---- Pengingat & Audit Trail
+    await loginPage(page, BASE, USER("admin"));
+    await visit(page, "/pengingat", 2000);
+    const pg = await page.text();
+    check("pengingat: aturan bawaan + preview", pg.includes("Tindakan PICA") && pg.includes("Preview Pengingat") && pg.includes("Inspeksi terjadwal"), pg.slice(0, 120));
+    await visit(page, "/audit", 2000);
+    const au = await page.text();
+    check("audit trail: admin melihat filter + baris riwayat", au.includes("Audit Trail") && au.includes("Terapkan") && au.includes("Kejadian"), au.slice(0, 120));
+    await visit(page, "/audit?entitas=incidents", 2000);
+    const auTable = await page.eval(`document.querySelector("table")?.innerText ?? ""`);
+    check("audit trail: filter entitas menyisakan Kejadian di tabel", auTable.includes("Kejadian") && !auTable.includes("Program TSP") && !auTable.includes("Temuan"), auTable.slice(0, 120));
+    await loginPage(page, BASE, USER("hse"));
+    await visit(page, "/audit", 2500);
+    check("audit trail: HSE dialihkan", (await page.eval("location.pathname")) === "/", await page.eval("location.href"));
+    await loginPage(page, BASE, USER("auditor"));
+    await visit(page, "/audit", 2000);
+    check("audit trail: auditor boleh membuka", (await page.eval("location.pathname")) === "/audit");
 
     // ---- Alur nyata: jadwal (RPC, HSE) → pemeriksa (UI) isi & kirim → HSE verifikasi (UI)
     const hseDb = await asUser(USER("hse"), APP_ID);

@@ -42,6 +42,11 @@ const LOG_ENTITIES = [
   "csms_assessments",
   "contractor_documents",
   "pjo_pja_appointments",
+  "controlled_documents",
+  "document_revisions",
+  "regulations",
+  "regulation_evaluations",
+  "ko_register",
 ] as const;
 type LogEntity = (typeof LOG_ENTITIES)[number];
 

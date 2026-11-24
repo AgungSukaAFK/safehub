@@ -16,14 +16,14 @@ case "$MODE" in
   platform)          FILES=(platform/p01_companies.sql platform/p02_cctv.sql platform/p03_maintenance.sql) ;;
   app)               FILES=(app/00_schema.sql app/01_base.sql app/02_notifications.sql app/03_approval.sql
                             app/04_support.sql app/05_feedback.sql app/06_updates.sql app/07_storage.sql
-                            app/08_maintenance.sql app/10_fondasi.sql app/11_kejadian_pica.sql app/12_inspeksi_kpi.sql app/13_tsp.sql app/14_pengingat.sql app/15_audit.sql app/16_laporan.sql app/17_people.sql app/18_pelatihan.sql app/19_kontraktor.sql app/example_pengajuan.sql app/09_verify.sql) ;;
+                            app/08_maintenance.sql app/10_fondasi.sql app/11_kejadian_pica.sql app/12_inspeksi_kpi.sql app/13_tsp.sql app/14_pengingat.sql app/15_audit.sql app/16_laporan.sql app/17_people.sql app/18_pelatihan.sql app/19_kontraktor.sql app/20_dokumen.sql app/example_pengajuan.sql app/09_verify.sql) ;;
   migration)         FILES=(app/00_schema.sql app/01_base.sql app/02_notifications.sql app/03_approval.sql
                             app/04_support.sql app/05_feedback.sql app/06_updates.sql app/07_storage.sql
-                            app/08_maintenance.sql app/10_fondasi.sql app/11_kejadian_pica.sql app/12_inspeksi_kpi.sql app/13_tsp.sql app/14_pengingat.sql app/15_audit.sql app/16_laporan.sql app/17_people.sql app/18_pelatihan.sql app/19_kontraktor.sql app/example_pengajuan.sql) ;;
+                            app/08_maintenance.sql app/10_fondasi.sql app/11_kejadian_pica.sql app/12_inspeksi_kpi.sql app/13_tsp.sql app/14_pengingat.sql app/15_audit.sql app/16_laporan.sql app/17_people.sql app/18_pelatihan.sql app/19_kontraktor.sql app/20_dokumen.sql app/example_pengajuan.sql) ;;
   verify)            FILES=(app/09_verify.sql) ;;
   app-no-example)    FILES=(app/00_schema.sql app/01_base.sql app/02_notifications.sql app/03_approval.sql
                             app/04_support.sql app/05_feedback.sql app/06_updates.sql app/07_storage.sql
-                            app/08_maintenance.sql app/10_fondasi.sql app/11_kejadian_pica.sql app/12_inspeksi_kpi.sql app/13_tsp.sql app/14_pengingat.sql app/15_audit.sql app/16_laporan.sql app/17_people.sql app/18_pelatihan.sql app/19_kontraktor.sql) ;;
+                            app/08_maintenance.sql app/10_fondasi.sql app/11_kejadian_pica.sql app/12_inspeksi_kpi.sql app/13_tsp.sql app/14_pengingat.sql app/15_audit.sql app/16_laporan.sql app/17_people.sql app/18_pelatihan.sql app/19_kontraktor.sql app/20_dokumen.sql) ;;
   dev-stub)          FILES=(dev/00_platform_stub.sql) ;;
   dev-storage-stub)  FILES=(dev/00_storage_stub.sql) ;;
   seed)              FILES=(dev/seed.sql) ;;

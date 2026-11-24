@@ -7,7 +7,7 @@ Langkah 0 (rancangan §3) untuk §4.6-§4.8 dan §2.12. Dikerjakan per bagian; k
 | A | Manpower, Kompetensi & Sertifikat, MCU (+ data terbatas), Permit Site | **selesai** |
 | B | Pelatihan (rencana, kalender, peserta, kehadiran, bukti) | **selesai** |
 | C | Kontraktor & Legalitas, PJO/PJA | **selesai** |
-| D | Prosedur & Dokumen (approval jenis A), Evaluasi Peraturan, Register KO | belum |
+| D | Prosedur & Dokumen (approval jenis A), Evaluasi Peraturan, Register KO | **selesai** (QA browser belum dijalankan) |
 | E | Impor Data (wizard) + pengingat kedaluwarsa (MCU, sertifikat, izin, dokumen) | belum |
 
 ## Bagian A (selesai)
@@ -66,3 +66,21 @@ masuk `trainings_logs` (aksi `participants`, `attendance`). Uji: `db/tests/10_pe
 Tulis lewat RPC `contractor_save`, `contractor_permit_save`, `contractor_contract_save`, `csms_save`, `contractor_document_set`, `pjo_pja_save`,
 `kontraktor_sync_evidence` (`db/app/19_kontraktor.sql`). Baca: `contractor_overview`. Nilai kontrak di `contractor_contract_values` (RLS fungsi, tidak dilog).
 Uji: `db/tests/11_kontraktor.sql` (Z1-Z4). Pengingat izin kedaluwarsa menyusul di bagian E.
+
+## Bagian D: Dokumen, Evaluasi Peraturan, Register KO (keputusan sendiri W1-W8, menunggu konfirmasi)
+
+| # | Keputusan | Alasan |
+|---|---|---|
+| W1 | Yang disetujui engine = REVISI (doc_type `document_revision`, tautan `/dokumen/revisi/<id>` yang mengalihkan ke dokumen). Status revisi `draft > pending_approval > approved \| rejected`; revisi terbit sebelumnya otomatis `obsolete`. Hanya satu revisi terbit dan satu revisi terbuka per dokumen (indeks unik) | Rancangan §4.8 |
+| W2 | Pengelola = `hse`, `hse_senior`, admin (bukan auditor). Dokumen terbit dapat dibaca SEMUA pengguna app dalam scope company (supaya distribusi sampai ke karyawan); draf/revisi berjalan hanya staf K3 | Pengakuan baca butuh akses baca bagi karyawan |
+| W3 | Distribusi = jabatan (teks, UI) + orang (`distribute_employees`, DB saja; belum ada pemilih di UI). Pengakuan dibuat untuk karyawan AKTIF berakun yang cocok saat revisi disetujui, dan diberi notifikasi in-app (kategori `dokumen`). Push tidak terkirim dari hook DB | Sama dengan pengingat: DB tidak bisa mengirim push |
+| W4 | Mengajukan revisi wajib punya minimal satu file di Storage `dokumen/<revisi>/` (dihitung saat diajukan). Karyawan membuka file lewat signed URL (baca = revisi terlihat) | Tanpa file, persetujuan tidak ada artinya |
+| W5 | Jadwal review = tanggal berlaku + interval bulan dokumen; chip masa berlaku turunan (ambang 30 hari). Penarikan dokumen: alasan >= 10 karakter, revisi terbit jadi obsolete, draf dihapus; banner USANG di detail | Rancangan: varian obsolete (banner) |
+| W6 | KPI `document_compliance` (draf, rumus belum disahkan): rata-rata (pengakuan selesai ÷ diminta) dan (dokumen aktif belum lewat jadwal review ÷ dokumen aktif). Bobot sama = usulan saya. Belum dipasang di Beranda | Rancangan §4.8 menyebut rumus belum disahkan |
+| W7 | Evaluasi peraturan: per (peraturan, site, pasal). Sebagian/Tidak Sesuai wajib tindak lanjut; bisa DIJADIKAN TEMUAN sekali (sumber Audit, kategori Dokumen & Prosedur, pilih area/PIC/risiko/tenggat) lewat `k3_finding_insert` | "tindak lanjut → bisa menjadi temuan" |
+| W8 | Register KO = register izin operasi / sertifikasi alat / sarana / dokumen teknis dengan masa berlaku, PJ, file; nomor `KO-YYYY-NNNN`. Rancangan tidak merinci isinya, ini tafsiran saya | Perlu dikonfirmasi isi sebenarnya Register KO |
+
+Tulis lewat RPC `document_save`, `document_revision_start/save`, `document_withdraw`, `document_acknowledge`, `regulation_save`, `regulation_evaluation_save`,
+`regulation_make_finding`, `ko_save`, `dokumen_sync_evidence`; hook `document_revision_context` / `document_revision_on_approval` (`db/app/20_dokumen.sql`).
+Baca: `document_overview`, `document_compliance`. Uji: `db/tests/12_dokumen.sql` (D1-D9). Belum dibangun: cabang `my_tasks` untuk pengakuan yang tertunda
+(hanya banner di /dokumen), pengingat review/KO kedaluwarsa (bagian E), blok Beranda kepatuhan dokumen, pemilih orang untuk distribusi.

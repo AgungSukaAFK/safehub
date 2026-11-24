@@ -90,7 +90,7 @@ async function contactSheet(file, items, { cols = 4, width = 420 } = {}) {
   return file;
 }
 
-const APP_PAGES = ["/", "/tugas", "/kejadian", "/kejadian/lapor", "/temuan", "/temuan/baru", "/inspeksi", "/inspeksi/template", "/observasi", "/observasi/baru", "/kpi", "/kpi/jam-kerja", "/tsp", "/pengingat", "/audit", "/laporan", "/manpower", "/kompetensi", "/pelatihan", "/kontraktor", "/pjo-pja", "/mcu", "/master", "/notifikasi", "/pengajuan", "/pengajuan/baru", "__DETAIL__", "/pengguna", "/approval/template", "/approval/kepala-departemen", "/bantuan", "/bantuan/kelola", "/feedback", "/feedback/kelola", "/pembaruan", "/pembaruan/baru", "/dokumentasi", "/tentang", "/profil"];
+const APP_PAGES = ["/", "/tugas", "/kejadian", "/kejadian/lapor", "/temuan", "/temuan/baru", "/inspeksi", "/inspeksi/template", "/observasi", "/observasi/baru", "/kpi", "/kpi/jam-kerja", "/tsp", "/pengingat", "/audit", "/laporan", "/manpower", "/kompetensi", "/pelatihan", "/kontraktor", "/pjo-pja", "/dokumen", "/peraturan", "/ko", "/mcu", "/master", "/notifikasi", "/pengajuan", "/pengajuan/baru", "__DETAIL__", "/pengguna", "/approval/template", "/approval/kepala-departemen", "/bantuan", "/bantuan/kelola", "/feedback", "/feedback/kelola", "/pembaruan", "/pembaruan/baru", "/dokumentasi", "/tentang", "/profil"];
 
 const chrome = await launch();
 const page = await chrome.newPage();
@@ -444,6 +444,34 @@ try {
     await loginPage(page, BASE, USER("karyawan"));
     await visit(page, "/kontraktor", 2500);
     check("kontraktor: karyawan dialihkan ke Beranda", (await page.eval("location.pathname")) === "/", await page.eval("location.href"));
+
+    // ---- Dokumen terkendali, Evaluasi Peraturan, Register KO
+    await loginPage(page, BASE, USER("hse"));
+    await visit(page, "/dokumen", 2500);
+    const dkr = await page.text();
+    check("dokumen: register, kode, tombol dokumen baru", dkr.includes("Register Dokumen") && dkr.includes("SOP-HSE-001") && dkr.includes("Dokumen Baru"), dkr.slice(0, 160));
+    const dokDb = await asUser(USER("hse"), APP_ID);
+    const { data: sopDoc } = await dokDb.from("controlled_documents").select("id").eq("code", "SOP-HSE-001").maybeSingle();
+    await visit(page, `/dokumen/${sopDoc?.id}`, 2500);
+    const ddt = await page.text();
+    check("dokumen: detail menampilkan revisi berlaku, pengakuan baca, riwayat", ddt.includes("Revisi Berlaku: Rev 2") && ddt.includes("Distribusi & Pengakuan Baca") && ddt.includes("Riwayat Revisi") && ddt.includes("Usang"), ddt.slice(0, 200));
+    const { data: frm } = await dokDb.from("controlled_documents").select("id").eq("code", "FRM-HSE-009").maybeSingle();
+    await visit(page, `/dokumen/${frm?.id}`, 2500);
+    check("dokumen: revisi berjalan (draf) tampil dengan jalur approval", (await page.text()).includes("Revisi Berjalan: Rev 2") && (await page.text()).includes("Jalur Approval"));
+    await visit(page, "/peraturan", 2500);
+    const prt = await page.text();
+    check("peraturan: evaluasi + tombol jadikan temuan", prt.includes("PP 50 Tahun 2012") && prt.includes("Tidak Sesuai") && prt.includes("Jadikan Temuan"), prt.slice(0, 160));
+    await visit(page, "/koTxt", 2500);
+    const koTxt = await page.text();
+    check("koTxt: register + status masa berlaku", koTxt.includes("Daftar Item KO") && koTxt.includes("Kedaluwarsa") && koTxt.includes("Tambah Item KO"), koTxt.slice(0, 160));
+    await loginPage(page, BASE, USER("karyawan"));
+    await visit(page, "/dokumen", 2500);
+    const dkkr = await page.text();
+    check("dokumen: karyawan melihat dokumen terbit + pengakuan yang perlu dibaca, tanpa tombol dokumen baru", dkkr.includes("SOP-HSE-001") && dkkr.includes("Perlu Anda baca") && !dkkr.includes("Dokumen Baru"), dkkr.slice(0, 200));
+    await visit(page, `/dokumen/${sopDoc?.id}`, 2500);
+    check("dokumen: karyawan melihat tombol pengakuan baca, bukan riwayat revisi", (await page.text()).includes("Saya sudah membaca") && !(await page.text()).includes("Riwayat Revisi"));
+    await visit(page, "/peraturan", 2500);
+    check("peraturan: karyawan dialihkan ke Beranda", (await page.eval("location.pathname")) === "/", await page.eval("location.href"));
 
     // ---- Laporan Periode: daftar + detail (laporan dibuat lewat RPC, bulan lalu, template PJO)
     await loginPage(page, BASE, USER("hse"));

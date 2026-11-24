@@ -309,7 +309,13 @@ bagian (A-E); **bagian A selesai** (Manpower, Kompetensi, MCU, Permit).
   `csms_assessments` (hasil dari skor), `contractor_doc_types` + `contractor_documents` (checklist 6 jenis), `pjo_pja_appointments`. Tulis HANYA lewat RPC
   (`contractor_manager()` = kontraktor_admin/hse/admin). Legalitas = turunan izin terbaru per nama (`contractor_overview`). Bukti `izin/`, `kdok/`, `pjo/`.
   Lib: `lib/kontraktor-rules.ts`, `lib/kontraktor.ts` (nilai kontrak dimuat hanya bila `canSeeCommercial`); UI `app/(app)/kontraktor/`, `app/(app)/pjo-pja/`.
-- **Belum (fase 4)**: Dokumen (D), Impor Data + pengingat kedaluwarsa (E).
+- **Dokumen (D)** (`db/app/20_dokumen.sql`, `/dokumen`, `/dokumen/[id]`, `/dokumen/revisi/[id]` = redirect, `/peraturan`, `/ko`): `controlled_documents` + `document_revisions`
+  (jenis A, doc_type `document_revision`; hook `document_revision_on_approval`: disetujui = revisi lama obsolete + `document_acknowledgements` untuk karyawan berakun
+  pada jabatan/orang tujuan + notifikasi in-app kategori `dokumen`), `regulations` + `regulation_evaluations` (Sebagian/Tidak Sesuai bisa dijadikan temuan sekali lewat
+  `regulation_make_finding` → `k3_finding_insert`), `ko_register`. Pengelola `document_manager()` = hse/hse_senior/admin. Dokumen terbit terbaca SEMUA pengguna app
+  (draf/revisi berjalan hanya staf K3). Policy dokumen<->revisi memakai `document_in_scope()` (definer) untuk menghindari rekursi RLS. File revisi `dokumen/<revisi>/`
+  (wajib >= 1 saat diajukan), KO `ko/<id>/`. Lib: `lib/dokumen-rules.ts`, `lib/dokumen.ts`; UI `app/(app)/dokumen/` (+ `peraturan/`, `ko/`). KPI `document_compliance` draf.
+- **Belum (fase 4)**: Impor Data + pengingat kedaluwarsa (E; termasuk MCU, sertifikat, permit, izin kontraktor, review dokumen, KO).
 
 ## Koreksi terhadap guide (sudah diterapkan di `db/`)
 

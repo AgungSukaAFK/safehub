@@ -938,3 +938,75 @@ begin
   alter table __APP__.contractor_documents enable trigger contractor_documents_log;
   alter table __APP__.pjo_pja_appointments enable trigger pjo_pja_appointments_log;
 end $$;
+
+-- ---------- data DEMO fase 4D: dokumen terkendali, peraturan, register KO ----------
+do $$
+declare
+  v_hse uuid := (select id from public.profiles where email = 'hse@demo.lourdes.test');
+  v_site uuid := (select id from public.locations where name = 'Site MIFA');
+  v_tpl uuid; d record; v_doc uuid; v_rev uuid;
+begin
+  if v_hse is null or v_site is null or exists (select 1 from __APP__.controlled_documents) then return; end if;
+  alter table __APP__.controlled_documents disable trigger controlled_documents_log;
+  alter table __APP__.document_revisions disable trigger document_revisions_log;
+  alter table __APP__.regulations disable trigger regulations_log;
+  alter table __APP__.regulation_evaluations disable trigger regulation_evaluations_log;
+  alter table __APP__.ko_register disable trigger ko_register_log;
+
+  if not exists (select 1 from __APP__.approval_templates where doc_type = 'document_revision') then
+    insert into __APP__.approval_templates (doc_type, name, description, priority)
+    values ('document_revision', 'Revisi dokumen standar', 'HSE Senior memeriksa → PJO menyetujui (DEMO)', 0) returning id into v_tpl;
+    insert into __APP__.approval_template_steps (template_id, step_no, approval_type, approver_kind, approver_id, due_hours)
+    values (v_tpl, 1, 'memeriksa',  'user', (select id from public.profiles where email = 'hse.senior@demo.lourdes.test'), 48),
+           (v_tpl, 2, 'menyetujui', 'user', (select id from public.profiles where email = 'pjo@demo.lourdes.test'), 48);
+  end if;
+
+  for d in
+    select * from (values
+      ('SOP-HSE-001', 'Pelaporan dan Investigasi Kejadian', 'sop', array['Teknisi AC', 'Pengawas Service', 'HSE Officer', 'Mekanik']),
+      ('IK-HSE-014', 'Penguncian Energi (LOTO)', 'ik', array['Teknisi AC', 'Mekanik']),
+      ('FRM-HSE-009', 'Form Izin Kerja Panas', 'form', array[]::text[])
+    ) as t(code, title, kind, titles)
+  loop
+    insert into __APP__.controlled_documents (company_code, code, title, kind, owner_id, distribute_titles, created_by)
+    values ('GMI', d.code, d.title, d.kind, v_hse, d.titles, v_hse) returning id into v_doc;
+    if d.code = 'SOP-HSE-001' then
+      insert into __APP__.document_revisions (document_id, rev_no, change_summary, status, effective_on, review_due_on, created_by) values
+        (v_doc, 1, 'Penerbitan awal', 'obsolete', current_date - 400, current_date - 35, v_hse);
+      insert into __APP__.document_revisions (document_id, rev_no, change_summary, status, effective_on, review_due_on, created_by)
+      values (v_doc, 2, 'Penambahan batas waktu pelaporan 2 jam dan klasifikasi awal oleh HSE.', 'approved', current_date - 120, current_date + 245, v_hse) returning id into v_rev;
+    elsif d.code = 'IK-HSE-014' then
+      insert into __APP__.document_revisions (document_id, rev_no, change_summary, status, effective_on, review_due_on, created_by)
+      values (v_doc, 1, 'Penerbitan awal', 'approved', current_date - 400, current_date - 35, v_hse) returning id into v_rev;
+    else
+      insert into __APP__.document_revisions (document_id, rev_no, change_summary, status, effective_on, review_due_on, created_by)
+      values (v_doc, 1, 'Penerbitan awal', 'approved', current_date - 200, current_date + 165, v_hse) returning id into v_rev;
+      insert into __APP__.document_revisions (document_id, rev_no, change_summary, created_by)
+      values (v_doc, 2, 'Tambah kolom pemeriksaan APAR di lokasi kerja.', v_hse);
+    end if;
+    insert into __APP__.document_acknowledgements (revision_id, user_id, employee_id, acknowledged_at)
+    select v_rev, e.profile_id, e.id,
+           case when e.code in ('GMI-0004', 'GMI-0008') or d.code = 'IK-HSE-014' then now() - interval '30 days' end
+      from __APP__.employees e
+     where e.status = 'active' and e.profile_id is not null and e.job_title = any (d.titles);
+  end loop;
+
+  insert into __APP__.regulations (company_code, code, title, issuer, issued_on, created_by) values
+    ('GMI', 'Kepmen ESDM 1827 K/30/MEM/2018', 'Pedoman Pelaksanaan Kaidah Teknik Pertambangan yang Baik', 'Kementerian ESDM', date '2018-05-07', v_hse),
+    ('GMI', 'PP 50 Tahun 2012', 'Penerapan Sistem Manajemen Keselamatan dan Kesehatan Kerja', 'Pemerintah RI', date '2012-04-12', v_hse);
+  insert into __APP__.regulation_evaluations (regulation_id, location_id, clause, requirement, compliance, evaluated_on, follow_up, next_review_on, evaluator_id) values
+    ((select id from __APP__.regulations where code like 'Kepmen%'), v_site, 'Lampiran IV.2', 'Pemeriksaan berkala peralatan angkat dan angkut oleh tenaga bersertifikat.', 'partial', current_date - 20, 'Lengkapi sertifikat operator crane workshop dan jadwalkan uji ulang.', current_date + 70, v_hse),
+    ((select id from __APP__.regulations where code like 'Kepmen%'), v_site, 'Lampiran IV.5', 'Penyediaan kotak P3K dan APAR sesuai jumlah pekerja di setiap area.', 'compliant', current_date - 20, null, current_date + 160, v_hse),
+    ((select id from __APP__.regulations where code like 'PP 50%'), v_site, 'Pasal 12', 'Pelaksanaan audit internal SMK3 minimal satu kali setahun.', 'non_compliant', current_date - 45, 'Susun jadwal audit internal dan tunjuk auditor internal bersertifikat.', current_date + 30, v_hse);
+
+  insert into __APP__.ko_register (company_code, location_id, code, title, kind, number, owner_id, valid_until, created_by) values
+    ('GMI', v_site, __APP__.next_doc_number('KO', 'GMI', 'year'), 'Izin Operasi Workshop Service', 'izin_operasi', 'IO/GMI/2025/007', v_hse, current_date + 200, v_hse),
+    ('GMI', v_site, __APP__.next_doc_number('KO', 'GMI', 'year'), 'Sertifikasi Layak Operasi Crane Workshop', 'sertifikasi_alat', 'SLO-CR-0412', v_hse, current_date + 25, v_hse),
+    ('GMI', v_site, __APP__.next_doc_number('KO', 'GMI', 'year'), 'Uji Instalasi Penyalur Petir', 'sertifikasi_alat', 'IPP-2024-118', v_hse, current_date - 10, v_hse);
+
+  alter table __APP__.controlled_documents enable trigger controlled_documents_log;
+  alter table __APP__.document_revisions enable trigger document_revisions_log;
+  alter table __APP__.regulations enable trigger regulations_log;
+  alter table __APP__.regulation_evaluations enable trigger regulation_evaluations_log;
+  alter table __APP__.ko_register enable trigger ko_register_log;
+end $$;

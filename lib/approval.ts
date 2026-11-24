@@ -13,6 +13,14 @@ const DOC_SUMMARY: Record<string, (s: ServerClient, ids: string[]) => Promise<{ 
     const { data: tpl } = await s.from("report_templates").select("id, name");
     return (data ?? []).map((d) => ({ id: d.id, code: d.code, title: tpl?.find((t) => t.id === d.template_id)?.name ?? "Laporan Periode", amount: null, companyCode: d.company_code, requesterId: d.created_by }));
   },
+  document_revision: async (s, ids) => {
+    const { data } = await s.from("document_revisions").select("id, rev_no, created_by, document_id").in("id", ids);
+    const { data: docs } = await s.from("controlled_documents").select("id, code, title, company_code").in("id", (data ?? []).map((r) => r.document_id));
+    return (data ?? []).map((r) => {
+      const d = docs?.find((x) => x.id === r.document_id);
+      return { id: r.id, code: d ? `${d.code} Rev ${r.rev_no}` : null, title: d?.title ?? "Revisi Dokumen", amount: null, companyCode: d?.company_code ?? "", requesterId: r.created_by };
+    });
+  },
   // CONTOH boilerplate (hapus bersama /pengajuan)
   pengajuan: async (s, ids) => {
     const { data } = await s.from("pengajuan").select("id, code, title, total_amount, company_code, created_by").in("id", ids);

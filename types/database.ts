@@ -1334,6 +1334,94 @@ isOneToOne: true
                   Relationships: [
                     
                   ]
+                },"mnt_backlog": {
+                  Row: {
+                    "closed_on": string | null,"id": string,"opened_on": string,"priority": string,"source_key": string,"status": string,"synced_at": string,"title": string,"unit_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "closed_on"?: string | null,"id"?: string,"opened_on": string,"priority": string,"source_key": string,"status": string,"synced_at"?: string,"title": string,"unit_id": string
+                  }
+                  Update: {
+                    "closed_on"?: string | null,"id"?: string,"opened_on"?: string,"priority"?: string,"source_key"?: string,"status"?: string,"synced_at"?: string,"title"?: string,"unit_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "mnt_backlog_unit_id_fkey"
+      columns: ["unit_id"]
+isOneToOne: false
+      referencedRelation: "mnt_units"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"mnt_downtime": {
+                  Row: {
+                    "event_date": string,"hours": number,"id": string,"kind": string,"note": string | null,"source_key": string,"synced_at": string,"unit_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "event_date": string,"hours": number,"id"?: string,"kind": string,"note"?: string | null,"source_key": string,"synced_at"?: string,"unit_id": string
+                  }
+                  Update: {
+                    "event_date"?: string,"hours"?: number,"id"?: string,"kind"?: string,"note"?: string | null,"source_key"?: string,"synced_at"?: string,"unit_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "mnt_downtime_unit_id_fkey"
+      columns: ["unit_id"]
+isOneToOne: false
+      referencedRelation: "mnt_units"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"mnt_ps": {
+                  Row: {
+                    "done_on": string | null,"id": string,"name": string,"planned_on": string,"source_key": string,"synced_at": string,"unit_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "done_on"?: string | null,"id"?: string,"name": string,"planned_on": string,"source_key": string,"synced_at"?: string,"unit_id": string
+                  }
+                  Update: {
+                    "done_on"?: string | null,"id"?: string,"name"?: string,"planned_on"?: string,"source_key"?: string,"synced_at"?: string,"unit_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "mnt_ps_unit_id_fkey"
+      columns: ["unit_id"]
+isOneToOne: false
+      referencedRelation: "mnt_units"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"mnt_sync_state": {
+                  Row: {
+                    "company_code": string,"filename": string | null,"row_count": number,"synced_at": string,"target": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "company_code": string,"filename"?: string | null,"row_count"?: number,"synced_at"?: string,"target": string
+                  }
+                  Update: {
+                    "company_code"?: string,"filename"?: string | null,"row_count"?: number,"synced_at"?: string,"target"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"mnt_units": {
+                  Row: {
+                    "code": string,"company_code": string,"id": string,"location_id": string,"model": string | null,"status": string,"synced_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "code": string,"company_code": string,"id"?: string,"location_id": string,"model"?: string | null,"status"?: string,"synced_at"?: string
+                  }
+                  Update: {
+                    "code"?: string,"company_code"?: string,"id"?: string,"location_id"?: string,"model"?: string | null,"status"?: string,"synced_at"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
                 },"notifications": {
                   Row: {
                     "actor_id": string | null,"body": string | null,"category": string,"created_at": string,"entity": string | null,"href": string | null,"id": string,"read_at": string | null,"record_id": string | null,"title": string,"type": string,"user_id": string
@@ -2390,6 +2478,9 @@ isOneToOne: false
 "import_row":
 { Args: { "d": Json,"p_company": string,"p_location": string,"p_mode": string,"p_target": string }; Returns: undefined
                            },
+"import_row_mnt":
+{ Args: { "d": Json,"p_company": string,"p_mode": string,"p_target": string }; Returns: undefined
+                           },
 "incident_classify":
 { Args: { "p": Json,"p_id": string }; Returns: Json
                            },
@@ -2528,6 +2619,12 @@ isOneToOne: false
 { Args: { "p": Json,"p_id": string }; Returns: Json
                            },
 "medical_viewer":
+{ Args: Record<PropertyKey, never>; Returns: boolean
+                           },
+"mnt_dashboard":
+{ Args: { "p_from": string,"p_location": string,"p_to": string }; Returns: Json
+                           },
+"mnt_manager":
 { Args: Record<PropertyKey, never>; Returns: boolean
                            },
 "my_company_scope":

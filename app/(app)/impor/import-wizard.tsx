@@ -7,7 +7,7 @@ import Link from "next/link";
 import { AlertTriangle, CheckCircle2, Download, Loader2, Upload } from "lucide-react";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { Button } from "@/components/ui/button";
-import { autoMap, IMPORT_TARGET_LIST, IMPORT_TARGETS, validateRows, type ImportMode, type ImportTargetId } from "@/lib/import/targets";
+import { autoMap, IMPORT_TARGET_LIST, IMPORT_TARGETS, validateRows, type ImportGroup, type ImportMode, type ImportTargetId } from "@/lib/import/targets";
 import { useOnline } from "@/lib/offline/use-online";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
@@ -19,13 +19,20 @@ const AFTER_LINK: Record<ImportTargetId, { href: string; label: string }> = {
   certificates: { href: "/kompetensi", label: "Buka Matriks Kompetensi" },
   mcu: { href: "/mcu", label: "Buka MCU" },
   site_permits: { href: "/manpower", label: "Buka Manpower" },
+  mnt_units: { href: "/maintenance?tab=unit", label: "Buka Maintenance" },
+  mnt_downtime: { href: "/maintenance?tab=downtime", label: "Buka Maintenance" },
+  mnt_ps: { href: "/maintenance?tab=ps", label: "Buka Maintenance" },
+  mnt_backlog: { href: "/maintenance?tab=backlog", label: "Buka Maintenance" },
 };
 const selectCls = "h-9 w-full rounded-md border bg-background px-2 text-sm";
 
-export function ImportWizard({ sites, defaultSite }: { sites: { id: string; name: string }[]; defaultSite: string | null }) {
+const GROUP_LABEL: Record<ImportGroup, string> = { people: "People & Compliance", maintenance: "Maintenance (cermin sistem maintenance, hanya baca di Safe Hub)" };
+
+export function ImportWizard({ sites, defaultSite, groups }: { sites: { id: string; name: string }[]; defaultSite: string | null; groups: ImportGroup[] }) {
   const online = useOnline();
   const [step, setStep] = useState(0);
-  const [targetId, setTargetId] = useState<ImportTargetId>("employees");
+  const allowed = IMPORT_TARGET_LIST.filter((t) => groups.includes(t.group));
+  const [targetId, setTargetId] = useState<ImportTargetId>(allowed[0]?.id ?? "employees");
   const [mode, setMode] = useState<ImportMode>("insert");
   const [siteId, setSiteId] = useState<string>(defaultSite ?? sites[0]?.id ?? "");
   const [file, setFile] = useState<File | null>(null);
@@ -88,10 +95,11 @@ export function ImportWizard({ sites, defaultSite }: { sites: { id: string; name
         <section className="space-y-4 rounded-xl border bg-card p-4">
           <fieldset className="space-y-2">
             <legend className="mb-1 text-sm font-medium">Data yang diimpor</legend>
-            {IMPORT_TARGET_LIST.map((t) => (
+            {allowed.map((t, i) => (
               <label key={t.id} className={cn("flex cursor-pointer gap-3 rounded-lg border p-3 text-sm", targetId === t.id && "border-primary bg-primary/5")}>
                 <input type="radio" name="target" checked={targetId === t.id} onChange={() => setTargetId(t.id)} className="mt-1" />
                 <span>
+                  {(i === 0 || allowed[i - 1].group !== t.group) && groups.length > 1 && <small className="mb-0.5 block text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">{GROUP_LABEL[t.group]}</small>}
                   <strong className="block font-medium">{t.label}</strong>
                   <small className="text-xs text-muted-foreground">{t.description}</small>
                 </span>

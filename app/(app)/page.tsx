@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight, Eye, Siren } from "lucide-react";
 import { BlockSkeleton, CardsSkeleton, FeedBlock, UpdateBanner } from "@/components/dashboard/blocks";
 import { DashboardGreeting } from "@/components/dashboard/greeting";
 import { K3ActionNeeded, LeadingBlock, MyReports, PicaBlock, SafetyStrip, SummaryCards, UpdatedAt } from "@/components/dashboard/k3-blocks";
+import { MaintenanceBlock } from "@/components/dashboard/maintenance-block";
 import { TspBlock } from "@/components/dashboard/tsp-block";
 import { NotificationCta } from "@/components/dashboard/notification-cta";
 import { buttonVariants } from "@/components/ui/button";
@@ -109,6 +110,9 @@ export default async function DashboardPage({ searchParams }: PageProps<"/">) {
           </Suspense>
           <Suspense key={`t-${bulan}-${siteId}`} fallback={<BlockSkeleton size="lg" height="h-40" />}>
             <TspBlock supabase={supabase} bulan={bulan} site={siteId} kpi={kpis.find((k) => k.code === "tsp_achievement") ?? null} />
+          </Suspense>
+          <Suspense key={`m-${bulan}-${siteId}`} fallback={<BlockSkeleton size="lg" height="h-32" />}>
+            <MaintenanceBlock supabase={supabase} bulan={bulan} site={siteId} kpis={["mnt_pa", "mnt_ps_accuracy", "mnt_mttr", "mnt_backlog_open"].map((c) => kpis.find((k) => k.code === c) ?? null)} />
           </Suspense>
           <UpdatedAt at={now} />
         </>

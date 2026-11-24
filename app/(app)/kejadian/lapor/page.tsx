@@ -4,6 +4,7 @@ import { requireAccess } from "@/lib/auth";
 import { FUNCTION_LABELS } from "@/lib/functions";
 import { getAreas, getContractorOptions, getK3Masters, getK3People, getWritableCompanies } from "@/lib/k3";
 import { nowWibLocal, type ReportValues } from "@/lib/kejadian-rules";
+import { listUnitSuggestions } from "@/lib/maintenance";
 import { parseSiteParam } from "@/lib/sites";
 import { createClient } from "@/lib/supabase/server";
 import { LaporWizard } from "./lapor-wizard";
@@ -20,12 +21,13 @@ export default async function LaporKejadianPage({ searchParams }: PageProps<"/ke
   const site = siteId ?? (access.profile.locationId && sites.some((s) => s.id === access.profile.locationId) ? access.profile.locationId : sites[0]?.id);
   if (!site) redirect("/kejadian");
   const supabase = await createClient();
-  const [areas, masters, people, contractors, companies] = await Promise.all([
+  const [areas, masters, people, contractors, companies, unitSuggestions] = await Promise.all([
     getAreas(supabase),
     getK3Masters(supabase),
     getK3People(supabase),
     getContractorOptions(supabase),
     getWritableCompanies(access),
+    listUnitSuggestions(supabase, site),
   ]);
   const initial: ReportValues = {
     company_code: companies.length === 1 ? companies[0].value : (access.profile.company ?? null),
@@ -57,6 +59,7 @@ export default async function LaporKejadianPage({ searchParams }: PageProps<"/ke
       contractors={contractors}
       reporter={{ name: access.profile.fullName, subtitle }}
       userId={access.userId}
+      unitSuggestions={unitSuggestions}
     />
   );
 }

@@ -63,6 +63,7 @@ export function LaporWizard({
   contractors,
   reporter,
   userId,
+  unitSuggestions,
 }: {
   initial: ReportValues;
   companies: SelectOption[];
@@ -74,6 +75,8 @@ export function LaporWizard({
   contractors: SelectOption[];
   reporter: { name: string; subtitle: string };
   userId: string;
+  /** unit dari data cermin maintenance (saran saja; isian bebas tetap boleh, D15) */
+  unitSuggestions: { code: string; label: string }[];
 }) {
   const router = useRouter();
   const online = useOnline();
@@ -331,7 +334,23 @@ export function LaporWizard({
               {err("category") && <p className="text-sm text-destructive">{err("category")}</p>}
             </fieldset>
             <Field label="Kode unit" htmlFor="lp-unit" hint="Contoh: H57197">
-              <Input id="lp-unit" value={v.unit_code} maxLength={40} onChange={(e) => set("unit_code", e.target.value)} className="h-11 text-base md:h-9 md:text-sm" />
+              <Input
+                id="lp-unit"
+                value={v.unit_code}
+                maxLength={40}
+                list={unitSuggestions.length ? "lp-unit-list" : undefined}
+                onChange={(e) => {
+                  set("unit_code", e.target.value);
+                  const hit = unitSuggestions.find((u) => u.code === e.target.value);
+                  if (hit && !v.unit_label) set("unit_label", hit.label);
+                }}
+                className="h-11 text-base md:h-9 md:text-sm"
+              />
+              {unitSuggestions.length > 0 && (
+                <datalist id="lp-unit-list">
+                  {unitSuggestions.map((u) => <option key={u.code} value={u.code}>{u.label}</option>)}
+                </datalist>
+              )}
             </Field>
             <Field label="Model / nama unit" htmlFor="lp-unit-label" hint="Contoh: HD785-7. Opsional">
               <Input id="lp-unit-label" value={v.unit_label} maxLength={120} onChange={(e) => set("unit_label", e.target.value)} className="h-11 text-base md:h-9 md:text-sm" />

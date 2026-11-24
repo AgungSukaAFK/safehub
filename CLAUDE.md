@@ -321,7 +321,20 @@ bagian (A-E); **bagian A selesai** (Manpower, Kompetensi, MCU, Permit).
   diagnosis), site_permits. Target baru = tambah entri di `IMPORT_TARGETS` + cabang di `import_row` + check `import_jobs.target`. Pengingat kedaluwarsa: `run_expiry_reminders`
   dipanggil lewat pembungkus `run_reminders` (inti = `run_reminders_core`); jenis baru = tambah di check `reminder_rules.kind` + cabang di `run_expiry_reminders` + `REMINDER_KINDS`.
   Kategori notifikasi `compliance`.
-- **Fase 4 selesai** (A-E). **Belum**: impor TSP/PS-backlog, pengingat laporan periode, push untuk pengingat, ambang ExpiryChip dari aturan pengingat.
+- **Fase 4 selesai** (A-E).
+
+## Safe Hub: Maintenance, hanya baca (fase 5, inti)
+
+Spesifikasi & keputusan sendiri M1-M8: [docs/spec/fase-5-maintenance.md](docs/spec/fase-5-maintenance.md). D12 (2026-11-24): sumber = **impor Excel**.
+
+- **Prinsip**: sistem maintenance tetap sumber kebenaran; tabel cermin `mnt_units/downtime/ps/backlog` (`db/app/22_maintenance.sql`) TIDAK punya form dan hanya ditulis `import_commit`
+  (target `mnt_*`, hak `mnt_manager()` = maintenance/hse/admin). Idempoten per `source_key` (kolom "ID sumber"). Setiap tampilan menyebut sumber + waktu sinkron (`mnt_sync_state`).
+- **Angka**: SATU RPC `mnt_dashboard(site, dari, sampai)` (invoker/RLS) dipakai halaman `/maintenance` (tab `?tab=`, `?bulan=YYYY-MM`) dan blok Beranda `MaintenanceBlock`.
+  Rumus (draf, "belum disahkan"): PA/MTBF/MTTR dari jam tersedia = unit tidak Dihentikan × hari × 24 (ASUMSI M1); PS Accuracy toleransi 2 hari; Backlog Open per akhir periode.
+  KPI `mnt_pa/mtbf/mttr/ps_accuracy/backlog_open` di Kamus KPI. Tanpa breakdown = "Belum tersedia".
+- **Lib**: `lib/maintenance-rules.ts` (label, aman client), `lib/maintenance.ts` (loader, server). Target impor baru = entri `IMPORT_TARGETS` (group `maintenance`) + cabang `import_row_mnt`.
+- Unit di record K3 tetap isian bebas (D15); data cermin hanya jadi saran datalist di Lapor Kejadian (`listUnitSuggestions`).
+- **Belum**: Material Request, Readiness LIB, Metal Scrap, bagian Maintenance di Laporan Periode, sinkron otomatis, tautan keluar ke sistem sumber. **Belum**: impor TSP/PS-backlog, pengingat laporan periode, push untuk pengingat, ambang ExpiryChip dari aturan pengingat.
 
 ## Koreksi terhadap guide (sudah diterapkan di `db/`)
 

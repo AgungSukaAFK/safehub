@@ -90,7 +90,7 @@ async function contactSheet(file, items, { cols = 4, width = 420 } = {}) {
   return file;
 }
 
-const APP_PAGES = ["/", "/tugas", "/kejadian", "/kejadian/lapor", "/temuan", "/temuan/baru", "/inspeksi", "/inspeksi/template", "/observasi", "/observasi/baru", "/kpi", "/kpi/jam-kerja", "/tsp", "/pengingat", "/audit", "/laporan", "/manpower", "/kompetensi", "/pelatihan", "/kontraktor", "/pjo-pja", "/dokumen", "/peraturan", "/ko", "/impor", "/mcu", "/master", "/notifikasi", "/pengajuan", "/pengajuan/baru", "__DETAIL__", "/pengguna", "/approval/template", "/approval/kepala-departemen", "/bantuan", "/bantuan/kelola", "/feedback", "/feedback/kelola", "/pembaruan", "/pembaruan/baru", "/dokumentasi", "/tentang", "/profil"];
+const APP_PAGES = ["/", "/tugas", "/kejadian", "/kejadian/lapor", "/temuan", "/temuan/baru", "/inspeksi", "/inspeksi/template", "/observasi", "/observasi/baru", "/kpi", "/kpi/jam-kerja", "/tsp", "/pengingat", "/audit", "/laporan", "/manpower", "/kompetensi", "/pelatihan", "/kontraktor", "/pjo-pja", "/dokumen", "/peraturan", "/ko", "/impor", "/maintenance", "/mcu", "/master", "/notifikasi", "/pengajuan", "/pengajuan/baru", "__DETAIL__", "/pengguna", "/approval/template", "/approval/kepala-departemen", "/bantuan", "/bantuan/kelola", "/feedback", "/feedback/kelola", "/pembaruan", "/pembaruan/baru", "/dokumentasi", "/tentang", "/profil"];
 
 const chrome = await launch();
 const page = await chrome.newPage();
@@ -486,6 +486,22 @@ try {
     await loginPage(page, BASE, USER("pengawas"));
     await visit(page, "/impor", 2500);
     check("impor: pengawas dialihkan ke Beranda", (await page.eval("location.pathname")) === "/", await page.eval("location.href"));
+
+    // ---- Maintenance (cermin, hanya baca)
+    await loginPage(page, BASE, USER("maintenance"));
+    await visit(page, "/maintenance?bulan=" + new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth() - 1, 1)).toISOString().slice(0, 7), 3000);
+    const mnt = await page.text();
+    check("maintenance: KPI PA/MTBF/MTTR/PS Accuracy/Backlog + sumber & waktu sinkron", mnt.includes("Physical Availability") && mnt.includes("MTBF") && mnt.includes("PS Accuracy") && mnt.includes("Backlog Open") && mnt.includes("Sumber:") && mnt.includes("diperbarui") && mnt.includes("DZ-101"), mnt.slice(0, 200));
+    check("maintenance: rumus KPI ditandai belum disahkan", mnt.includes("Rumus belum disahkan"), mnt.slice(0, 120));
+    await visit(page, "/maintenance?tab=backlog", 2500);
+    check("maintenance: tab Backlog menampilkan item + prioritas, tanpa tombol ubah", (await page.text()).includes("Ganti final drive") && (await page.text()).includes("Tinggi") && !(await page.text()).includes("Tambah Backlog"));
+    await visit(page, "/impor", 2500);
+    check("impor: target maintenance tersedia untuk Service/Maintenance, target people tidak", (await page.text()).includes("Maintenance: Unit") && (await page.text()).includes("Maintenance: Backlog") && !(await page.text()).includes("Manpower (karyawan & tenaga mitra)"), (await page.text()).slice(0, 200));
+    await visit(page, "/kejadian/lapor", 2500);
+    check("lapor kejadian: datalist saran unit dari data maintenance", (await page.eval("document.querySelectorAll('#lp-unit-list option').length")) >= 7, String(await page.eval("document.querySelectorAll('#lp-unit-list option').length")));
+    await loginPage(page, BASE, USER("karyawan"));
+    await visit(page, "/maintenance", 2500);
+    check("maintenance: karyawan dialihkan ke Beranda", (await page.eval("location.pathname")) === "/", await page.eval("location.href"));
 
     // ---- Laporan Periode: daftar + detail (laporan dibuat lewat RPC, bulan lalu, template PJO)
     await loginPage(page, BASE, USER("hse"));

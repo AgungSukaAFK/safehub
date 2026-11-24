@@ -4,7 +4,7 @@ import { Content } from "@/components/list/content";
 import { PageHeader } from "@/components/page-header";
 import { requireAccess } from "@/lib/auth";
 import { formatDateTime } from "@/lib/format";
-import { IMPORT_TARGETS, type ImportTargetId } from "@/lib/import/targets";
+import { IMPORT_TARGETS, type ImportGroup, type ImportTargetId } from "@/lib/import/targets";
 import { parseSiteParam } from "@/lib/sites";
 import { createClient } from "@/lib/supabase/server";
 import { ImportWizard } from "./import-wizard";
@@ -15,8 +15,11 @@ export const metadata: Metadata = { title: "Impor Data" };
 export default async function ImporPage({ searchParams }: PageProps<"/impor">) {
   const access = await requireAccess("viewer");
   const isAdmin = access.role === "admin" || access.platformAdmin;
-  const canImport = isAdmin || (!access.functions.includes("auditor") && (access.functions.includes("hr") || access.functions.includes("hse")));
-  if (!canImport) redirect("/");
+  const writer = isAdmin || !access.functions.includes("auditor");
+  const groups: ImportGroup[] = [];
+  if (isAdmin || (writer && (access.functions.includes("hr") || access.functions.includes("hse")))) groups.push("people");
+  if (isAdmin || (writer && (access.functions.includes("maintenance") || access.functions.includes("hse")))) groups.push("maintenance");
+  if (groups.length === 0) redirect("/");
   const sp = await searchParams;
   const { siteId, sites } = await parseSiteParam(sp, access);
   const supabase = await createClient();
@@ -25,9 +28,9 @@ export default async function ImporPage({ searchParams }: PageProps<"/impor">) {
 
   return (
     <>
-      <PageHeader title="Impor Data" description="Masukkan data awal dari file Excel: unggah, cocokkan kolom, periksa, lalu impor" />
+      <PageHeader title="Impor Data" description="Masukkan data awal manpower dan data dari sistem maintenance lewat Excel: unggah, cocokkan kolom, periksa, lalu impor" />
       <div className="col-span-12 flex flex-col gap-4">
-        <ImportWizard sites={sites.map((s) => ({ id: s.id, name: s.name }))} defaultSite={defaultSite} />
+        <ImportWizard sites={sites.map((s) => ({ id: s.id, name: s.name }))} defaultSite={defaultSite} groups={groups} />
         <Content title="Riwayat Impor" description="10 impor terakhir Anda">
           {(jobs ?? []).length === 0 ? (
             <p className="text-sm text-muted-foreground">Belum ada impor.</p>

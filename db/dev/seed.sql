@@ -1010,3 +1010,60 @@ begin
   alter table __APP__.regulation_evaluations enable trigger regulation_evaluations_log;
   alter table __APP__.ko_register enable trigger ko_register_log;
 end $$;
+
+-- ---------- data DEMO fase 5: cermin data maintenance (unit, downtime, PS, backlog) ----------
+-- Periode inti = BULAN LALU (selalu penuh) + sedikit bulan ini. Kunci sumber 'seed-*' (impor ulang idempoten).
+do $$
+declare
+  v_site uuid := (select id from public.locations where name = 'Site MIFA');
+  v_p date := (date_trunc('month', current_date) - interval '1 month')::date;
+  v_cur date := date_trunc('month', current_date)::date;
+begin
+  if v_site is null or exists (select 1 from __APP__.mnt_units) then return; end if;
+  insert into __APP__.mnt_units (company_code, location_id, code, model, status) values
+    ('GMI', v_site, 'EX-201', 'Excavator PC400', 'active'),
+    ('GMI', v_site, 'HD-301', 'Dump Truck HD785', 'active'),
+    ('GMI', v_site, 'DZ-101', 'Dozer D85', 'breakdown'),
+    ('GMI', v_site, 'LV-12', 'Light Vehicle Hilux', 'active'),
+    ('GMI', v_site, 'GS-05', 'Genset 500 kVA', 'standby'),
+    ('GMI', v_site, 'CR-02', 'Crane Workshop 10T', 'active'),
+    ('GMI', v_site, 'WL-07', 'Wheel Loader WA470', 'active'),
+    ('GMI', v_site, 'CMP-04', 'Compressor Atlas', 'retired');
+
+  insert into __APP__.mnt_downtime (unit_id, event_date, hours, kind, note, source_key)
+  select u.id, d.dt, d.h, d.k, d.note, 'seed-dt-' || d.n
+    from (values
+      (1, 'EX-201', v_p + 4, 40, 'breakdown', 'Hydraulic pump bocor'),
+      (2, 'HD-301', v_p + 9, 30, 'breakdown', 'Turbo charger'),
+      (3, 'DZ-101', v_p + 15, 50, 'breakdown', 'Final drive'),
+      (4, 'GS-05', v_p + 6, 24, 'planned', 'Overhaul terjadwal'),
+      (5, 'CMP-04', v_p + 11, 10, 'breakdown', 'Unit sudah dihentikan (tidak dihitung)'),
+      (6, 'DZ-101', v_cur, 6, 'breakdown', 'Lanjutan perbaikan final drive')
+    ) as d(n, code, dt, h, k, note) join __APP__.mnt_units u on u.company_code = 'GMI' and u.code = d.code;
+
+  insert into __APP__.mnt_ps (unit_id, name, planned_on, done_on, source_key)
+  select u.id, p.name, p.planned, p.done, 'seed-ps-' || p.n
+    from (values
+      (1, 'EX-201', 'PS 500 jam', v_p + 3, v_p + 3),
+      (2, 'HD-301', 'PS 250 jam', v_p + 5, v_p + 5),
+      (3, 'LV-12', 'PS 10.000 km', v_p + 8, v_p + 9),
+      (4, 'CR-02', 'PS tahunan crane', v_p + 12, v_p + 17),
+      (5, 'WL-07', 'PS 250 jam', v_p + 14, null::date),
+      (6, 'DZ-101', 'PS 1000 jam', v_p + 20, v_p + 18)
+    ) as p(n, code, name, planned, done) join __APP__.mnt_units u on u.company_code = 'GMI' and u.code = p.code;
+
+  insert into __APP__.mnt_backlog (unit_id, title, priority, status, opened_on, closed_on, source_key)
+  select u.id, b.title, b.pr, b.st, b.op, b.cl, 'seed-bl-' || b.n
+    from (values
+      (1, 'DZ-101', 'Ganti final drive', 'high', 'open', v_p - 10, null::date),
+      (2, 'HD-301', 'Perbaikan AC kabin', 'medium', 'open', v_p - 20, null::date),
+      (3, 'EX-201', 'Ganti bucket teeth', 'high', 'open', v_p + 2, null::date),
+      (4, 'LV-12', 'Ganti wiper', 'low', 'open', v_p + 7, null::date),
+      (5, 'WL-07', 'Seal hydraulic rembes', 'low', 'done', v_p - 5, v_p + 3),
+      (6, 'CR-02', 'Kalibrasi limit switch', 'low', 'done', v_p + 10, v_cur + 0)
+    ) as b(n, code, title, pr, st, op, cl) join __APP__.mnt_units u on u.company_code = 'GMI' and u.code = b.code;
+
+  insert into __APP__.mnt_sync_state (company_code, target, synced_at, row_count, filename) values
+    ('GMI', 'mnt_units', now() - interval '1 day', 8, 'unit.xlsx'), ('GMI', 'mnt_downtime', now() - interval '1 day', 6, 'downtime.xlsx'),
+    ('GMI', 'mnt_ps', now() - interval '1 day', 6, 'ps.xlsx'), ('GMI', 'mnt_backlog', now() - interval '1 day', 6, 'backlog.xlsx');
+end $$;

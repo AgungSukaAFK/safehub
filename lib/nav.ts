@@ -18,6 +18,7 @@ import {
   UserCheck,
   Stethoscope,
   Users2,
+  Wrench,
   FileText,
   FileUp,
   Headset,
@@ -73,7 +74,7 @@ export type NavItem = {
 /** Semua yang bisa menulis K3 (auditor = baca saja, rancangan §2.1). Cermin k3_writer() di DB. */
 const notAuditor = (a: AppAccess) => !a.functions.includes("auditor");
 /** Staf K3 (fungsi selain karyawan) atau admin: menu daftar Temuan. Karyawan membuka temuan lewat Tugas Saya. */
-const canImport = (a: AppAccess) => a.role === "admin" || a.platformAdmin || (!a.functions.includes("auditor") && (a.functions.includes("hr") || a.functions.includes("hse")));
+const canImport = (a: AppAccess) => a.role === "admin" || a.platformAdmin || (!a.functions.includes("auditor") && (a.functions.includes("hr") || a.functions.includes("hse") || a.functions.includes("maintenance")));
 const k3Staff = (a: AppAccess) => a.role === "admin" || a.platformAdmin || a.functions.some((f) => f !== "karyawan");
 
 export const NAV_GROUP_LABELS: Record<NavGroupId, string> = {
@@ -262,6 +263,16 @@ export const NAV_ITEMS: NavItem[] = [
     min: "viewer",
     group: "dokumen",
     keywords: ["ko", "keselamatan operasi", "izin operasi", "sertifikasi alat", "slo"],
+    visible: k3Staff,
+  },
+  {
+    href: "/maintenance",
+    label: "Maintenance",
+    description: "Ketersediaan unit, PS, backlog, dan downtime (hanya baca dari sistem maintenance)",
+    icon: Wrench,
+    min: "viewer",
+    group: "maintenance",
+    keywords: ["maintenance", "unit", "pa", "availability", "mtbf", "mttr", "ps", "planned service", "backlog", "downtime", "breakdown"],
     visible: k3Staff,
   },
   {

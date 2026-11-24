@@ -7,9 +7,11 @@ export async function GET(request: Request) {
   const access = await getAccess();
   if (!access) return new Response("Sesi berakhir. Masuk lagi.", { status: 401 });
   const isAdmin = access.role === "admin" || access.platformAdmin;
-  if (!isAdmin && !access.functions.includes("hr") && !access.functions.includes("hse")) return new Response("Anda tidak punya akses impor data.", { status: 403 });
   const target = IMPORT_TARGETS[new URL(request.url).searchParams.get("target") as ImportTargetId];
   if (!target) return new Response("Target tidak dikenal.", { status: 400 });
+  const fn = (f: string) => access.functions.includes(f as never);
+  const allowed = isAdmin || (target.group === "people" ? fn("hr") || fn("hse") : fn("maintenance") || fn("hse"));
+  if (!allowed) return new Response("Anda tidak punya akses impor data ini.", { status: 403 });
 
   type Row = Record<string, string>;
   const columns: ExcelColumn<Row>[] = target.columns.map((c) => ({ header: c.label, value: (r) => r[c.key] }));

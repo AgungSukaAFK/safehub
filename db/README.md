@@ -15,6 +15,7 @@ Template SQL, **bukan folder migration**. Saat app dibuat, file di sini digabung
 | `app/17_people.sql` | Manpower, kompetensi/sertifikat, MCU (+ data terbatas), permit site | Safe Hub (fase 4A) |
 | `app/18_pelatihan.sql` | Pelatihan: rencana, peserta, kehadiran, bukti | Safe Hub (fase 4B) |
 | `app/19_kontraktor.sql` | Kontraktor (izin, kontrak + nilai terbatas, CSMS, checklist), PJO/PJA | Safe Hub (fase 4C) |
+| `app/22_maintenance.sql` | Cermin data sistem maintenance (unit, downtime, PS, backlog; hanya baca) + `mnt_dashboard` | Safe Hub (fase 5) |
 | `app/21_impor_pengingat.sql` | Impor Data (import_jobs, import_commit) + 6 jenis pengingat kedaluwarsa | Safe Hub (fase 4E) |
 | `app/20_dokumen.sql` | Dokumen terkendali (revisi lewat approval engine, pengakuan baca), Evaluasi Peraturan, Register KO | Safe Hub (fase 4D) |
 | `app/example_pengajuan.sql` | Contoh dokumen lengkap dengan approval | Hapus saat app punya dokumen asli |

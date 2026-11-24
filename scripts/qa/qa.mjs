@@ -90,7 +90,7 @@ async function contactSheet(file, items, { cols = 4, width = 420 } = {}) {
   return file;
 }
 
-const APP_PAGES = ["/", "/tugas", "/kejadian", "/kejadian/lapor", "/temuan", "/temuan/baru", "/inspeksi", "/inspeksi/template", "/observasi", "/observasi/baru", "/kpi", "/kpi/jam-kerja", "/tsp", "/pengingat", "/audit", "/master", "/notifikasi", "/pengajuan", "/pengajuan/baru", "__DETAIL__", "/pengguna", "/approval/template", "/approval/kepala-departemen", "/bantuan", "/bantuan/kelola", "/feedback", "/feedback/kelola", "/pembaruan", "/pembaruan/baru", "/dokumentasi", "/tentang", "/profil"];
+const APP_PAGES = ["/", "/tugas", "/kejadian", "/kejadian/lapor", "/temuan", "/temuan/baru", "/inspeksi", "/inspeksi/template", "/observasi", "/observasi/baru", "/kpi", "/kpi/jam-kerja", "/tsp", "/pengingat", "/audit", "/laporan", "/master", "/notifikasi", "/pengajuan", "/pengajuan/baru", "__DETAIL__", "/pengguna", "/approval/template", "/approval/kepala-departemen", "/bantuan", "/bantuan/kelola", "/feedback", "/feedback/kelola", "/pembaruan", "/pembaruan/baru", "/dokumentasi", "/tentang", "/profil"];
 
 const chrome = await launch();
 const page = await chrome.newPage();
@@ -383,6 +383,26 @@ try {
     await loginPage(page, BASE, USER("auditor"));
     await visit(page, "/audit", 2000);
     check("audit trail: auditor boleh membuka", (await page.eval("location.pathname")) === "/audit");
+
+    // ---- Laporan Periode: daftar + detail (laporan dibuat lewat RPC, bulan lalu, template PJO)
+    await loginPage(page, BASE, USER("hse"));
+    const repDb = await asUser(USER("hse"), APP_ID);
+    const { data: rtpl } = await repDb.from("report_templates").select("id").eq("code", "F-MAC-IMS-08-015").maybeSingle();
+    const { data: rsite } = await repDb.schema("public").from("locations").select("id").eq("name", "Site MIFA").maybeSingle();
+    const lastMonth = new Date(Date.now() + 7 * 3_600_000 - 40 * 86_400_000).toISOString().slice(0, 7);
+    const { data: rep, error: repErr } = await repDb.rpc("report_create", { p: { template_id: rtpl?.id, location_id: rsite?.id, period: lastMonth } });
+    check("laporan QA: laporan dibuat lewat RPC (atau sudah ada)", !!rep?.id || /sudah ada/.test(repErr?.message ?? ""), repErr?.message);
+    await visit(page, "/laporan", 2000);
+    const lp = await page.text();
+    check("laporan: daftar + tombol Buat Laporan", lp.includes("Laporan Periode") && lp.includes("Buat Laporan") && lp.includes("LAP-PJO-"), lp.slice(0, 120));
+    if (rep?.id) {
+      await visit(page, `/laporan/${rep.id}`, 2500);
+      const ld = await page.text();
+      check("laporan: workspace memuat outline, kelengkapan, jalur approval", ld.includes("Pemeriksaan Kelengkapan") && ld.includes("Kinerja Keselamatan") && ld.includes("Jalur Approval") && ld.includes("Belum tersedia"), ld.slice(0, 160));
+    }
+    await loginPage(page, BASE, USER("karyawan"));
+    await visit(page, "/laporan", 2500);
+    check("laporan: karyawan dialihkan ke Beranda", (await page.eval("location.pathname")) === "/", await page.eval("location.href"));
 
     // ---- Alur nyata: jadwal (RPC, HSE) → pemeriksa (UI) isi & kirim → HSE verifikasi (UI)
     const hseDb = await asUser(USER("hse"), APP_ID);

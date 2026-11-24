@@ -252,7 +252,7 @@ Spesifikasi & keputusan sendiri T1-T9: [docs/spec/fase-2-inspeksi-dashboard.md](
 ## Safe Hub: TSP & Aktivitas, Pengingat, Audit Trail, Laporan Periode (fase 3)
 
 Spesifikasi & keputusan sendiri V1-V7: [docs/spec/fase-3-tsp-laporan.md](docs/spec/fase-3-tsp-laporan.md). Dikerjakan berurutan;
-**TSP & Aktivitas, Pengingat, dan Audit Trail selesai**; Laporan Periode belum.
+**semua empat bagian selesai** (TSP & Aktivitas, Pengingat, Audit Trail, Laporan Periode).
 
 - **TSP** (`db/app/13_tsp.sql`, jenis B): `tsp_programs` (rencana per bulan = `plan smallint[12]`), `tsp_realizations`, `safety_activities`
   (`AKT-YYYY-NNNN`), `tsp_evaluations` (HSE ajukan → PJO setujui/kembalikan, snapshot `summary`). Tulis HANYA lewat RPC `tsp_*` /
@@ -271,7 +271,16 @@ Spesifikasi & keputusan sendiri V1-V7: [docs/spec/fase-3-tsp-laporan.md](docs/sp
   `ExpiryChip` masih 30 hari (belum membaca aturan: belum ada data kedaluwarsa).
 - **Audit Trail** (`db/app/15_audit.sql`, `/audit`): RPC `audit_trail` = UNION semua `<entitas>_logs` (security invoker, hanya admin app
   dan Auditor, kursor `sebelum`). Entitas log baru = tambah satu cabang di 15 + `lib/audit-rules.ts` + `LOG_ENTITIES`.
-- **Belum dibangun (fase 3)**: Laporan Periode, blok Beranda TSP.
+- **Laporan Periode** (`db/app/16_laporan.sql`, `/laporan`, jenis A): `report_templates` (kode form + `sections` jsonb; sumber `kpi|incidents|
+  findings|inspections|tsp|narrative|unavailable`), `reports` (site + template + bulan; kode `LAP-YYYY-MM` / `LAP-PJO-YYYY-MM` = periode, bukan
+  urut), `report_versions` (snapshot jsonb). Approval engine doc_type `laporan` (template seed: HSE Senior → PJO → Manajemen; `DOC_SUMMARY.laporan`
+  di lib/approval.ts). Hook `report_on_approval`: submitted = cek kelengkapan wajib (kekurangan hanya boleh dengan `submit_note` >= 10 karakter),
+  approved = **snapshot versi baru** (1.0, koreksi 1.1, ...) + status `published`. Angka draf = `report_build_data` (SATU sumber, definer, tidak
+  bergantung scope approver) lewat `report_data`; tampilan terbit HANYA membaca snapshot. Koreksi = `report_start_correction` (alasan >= 10) →
+  draf → approval lagi. Bagian modul yang belum ada = `unavailable` ("Belum tersedia", tanpa angka). Narasi = teks biasa (bukan rich text).
+  Lib: `lib/laporan-rules.ts`, `lib/laporan.ts`; halaman `app/(app)/laporan/` (daftar, `create-sheet.tsx`, `[id]/laporan-view.tsx`).
+- **Belum dibangun (fase 3)**: ekspor PDF/Excel & cetak Laporan Periode, blok Beranda "Pencapaian TSP", rich text narasi, template laporan
+  yang bisa diubah di UI.
 
 ## Koreksi terhadap guide (sudah diterapkan di `db/`)
 

@@ -29,6 +29,7 @@ const LOG_ENTITIES = [
   "safety_activities",
   "tsp_evaluations",
   "reminder_rules",
+  "reports",
 ] as const;
 type LogEntity = (typeof LOG_ENTITIES)[number];
 

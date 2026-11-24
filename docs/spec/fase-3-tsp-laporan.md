@@ -6,7 +6,7 @@ sendiri ditandai **[V#]**. Keputusan pengguna (2026-11-24): urutan TSP → Pengi
 D9 = template approval + kepala departemen yang sudah ada; data awal TSP = seed prototipe + input manual;
 D10 = pengingat in-app + push saja (tanpa email).
 
-Status pengerjaan: **bagian 1 (TSP & Aktivitas), 2 (Pengingat), 3 (Audit Trail) selesai**; bagian 4 (Laporan Periode) belum.
+Status pengerjaan: **semua empat bagian selesai** (TSP & Aktivitas, Pengingat, Audit Trail, Laporan Periode).
 
 ## 1. TSP & Aktivitas (selesai)
 
@@ -58,6 +58,23 @@ capaian, program tercapai/tertinggal, kelengkapan bukti. Halaman, evaluasi, dan 
 - **Audit Trail**: **[V11]** admin app dan Auditor; mengikuti RLS log tiap entitas (jadi Auditor tidak melihat log yang RLS-nya admin saja).
   Filter entitas/pelaku/aksi/periode, paginasi kursor 50 baris.
 
+## 4. Laporan Periode (selesai)
+
+Route: `/laporan` (ringkasan status, filter template/tahun, tombol Buat Laporan) dan `/laporan/[id]` (workspace: outline, bagian dengan tautan
+"N data · lihat sumber", Pemeriksaan Kelengkapan, tindakan, riwayat versi, Jalur Approval). Alur: draf → ajukan → HSE Senior (memeriksa) → PJO →
+Manajemen → **Terbit** (snapshot v1.0). Dikembalikan → bisa diubah dan diajukan ulang. Koreksi → v1.1 lewat approval yang sama, alasan wajib.
+
+Keputusan sendiri (mohon dikonfirmasi):
+
+| # | Keputusan | Alasan |
+|---|---|---|
+| W1 | Kelengkapan wajib = jam kerja bulan itu, semua kejadian periode terklasifikasi, narasi terisi; disarankan = bukti PICA terverifikasi, evaluasi TSP disetujui. Kekurangan wajib boleh diajukan dengan alasan (>= 10 karakter) | Rancangan §4.10: "atau dengan catatan"; angka palsu tidak dibuat |
+| W2 | Narasi = teks biasa maks 4000 karakter per bagian, bukan Tiptap | Rich text menambah kompleksitas sanitasi; bisa diganti `RichTextEditor` tanpa mengubah DB (kolom jsonb) |
+| W3 | Template laporan hanya dari seed (2 template prototipe); belum ada UI mengelolanya | Prototipe tidak menampilkan editor template |
+| W4 | Kode laporan = periode (`LAP-2026-10`), unik per site+template+bulan; tanpa nomor urut | Rancangan §2.6 |
+| W5 | Snapshot memuat daftar kejadian (maks 100) dan angka agregat, bukan seluruh record | Cukup untuk arsip resmi; record sumber tetap bisa dibuka |
+| W6 | Jalur approval dari template engine (D9), tanpa kepala departemen (departemen null) | Persetujuan per jabatan tetap, mengikuti prototipe |
+
 ## 3. Belum dibangun
-Blok Beranda "Pencapaian TSP per elemen", tautan aktivitas ke Leading Indicator dashboard, salin program antar tahun,
-cetak evaluasi. Bagian 2-4 (Pengingat, Audit Trail, Laporan Periode) menyusul.
+Ekspor PDF/Excel dan cetak Laporan Periode, blok Beranda "Pencapaian TSP per elemen", tautan aktivitas ke Leading Indicator dashboard, salin
+program TSP antar tahun, cetak evaluasi TSP, rich text narasi.

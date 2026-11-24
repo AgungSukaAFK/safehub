@@ -735,3 +735,18 @@ begin
   alter table __APP__.tsp_realizations enable trigger tsp_realizations_log;
   alter table __APP__.safety_activities enable trigger safety_activities_log;
 end $$;
+
+-- ---------- data DEMO fase 3: template approval Laporan Periode (D9: template + approver per langkah) ----------
+do $$
+declare v_tpl uuid;
+begin
+  if not exists (select 1 from __APP__.approval_templates where doc_type = 'laporan') then
+    insert into __APP__.approval_templates (doc_type, name, description, priority)
+    values ('laporan', 'Laporan Periode standar', 'Review pemilik data (HSE Senior) → PJO → Manajemen (DEMO)', 0)
+    returning id into v_tpl;
+    insert into __APP__.approval_template_steps (template_id, step_no, approval_type, approver_kind, approver_id, due_hours)
+    values (v_tpl, 1, 'memeriksa',  'user', (select id from public.profiles where email = 'hse.senior@demo.lourdes.test'), 48),
+           (v_tpl, 2, 'menyetujui', 'user', (select id from public.profiles where email = 'pjo@demo.lourdes.test'), 48),
+           (v_tpl, 3, 'menyetujui', 'user', (select id from public.profiles where email = 'manajemen@demo.lourdes.test'), 72);
+  end if;
+end $$;

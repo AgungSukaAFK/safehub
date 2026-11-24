@@ -2,6 +2,7 @@
 import { INCIDENT_STATUS } from "@/lib/kejadian-rules";
 import { INSPECTION_STATUS } from "@/lib/inspeksi-rules";
 import { ACTION_STATUS } from "@/lib/pica-rules";
+import { REPORT_STATUS } from "@/lib/laporan-rules";
 import { EVALUATION_STATUS } from "@/lib/tsp-rules";
 import type { StatusDef } from "@/lib/status";
 
@@ -23,4 +24,5 @@ export const TASK_STATUS_MAP: Record<string, Record<string, StatusDef>> = {
   pica_actions: ACTION_STATUS,
   inspections: INSPECTION_STATUS,
   tsp_evaluations: EVALUATION_STATUS,
+  reports: REPORT_STATUS,
 };

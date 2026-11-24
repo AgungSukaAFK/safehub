@@ -12,6 +12,7 @@ export const AUDIT_ENTITIES: Record<string, { label: string; href?: (id: string)
   tsp_realizations: { label: "Realisasi TSP", href: () => "/tsp" },
   safety_activities: { label: "Aktivitas K3", href: () => "/tsp" },
   tsp_evaluations: { label: "Evaluasi TSP", href: () => "/tsp" },
+  reports: { label: "Laporan Periode", href: (id) => `/laporan/${id}` },
   reminder_rules: { label: "Aturan pengingat", href: () => "/pengingat" },
   members: { label: "Pengguna", href: (id) => `/pengguna/${id}` },
   areas: { label: "Area", href: () => "/master" },

@@ -1096,6 +1096,74 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"report_templates": {
+                  Row: {
+                    "code": string,"created_at": string,"id": string,"is_active": boolean,"name": string,"prefix": string,"revision": string,"sections": NonNullable<Json>,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "code": string,"created_at"?: string,"id"?: string,"is_active"?: boolean,"name": string,"prefix": string,"revision"?: string,"sections": NonNullable<Json>,"updated_at"?: string
+                  }
+                  Update: {
+                    "code"?: string,"created_at"?: string,"id"?: string,"is_active"?: boolean,"name"?: string,"prefix"?: string,"revision"?: string,"sections"?: NonNullable<Json>,"updated_at"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"report_versions": {
+                  Row: {
+                    "id": string,"published_at": string,"reason": string | null,"report_id": string,"snapshot": NonNullable<Json>,"version": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "id"?: string,"published_at"?: string,"reason"?: string | null,"report_id": string,"snapshot": NonNullable<Json>,"version": string
+                  }
+                  Update: {
+                    "id"?: string,"published_at"?: string,"reason"?: string | null,"report_id"?: string,"snapshot"?: NonNullable<Json>,"version"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "report_versions_report_id_fkey"
+      columns: ["report_id"]
+isOneToOne: false
+      referencedRelation: "reports"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"reports": {
+                  Row: {
+                    "code": string,"company_code": string,"correction_reason": string | null,"created_at": string,"created_by": string | null,"current_version": string | null,"id": string,"location_id": string,"narratives": NonNullable<Json>,"period": string,"search_text": string | null,"status": string,"submit_note": string | null,"template_id": string,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "code": string,"company_code": string,"correction_reason"?: string | null,"created_at"?: string,"created_by"?: string | null,"current_version"?: string | null,"id"?: string,"location_id": string,"narratives"?: NonNullable<Json>,"period": string,"search_text"?: string | null,"status"?: string,"submit_note"?: string | null,"template_id": string,"updated_at"?: string
+                  }
+                  Update: {
+                    "code"?: string,"company_code"?: string,"correction_reason"?: string | null,"created_at"?: string,"created_by"?: string | null,"current_version"?: string | null,"id"?: string,"location_id"?: string,"narratives"?: NonNullable<Json>,"period"?: string,"search_text"?: string | null,"status"?: string,"submit_note"?: string | null,"template_id"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "reports_template_id_fkey"
+      columns: ["template_id"]
+isOneToOne: false
+      referencedRelation: "report_templates"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"reports_logs": {
+                  Row: {
+                    "action": string,"actor_id": string | null,"at": string,"changes": Json | null,"id": number,"note": string | null,"record_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "action": string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id": string
+                  }
+                  Update: {
+                    "action"?: string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
                 },"safety_activities": {
                   Row: {
                     "activity_date": string,"area_id": string,"code": string,"company_code": string,"created_at": string,"created_by": string | null,"evidence_count": number,"id": string,"leader_id": string,"location_id": string,"notes": string | null,"participant_count": number,"program_id": string | null,"search_text": string | null,"type_code": string,"updated_at": string
@@ -1730,6 +1798,41 @@ isOneToOne: false
                            },
 "reminder_rule_save":
 { Args: { "p": Json,"p_id": string }; Returns: Json
+                           },
+"report_approval_context":
+{ Args: { "p_id": string }; Returns: Database["safehub"]['CompositeTypes']["approval_context"]
+                          SetofOptions: {
+        from: "*"
+        to: "approval_context"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
+"report_build_data":
+{ Args: { "p_id": string }; Returns: Json
+                           },
+"report_can_edit":
+{ Args: { "p_id": string }; Returns: boolean
+                           },
+"report_completeness":
+{ Args: { "p_id": string }; Returns: Json
+                           },
+"report_create":
+{ Args: { "p": Json }; Returns: Json
+                           },
+"report_data":
+{ Args: { "p_id": string }; Returns: Json
+                           },
+"report_on_approval":
+{ Args: { "p_id": string,"p_outcome": string }; Returns: undefined
+                           },
+"report_save_narratives":
+{ Args: { "p": Json,"p_id": string,"p_submit_note"?: string }; Returns: Json
+                           },
+"report_start_correction":
+{ Args: { "p_id": string,"p_reason": string }; Returns: Json
+                           },
+"report_visible":
+{ Args: { "p_id": string }; Returns: boolean
                            },
 "request_followup":
 { Args: { "p_approval_id": string }; Returns: Json

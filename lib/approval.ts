@@ -8,6 +8,11 @@ export type DocSummary = { code: string | null; title: string; amount: number | 
 
 /** Ringkasan dokumen per doc_type (kode, judul, nominal, pemohon). Dokumen baru: tambah di sini. */
 const DOC_SUMMARY: Record<string, (s: ServerClient, ids: string[]) => Promise<{ id: string; code: string | null; title: string; amount: number | null; companyCode: string; requesterId: string | null }[]>> = {
+  laporan: async (s, ids) => {
+    const { data } = await s.from("reports").select("id, code, company_code, created_by, template_id").in("id", ids);
+    const { data: tpl } = await s.from("report_templates").select("id, name");
+    return (data ?? []).map((d) => ({ id: d.id, code: d.code, title: tpl?.find((t) => t.id === d.template_id)?.name ?? "Laporan Periode", amount: null, companyCode: d.company_code, requesterId: d.created_by }));
+  },
   // CONTOH boilerplate (hapus bersama /pengajuan)
   pengajuan: async (s, ids) => {
     const { data } = await s.from("pengajuan").select("id, code, title, total_amount, company_code, created_by").in("id", ids);

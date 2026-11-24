@@ -249,6 +249,23 @@ Spesifikasi & keputusan sendiri T1-T9: [docs/spec/fase-2-inspeksi-dashboard.md](
 - **Belum dibangun (fase 2)**: ekspor Excel/cetak inspeksi, jadwal berulang, blok Beranda yang datanya belum ada
   (Manpower, Kepatuhan Dokumen, TSP, Health, Maintenance, Isu Terbuka, Perlu Perhatian).
 
+## Safe Hub: TSP & Aktivitas, Pengingat, Audit Trail, Laporan Periode (fase 3)
+
+Spesifikasi & keputusan sendiri V1-V7: [docs/spec/fase-3-tsp-laporan.md](docs/spec/fase-3-tsp-laporan.md). Dikerjakan berurutan;
+**TSP & Aktivitas selesai**, tiga bagian lain belum.
+
+- **TSP** (`db/app/13_tsp.sql`, jenis B): `tsp_programs` (rencana per bulan = `plan smallint[12]`), `tsp_realizations`, `safety_activities`
+  (`AKT-YYYY-NNNN`), `tsp_evaluations` (HSE ajukan → PJO setujui/kembalikan, snapshot `summary`). Tulis HANYA lewat RPC `tsp_*` /
+  `safety_activity_*`. Aktual sel = max(manual, jumlah aktivitas terhubung) (V1). SATU sumber angka: `tsp_matrix` + `tsp_summary`
+  (halaman, evaluasi, ekspor). Capaian = Σ min(aktual, rencana) ÷ Σ rencana s.d. bulan acuan; KPI `tsp_achievement` draf.
+- **Bukti** = Storage `tsp/<program>/<YYYY-MM>/` dan `aktivitas/<id>/` (policy lampiran didefinisikan ulang di 13); jumlah file dihitung
+  RPC (`tsp_count_files`, tertutup untuk client), bukan tabel. Realisasi bulan yang evaluasinya disetujui terkunci.
+- **Lib/halaman**: `lib/tsp-rules.ts` (zod, `cellState`, `programProgress`), `lib/tsp.ts` (loader), `app/(app)/tsp/` (`page.tsx`,
+  `tsp-matrix.tsx` + sheet realisasi, `program-sheet.tsx`, `activity-sheet.tsx`, `evaluation-panel.tsx`, `ekspor/route.ts`).
+  Hanya staf K3 (bukan Karyawan) yang melihat; menu `TSP & Aktivitas` (grup k3lh). `my_tasks` punya cabang `tsp_approve` (PJO).
+- Helper DB baru: `k3_staff()` (staf K3 / admin), `tsp_recorder()` (hse/pengawas/pjo, bukan auditor). Kategori notifikasi `tsp`.
+- **Belum dibangun (fase 3)**: Pengingat (`reminder_rules`), Audit Trail, Laporan Periode, blok Beranda TSP.
+
 ## Koreksi terhadap guide (sudah diterapkan di `db/`)
 
 | # | Masalah di guide | Perbaikan |

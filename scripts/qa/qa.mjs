@@ -90,7 +90,7 @@ async function contactSheet(file, items, { cols = 4, width = 420 } = {}) {
   return file;
 }
 
-const APP_PAGES = ["/", "/tugas", "/kejadian", "/kejadian/lapor", "/temuan", "/temuan/baru", "/inspeksi", "/inspeksi/template", "/observasi", "/observasi/baru", "/kpi", "/kpi/jam-kerja", "/master", "/notifikasi", "/pengajuan", "/pengajuan/baru", "__DETAIL__", "/pengguna", "/approval/template", "/approval/kepala-departemen", "/bantuan", "/bantuan/kelola", "/feedback", "/feedback/kelola", "/pembaruan", "/pembaruan/baru", "/dokumentasi", "/tentang", "/profil"];
+const APP_PAGES = ["/", "/tugas", "/kejadian", "/kejadian/lapor", "/temuan", "/temuan/baru", "/inspeksi", "/inspeksi/template", "/observasi", "/observasi/baru", "/kpi", "/kpi/jam-kerja", "/tsp", "/master", "/notifikasi", "/pengajuan", "/pengajuan/baru", "__DETAIL__", "/pengguna", "/approval/template", "/approval/kepala-departemen", "/bantuan", "/bantuan/kelola", "/feedback", "/feedback/kelola", "/pembaruan", "/pembaruan/baru", "/dokumentasi", "/tentang", "/profil"];
 
 const chrome = await launch();
 const page = await chrome.newPage();
@@ -354,6 +354,17 @@ try {
     await loginPage(page, BASE, USER("karyawan"));
     await visit(page, "/inspeksi/template", 2500);
     check("template inspeksi: karyawan dialihkan", (await page.eval("location.pathname")) === "/inspeksi", await page.eval("location.href"));
+
+    // ---- TSP & Aktivitas: matriks, aktivitas, evaluasi
+    await loginPage(page, BASE, USER("hse"));
+    await visit(page, "/tsp", 2500);
+    const tsp = await page.text();
+    check("tsp: matriks program, capaian, aktivitas, evaluasi", tsp.includes("Monitoring Matrix TSP") && tsp.includes("Komunikasi Kebijakan SMT") && tsp.includes("Aktivitas K3") && tsp.includes("Evaluasi Bulanan") && tsp.includes("Rumus belum disahkan"), tsp.slice(0, 160));
+    check("tsp: HSE melihat Tambah Program + Catat Aktivitas", tsp.includes("Tambah Program") && tsp.includes("Catat Aktivitas"));
+    check("tsp: sel matriks punya label aksesibel (aktual/rencana)", (await page.eval(`document.querySelectorAll('button[aria-label*="aktual"][aria-label*="rencana"]').length`)) > 20);
+    await loginPage(page, BASE, USER("karyawan"));
+    await visit(page, "/tsp", 2500);
+    check("tsp: karyawan dialihkan ke Beranda", (await page.eval("location.pathname")) === "/", await page.eval("location.href"));
 
     // ---- Alur nyata: jadwal (RPC, HSE) → pemeriksa (UI) isi & kirim → HSE verifikasi (UI)
     const hseDb = await asUser(USER("hse"), APP_ID);

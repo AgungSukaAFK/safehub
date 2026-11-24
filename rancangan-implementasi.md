@@ -5,7 +5,7 @@ Guideline pengembangan fitur berdasarkan prototipe UI Figma di folder
 kode. Detail teknis mengikuti [CLAUDE.md](CLAUDE.md), [frontend-guide.md](frontend-guide.md), dan
 [backend-guide.md](backend-guide.md).
 
-> Status: draf v0.7 (2026-11-23). Fase 2 (Inspeksi & Observasi, Kamus KPI, Dashboard v1) dibangun di cabang `fase-2-inspeksi-dashboard`; keputusan T1-T9 menunggu konfirmasi (docs/spec/fase-2-inspeksi-dashboard.md). Fase 1 (Kejadian + Temuan/PICA) dibangun di cabang `fase-1-kejadian-pica`; keputusan S1-S7 menunggu konfirmasi (lihat docs/spec/fase-1-kejadian-pica.md). D1–D5, D7, D13–D15 sudah diputuskan. Fase 0 selesai di cabang
+> Status: draf v0.8 (2026-11-24). Fase 3 sedang dikerjakan di cabang `fase-3-tsp-laporan` (TSP & Aktivitas selesai; Pengingat, Audit Trail, Laporan Periode menyusul; keputusan V1-V7 di docs/spec/fase-3-tsp-laporan.md). D9 (approval laporan = template + kepala departemen) dan D10 (tanpa email) diputuskan 2026-11-24. Sebelumnya v0.7 (2026-11-23). Fase 2 (Inspeksi & Observasi, Kamus KPI, Dashboard v1) dibangun di cabang `fase-2-inspeksi-dashboard`; keputusan T1-T9 menunggu konfirmasi (docs/spec/fase-2-inspeksi-dashboard.md). Fase 1 (Kejadian + Temuan/PICA) dibangun di cabang `fase-1-kejadian-pica`; keputusan S1-S7 menunggu konfirmasi (lihat docs/spec/fase-1-kejadian-pica.md). D1–D5, D7, D13–D15 sudah diputuskan. Fase 0 selesai di cabang
 > `fase-0-fondasi` (lihat catatan di §4.0). Bagian bertanda **[KEPUTUSAN]** memakai asumsi default. Konfirmasi
 > dulu sebelum modul terkait dikerjakan, lalu ubah tandanya menjadi **[DIPUTUSKAN]**.
 
@@ -786,8 +786,8 @@ Isi kolom "Keputusan" saat sudah dikonfirmasi, lalu perbarui bagian terkait.
 | D6 | Sumber jam kerja (penyebut LTIFR)? (§4.6) | Input bulanan per site | |
 | D7 | Maintenance: input penuh di app atau impor/integrasi sistem lain? (§4.9) | Impor + dashboard dulu | **Sistem maintenance sudah ada; Safe Hub hanya membaca** (2026-11-20) |
 | D8 | "Isu Terbuka" = entitas `issues` sendiri atau temuan bersumber rapat? (§4.4) | Temuan dengan `source_kind = meeting` | |
-| D9 | Penyetuju Laporan Periode & Dokumen: tetap per template atau per jabatan? | Template approval + kepala departemen yang sudah ada | |
-| D10 | Email sebagai kanal pengingat? (§4.12) | Tidak; in-app + push | |
+| D9 | Penyetuju Laporan Periode & Dokumen: tetap per template atau per jabatan? | Template approval + kepala departemen yang sudah ada | **Setuju default** (2026-11-24) |
+| D10 | Email sebagai kanal pengingat? (§4.12) | Tidak; in-app + push | **Setuju default** (2026-11-24) |
 | D11 | Ambang KPI kesehatan (CMR ≤ 2,21, dst.) dan target leading indicator: siapa pemilik & di mana diatur? | Kamus KPI (kolom ambang, versi) | |
 | D12 | Sistem maintenance yang ada: schema Lourdes di DB yang sama, API, atau hanya ekspor Excel? Apakah ada URL detail per record? (§4.9) | View read-only lintas schema bila satu DB | |
 | D13 | Perlu pembatasan user per site (`members.location_ids`), atau semua user melihat semua site dalam company-nya? (§2.2) | Kolom disiapkan, default semua site | **Setuju default: semua site, batas opsional per user oleh admin** (2026-11-23) |

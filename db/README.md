@@ -10,6 +10,7 @@ Template SQL, **bukan folder migration**. Saat app dibuat, file di sini digabung
 | `app/10_fondasi.sql` | Fungsi K3, scope site, area, master, mitra, `my_tasks()` | Safe Hub (fase 0) |
 | `app/11_kejadian_pica.sql` | Kejadian & Investigasi, Temuan, tindakan PICA (workflow jenis B, RPC) | Safe Hub (fase 1) |
 | `app/12_inspeksi_kpi.sql` | Inspeksi & observasi, jam kerja, Kamus KPI, `kpi_safety`/`dashboard_k3` | Safe Hub (fase 2) |
+| `app/13_tsp.sql` | TSP & aktivitas K3, evaluasi bulanan, `tsp_matrix`/`tsp_summary` | Safe Hub (fase 3) |
 | `app/example_pengajuan.sql` | Contoh dokumen lengkap dengan approval | Hapus saat app punya dokumen asli |
 | `app/09_verify.sql` | Verifikasi QR publik (membuka schema app untuk `anon`) | **Opsional**, butuh izin user |
 | `dev/` | Stub platform, stub storage, seed data DEMO | **Hanya lokal/uji**, jangan disalin |

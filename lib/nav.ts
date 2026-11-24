@@ -23,6 +23,7 @@ import {
   ShieldAlert,
   Siren,
   Sparkles,
+  Target,
   Users,
 } from "lucide-react";
 import type { AppAccess } from "@/lib/access-types";
@@ -159,6 +160,16 @@ export const NAV_ITEMS: NavItem[] = [
     createHref: "/temuan/baru",
     createLabel: "Temuan",
     createVisible: (a) => notAuditor(a) && a.functions.some((f) => f === "hse" || f === "pengawas" || f === "pjo"),
+  },
+  {
+    href: "/tsp",
+    label: "TSP & Aktivitas",
+    description: "Tujuan dan Sasaran Program, aktivitas K3, evaluasi bulanan",
+    icon: Target,
+    min: "viewer",
+    group: "k3lh",
+    keywords: ["tsp", "program", "sasaran", "aktivitas", "safety talk", "kampanye", "evaluasi", "akt", "capaian"],
+    visible: k3Staff,
   },
   // ── Inbox ─────────────────────────────────────────────────────────────
   {

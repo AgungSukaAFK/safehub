@@ -1048,6 +1048,46 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"safety_activities": {
+                  Row: {
+                    "activity_date": string,"area_id": string,"code": string,"company_code": string,"created_at": string,"created_by": string | null,"evidence_count": number,"id": string,"leader_id": string,"location_id": string,"notes": string | null,"participant_count": number,"program_id": string | null,"search_text": string | null,"type_code": string,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "activity_date": string,"area_id": string,"code": string,"company_code": string,"created_at"?: string,"created_by"?: string | null,"evidence_count"?: number,"id"?: string,"leader_id": string,"location_id": string,"notes"?: string | null,"participant_count"?: number,"program_id"?: string | null,"search_text"?: string | null,"type_code": string,"updated_at"?: string
+                  }
+                  Update: {
+                    "activity_date"?: string,"area_id"?: string,"code"?: string,"company_code"?: string,"created_at"?: string,"created_by"?: string | null,"evidence_count"?: number,"id"?: string,"leader_id"?: string,"location_id"?: string,"notes"?: string | null,"participant_count"?: number,"program_id"?: string | null,"search_text"?: string | null,"type_code"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "safety_activities_area_id_fkey"
+      columns: ["area_id"]
+isOneToOne: false
+      referencedRelation: "areas"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "safety_activities_program_id_fkey"
+      columns: ["program_id"]
+isOneToOne: false
+      referencedRelation: "tsp_programs"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"safety_activities_logs": {
+                  Row: {
+                    "action": string,"actor_id": string | null,"at": string,"changes": Json | null,"id": number,"note": string | null,"record_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "action": string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id": string
+                  }
+                  Update: {
+                    "action"?: string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
                 },"storage_cleanup_queue": {
                   Row: {
                     "bucket": string,"id": number,"path": string,"queued_at": string,"reason": string | null
@@ -1092,6 +1132,96 @@ isOneToOne: false
                   }
                   Update: {
                     "assigned_to"?: string | null,"category"?: string,"context"?: Json | null,"created_at"?: string,"id"?: string,"last_message_at"?: string,"status"?: string,"subject"?: string,"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"tsp_evaluations": {
+                  Row: {
+                    "company_code": string,"created_at": string,"decided_at": string | null,"decided_by": string | null,"decision_note": string | null,"id": string,"location_id": string,"month": number,"prepared_by": string | null,"status": string,"submitted_at": string | null,"summary": Json | null,"updated_at": string,"year": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "company_code": string,"created_at"?: string,"decided_at"?: string | null,"decided_by"?: string | null,"decision_note"?: string | null,"id"?: string,"location_id": string,"month": number,"prepared_by"?: string | null,"status"?: string,"submitted_at"?: string | null,"summary"?: Json | null,"updated_at"?: string,"year": number
+                  }
+                  Update: {
+                    "company_code"?: string,"created_at"?: string,"decided_at"?: string | null,"decided_by"?: string | null,"decision_note"?: string | null,"id"?: string,"location_id"?: string,"month"?: number,"prepared_by"?: string | null,"status"?: string,"submitted_at"?: string | null,"summary"?: Json | null,"updated_at"?: string,"year"?: number
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"tsp_evaluations_logs": {
+                  Row: {
+                    "action": string,"actor_id": string | null,"at": string,"changes": Json | null,"id": number,"note": string | null,"record_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "action": string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id": string
+                  }
+                  Update: {
+                    "action"?: string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"tsp_programs": {
+                  Row: {
+                    "annual_target": number,"company_code": string,"created_at": string,"created_by": string | null,"element": string,"evidence_required": string,"id": string,"indicator": string,"is_active": boolean,"location_id": string,"name": string,"no": string,"owner_label": string,"plan": (number)[],"sort_order": number,"updated_at": string,"year": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "annual_target": number,"company_code": string,"created_at"?: string,"created_by"?: string | null,"element": string,"evidence_required"?: string,"id"?: string,"indicator": string,"is_active"?: boolean,"location_id": string,"name": string,"no": string,"owner_label": string,"plan": (number)[],"sort_order"?: number,"updated_at"?: string,"year": number
+                  }
+                  Update: {
+                    "annual_target"?: number,"company_code"?: string,"created_at"?: string,"created_by"?: string | null,"element"?: string,"evidence_required"?: string,"id"?: string,"indicator"?: string,"is_active"?: boolean,"location_id"?: string,"name"?: string,"no"?: string,"owner_label"?: string,"plan"?: (number)[],"sort_order"?: number,"updated_at"?: string,"year"?: number
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"tsp_programs_logs": {
+                  Row: {
+                    "action": string,"actor_id": string | null,"at": string,"changes": Json | null,"id": number,"note": string | null,"record_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "action": string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id": string
+                  }
+                  Update: {
+                    "action"?: string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"tsp_realizations": {
+                  Row: {
+                    "actual": number,"created_at": string,"created_by": string | null,"evidence_count": number,"id": string,"month": number,"note": string | null,"program_id": string,"updated_at": string,"updated_by": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "actual"?: number,"created_at"?: string,"created_by"?: string | null,"evidence_count"?: number,"id"?: string,"month": number,"note"?: string | null,"program_id": string,"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Update: {
+                    "actual"?: number,"created_at"?: string,"created_by"?: string | null,"evidence_count"?: number,"id"?: string,"month"?: number,"note"?: string | null,"program_id"?: string,"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "tsp_realizations_program_id_fkey"
+      columns: ["program_id"]
+isOneToOne: false
+      referencedRelation: "tsp_programs"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"tsp_realizations_logs": {
+                  Row: {
+                    "action": string,"actor_id": string | null,"at": string,"changes": Json | null,"id": number,"note": string | null,"record_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "action": string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id": string
+                  }
+                  Update: {
+                    "action"?: string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id"?: string
                   }
                   Relationships: [
                     
@@ -1440,6 +1570,9 @@ isOneToOne: false
 "k3_sees_all":
 { Args: Record<PropertyKey, never>; Returns: boolean
                            },
+"k3_staff":
+{ Args: Record<PropertyKey, never>; Returns: boolean
+                           },
 "k3_user_ok":
 { Args: { "p_user": string }; Returns: boolean
                            },
@@ -1548,6 +1681,12 @@ isOneToOne: false
 "run_maintenance":
 { Args: Record<PropertyKey, never>; Returns: Json
                            },
+"safety_activity_save":
+{ Args: { "p": Json }; Returns: Json
+                           },
+"safety_activity_sync_evidence":
+{ Args: { "p_id": string }; Returns: Json
+                           },
 "set_log_context":
 { Args: { "p_action": string,"p_note": string }; Returns: undefined
                            },
@@ -1577,6 +1716,35 @@ isOneToOne: false
                            },
 "today_wib":
 { Args: Record<PropertyKey, never>; Returns: string
+                           },
+"tsp_count_files":
+{ Args: { "p_prefix": string }; Returns: number
+                           },
+"tsp_evaluation_decide":
+{ Args: { "p_approve": boolean,"p_id": string,"p_note"?: string }; Returns: Json
+                           },
+"tsp_evaluation_submit":
+{ Args: { "p_location": string,"p_month": number,"p_year": number }; Returns: Json
+                           },
+"tsp_matrix":
+{ Args: { "p_location"?: string,"p_year": number }; Returns: {
+              "actual": (number)[],"annual_target": number,"element": string,"evidence": (number)[],"evidence_required": string,"id": string,"indicator": string,"is_active": boolean,"location_id": string,"name": string,"no": string,"notes": (string)[],"owner_label": string,"plan": (number)[],"sort_order": number
+            }[]
+                           },
+"tsp_program_save":
+{ Args: { "p": Json,"p_id": string }; Returns: Json
+                           },
+"tsp_program_visible":
+{ Args: { "p_id": string }; Returns: boolean
+                           },
+"tsp_realization_save":
+{ Args: { "p_actual": number,"p_month": number,"p_note"?: string,"p_program": string }; Returns: Json
+                           },
+"tsp_recorder":
+{ Args: Record<PropertyKey, never>; Returns: boolean
+                           },
+"tsp_summary":
+{ Args: { "p_location"?: string,"p_month": number,"p_year": number }; Returns: Json
                            },
 "users_with_function":
 { Args: { "p_company": string,"p_functions": (string)[],"p_location": string }; Returns: (string)[]

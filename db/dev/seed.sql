@@ -664,3 +664,74 @@ select 0, 1, 0, 'Rilis awal __NAME__',
        '{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Ini post contoh dari boilerplate. Ganti atau hapus saat app nyata dibuat."}]}]}'::jsonb,
        (select id from public.profiles where email = 'admin@demo.lourdes.test')
  where not exists (select 1 from __APP__.updates);
+
+-- ---------- data DEMO fase 3: program TSP, realisasi, aktivitas K3 (dari prototipe tsp-management) ----------
+-- Dimasukkan langsung (seed = superuser) supaya capaian tersebar beberapa bulan. Tahun = tahun berjalan.
+do $$
+declare
+  v_site uuid := (select id from public.locations where name = 'Site MIFA');
+  v_year smallint := extract(year from current_date)::smallint;
+  v_hse uuid := (select id from public.profiles where email = 'hse@demo.lourdes.test');
+  v_peng uuid := (select id from public.profiles where email = 'pengawas@demo.lourdes.test');
+  v_prog uuid;
+  p record;
+  m integer;
+  v_n integer := 0;
+begin
+  if v_site is null or v_hse is null or exists (select 1 from __APP__.tsp_programs) then
+    return;
+  end if;
+  alter table __APP__.tsp_programs disable trigger tsp_programs_log;
+  alter table __APP__.tsp_realizations disable trigger tsp_realizations_log;
+  alter table __APP__.safety_activities disable trigger safety_activities_log;
+  for p in
+    select * from (values
+      ('1.1',  '1. Kebijakan',     'Tinjauan Kebijakan',                 'PJO',            'Kebijakan ditinjau, dibuktikan daftar hadir dan notulen', 'Jadwal Rapat Tinjauan Manajemen', 1,  '{0,0,0,0,0,0,0,0,1,0,0,0}', '{0,0,0,0,0,0,0,0,1,0,0,0}', -1),
+      ('1.2',  '1. Kebijakan',     'Komunikasi Kebijakan SMT',           'All Departemen', '1x per bulan saat General Safety Talk',                   'Daftar Hadir dan Dokumentasi',     12, '{1,1,1,1,1,1,1,1,1,1,1,1}', '{1,1,1,1,1,0,1,1,1,0,0,0}', 6),
+      ('1.3',  '1. Kebijakan',     'Pemasangan Kebijakan SMT',           'All Departemen', 'Kebijakan terpasang di area kerja dan office',            'Foto Pemasangan',                  12, '{1,1,1,1,1,1,1,1,1,1,1,1}', '{1,1,1,1,1,1,1,1,0,1,0,0}', -1),
+      ('2.1',  '2. Perencanaan',   'Review IBPR',                        'All Departemen', 'Review IBPR dilakukan 2x per tahun',                      'IBPR, Daftar Hadir, MOM',          2,  '{0,0,0,1,0,0,0,0,0,1,0,0}', '{0,0,0,1,0,0,0,0,0,0,0,0}', -1),
+      ('2.1A', '2. Perencanaan',   'Review Top 10 High Risk Activity',   'All Departemen', 'Top 10 risiko tinggi diperbarui per semester',            'Register Risiko dan MOM',          2,  '{0,0,1,0,0,0,0,0,0,1,0,0}', '{0,0,1,0,0,0,0,0,0,0,0,0}', -1),
+      ('2.2',  '2. Perencanaan',   'Komunikasi dan Konsultasi Risiko',   'PJO',            'Konsultasi risiko dengan seluruh bagian',                 'Daftar Hadir, Dokumentasi, MOM',   2,  '{0,0,0,0,1,0,0,0,0,0,1,0}', '{0,0,0,0,1,0,0,0,0,0,0,0}', -1),
+      ('3.5',  '3. Implementasi',  'Kampanye K3',                        'HSE',            'Kampanye tematik dilaksanakan per kuartal',               'Materi, Daftar Hadir, Dokumentasi',4,  '{0,0,1,0,0,1,0,0,1,0,0,1}', '{0,0,1,0,0,1,0,0,0,0,0,0}', -1),
+      ('3.7',  '3. Implementasi',  'Pelatihan Penggunaan APD',           'HSE',            'Seluruh pekerja mengikuti refresh penggunaan APD',        'Daftar Hadir dan Evaluasi',        2,  '{0,0,0,1,0,0,0,0,0,0,0,1}', '{0,0,0,1,0,0,0,0,0,0,0,0}', 4),
+      ('3.8',  '3. Implementasi',  'Program Induksi SMT',                'HSE',            'Induksi diberikan kepada pekerja baru dan visitor',       'Form Induksi dan Dokumentasi',     12, '{1,1,1,1,1,1,1,1,1,1,1,1}', '{1,1,1,1,1,1,1,0,1,1,0,0}', -1)
+    ) as t(no, element, name, owner, indicator, evidence, target, plan, actuals, nofile)
+  loop
+    v_n := v_n + 1;
+    insert into __APP__.tsp_programs (company_code, location_id, year, no, element, name, owner_label, indicator,
+      evidence_required, annual_target, plan, sort_order, created_by)
+    values ('GMI', v_site, v_year, p.no, p.element, p.name, p.owner, p.indicator, p.evidence, p.target,
+      p.plan::smallint[], v_n * 10, v_hse)
+    returning id into v_prog;
+    for m in 1..11 loop
+      if (p.actuals::integer[])[m] > 0 then
+        insert into __APP__.tsp_realizations (program_id, month, actual, evidence_count, created_by, updated_by)
+        values (v_prog, m, (p.actuals::integer[])[m], case when p.nofile = m then 0 else 1 end, v_hse, v_hse);
+      end if;
+    end loop;
+    if p.no = '3.7' then
+      update __APP__.tsp_realizations set note = 'Refresh APD gelombang kedua dijadwalkan Desember.' where program_id = v_prog and month = 4;
+    end if;
+  end loop;
+  update __APP__.tsp_realizations r set note = 'Daftar hadir Juni belum dilengkapi.'
+    from __APP__.tsp_programs g where g.id = r.program_id and g.no = '1.2' and r.month = 6;
+
+  -- aktivitas K3 (sebagian terhubung ke program; bulan berjalan)
+  insert into __APP__.safety_activities (code, company_code, location_id, area_id, type_code, activity_date, leader_id,
+    participant_count, program_id, notes, evidence_count, created_by)
+  select __APP__.next_doc_number('AKT', 'GMI', 'year'), 'GMI', v_site,
+         (select id from __APP__.areas where location_id = v_site and name = x.area limit 1), x.type, current_date - x.ago,
+         x.leader, x.peserta,
+         (select id from __APP__.tsp_programs where year = v_year and location_id = v_site and no = x.prog), x.catatan, x.ev, x.leader
+    from (values
+      (1, 'Workshop Service', 'safety_talk',      3,  v_hse,  32, '1.2', 'Safety talk mingguan: LOTO dan pengamanan energi.', 2),
+      (2, 'Workshop Service', 'sosialisasi_jsa',  9,  v_hse,  18, '2.2', 'Sosialisasi JSA pekerjaan panel kelistrikan.', 1),
+      (3, 'Workshop Service', 'sosialisasi_ik',  14,  v_peng, 21, '3.7', 'Sosialisasi IK penggunaan APD.', 0),
+      (4, 'Workshop Service', 'sosialisasi_sop', 20,  v_hse,  14, '3.8', 'Sosialisasi SOP induksi pekerja baru.', 1),
+      (5, 'Workshop Service', 'kampanye_k3',     25,  v_hse,  34, '3.5', 'Kampanye tematik keselamatan berkendara.', 3),
+      (6, 'Workshop Service', 'inspeksi_bersama',30,  v_peng,  8, '2.1', 'Inspeksi bersama area hauling.', 1)
+    ) as x(n, area, type, ago, leader, peserta, prog, catatan, ev);
+  alter table __APP__.tsp_programs enable trigger tsp_programs_log;
+  alter table __APP__.tsp_realizations enable trigger tsp_realizations_log;
+  alter table __APP__.safety_activities enable trigger safety_activities_log;
+end $$;

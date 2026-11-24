@@ -14,6 +14,7 @@ Template SQL, **bukan folder migration**. Saat app dibuat, file di sini digabung
 | `app/14_pengingat.sql` · `15_audit.sql` · `16_laporan.sql` | Aturan pengingat + `run_reminders`, `audit_trail`, Laporan Periode (approval + snapshot) | Safe Hub (fase 3) |
 | `app/17_people.sql` | Manpower, kompetensi/sertifikat, MCU (+ data terbatas), permit site | Safe Hub (fase 4A) |
 | `app/18_pelatihan.sql` | Pelatihan: rencana, peserta, kehadiran, bukti | Safe Hub (fase 4B) |
+| `app/19_kontraktor.sql` | Kontraktor (izin, kontrak + nilai terbatas, CSMS, checklist), PJO/PJA | Safe Hub (fase 4C) |
 | `app/example_pengajuan.sql` | Contoh dokumen lengkap dengan approval | Hapus saat app punya dokumen asli |
 | `app/09_verify.sql` | Verifikasi QR publik (membuka schema app untuk `anon`) | **Opsional**, butuh izin user |
 | `dev/` | Stub platform, stub storage, seed data DEMO | **Hanya lokal/uji**, jangan disalin |

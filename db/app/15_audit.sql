@@ -211,6 +211,41 @@ begin
         and (p_actor is null or l.actor_id = p_actor) and (p_action is null or l.action = p_action)
         and (p_before is null or l.at < p_before)
       order by l.at desc, l.id desc limit least(greatest(p_limit, 1), 200) + 1)
+    union all
+    (select 'contractor_permits'::text as entity, l.id, l.record_id, l.at, l.actor_id, l.action, l.note, l.changes
+       from __APP__.contractor_permits_logs l
+      where (p_entities is null or 'contractor_permits' = any (p_entities)) and l.at >= p_from and l.at < p_to
+        and (p_actor is null or l.actor_id = p_actor) and (p_action is null or l.action = p_action)
+        and (p_before is null or l.at < p_before)
+      order by l.at desc, l.id desc limit least(greatest(p_limit, 1), 200) + 1)
+    union all
+    (select 'contractor_contracts'::text as entity, l.id, l.record_id, l.at, l.actor_id, l.action, l.note, l.changes
+       from __APP__.contractor_contracts_logs l
+      where (p_entities is null or 'contractor_contracts' = any (p_entities)) and l.at >= p_from and l.at < p_to
+        and (p_actor is null or l.actor_id = p_actor) and (p_action is null or l.action = p_action)
+        and (p_before is null or l.at < p_before)
+      order by l.at desc, l.id desc limit least(greatest(p_limit, 1), 200) + 1)
+    union all
+    (select 'csms_assessments'::text as entity, l.id, l.record_id, l.at, l.actor_id, l.action, l.note, l.changes
+       from __APP__.csms_assessments_logs l
+      where (p_entities is null or 'csms_assessments' = any (p_entities)) and l.at >= p_from and l.at < p_to
+        and (p_actor is null or l.actor_id = p_actor) and (p_action is null or l.action = p_action)
+        and (p_before is null or l.at < p_before)
+      order by l.at desc, l.id desc limit least(greatest(p_limit, 1), 200) + 1)
+    union all
+    (select 'contractor_documents'::text as entity, l.id, l.record_id, l.at, l.actor_id, l.action, l.note, l.changes
+       from __APP__.contractor_documents_logs l
+      where (p_entities is null or 'contractor_documents' = any (p_entities)) and l.at >= p_from and l.at < p_to
+        and (p_actor is null or l.actor_id = p_actor) and (p_action is null or l.action = p_action)
+        and (p_before is null or l.at < p_before)
+      order by l.at desc, l.id desc limit least(greatest(p_limit, 1), 200) + 1)
+    union all
+    (select 'pjo_pja_appointments'::text as entity, l.id, l.record_id, l.at, l.actor_id, l.action, l.note, l.changes
+       from __APP__.pjo_pja_appointments_logs l
+      where (p_entities is null or 'pjo_pja_appointments' = any (p_entities)) and l.at >= p_from and l.at < p_to
+        and (p_actor is null or l.actor_id = p_actor) and (p_action is null or l.action = p_action)
+        and (p_before is null or l.at < p_before)
+      order by l.at desc, l.id desc limit least(greatest(p_limit, 1), 200) + 1)
   ) u
   order by u.at desc, u.id desc
   limit least(greatest(p_limit, 1), 200) + 1;

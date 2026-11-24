@@ -304,7 +304,12 @@ bagian (A-E); **bagian A selesai** (Manpower, Kompetensi, MCU, Permit).
   tercatat (kunci rencana & peserta), batal = alasan >= 10. Peserta = karyawan aktif site itu; peserta berakun dinotifikasi (kategori
   `pelatihan`, push lewat `notificationIds`). Tidak menerbitkan sertifikat otomatis (Y3). Bukti Storage `pelatihan/<id>/`; riwayat di tab
   Pelatihan profil karyawan (`employee_trainings`). Lib: `lib/pelatihan-rules.ts`, `lib/pelatihan.ts`; UI `app/(app)/pelatihan/`.
-- **Belum (fase 4)**: Kontraktor & PJO/PJA (C), Dokumen (D), Impor Data + pengingat kedaluwarsa (E).
+- **Kontraktor & PJO/PJA (C)** (`db/app/19_kontraktor.sql`, `/kontraktor`, `/kontraktor/[id]` tab `?tab=`, `/pjo-pja`): `contractors` diperluas (PIC, catatan);
+  `contractor_permits`, `contractor_contracts` + `contractor_contract_values` (nilai = data komersial: hanya manajemen/kontraktor_admin/admin, tidak dilog),
+  `csms_assessments` (hasil dari skor), `contractor_doc_types` + `contractor_documents` (checklist 6 jenis), `pjo_pja_appointments`. Tulis HANYA lewat RPC
+  (`contractor_manager()` = kontraktor_admin/hse/admin). Legalitas = turunan izin terbaru per nama (`contractor_overview`). Bukti `izin/`, `kdok/`, `pjo/`.
+  Lib: `lib/kontraktor-rules.ts`, `lib/kontraktor.ts` (nilai kontrak dimuat hanya bila `canSeeCommercial`); UI `app/(app)/kontraktor/`, `app/(app)/pjo-pja/`.
+- **Belum (fase 4)**: Dokumen (D), Impor Data + pengingat kedaluwarsa (E).
 
 ## Koreksi terhadap guide (sudah diterapkan di `db/`)
 

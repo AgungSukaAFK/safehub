@@ -6,7 +6,7 @@ Langkah 0 (rancangan §3) untuk §4.6-§4.8 dan §2.12. Dikerjakan per bagian; k
 |---|---|---|
 | A | Manpower, Kompetensi & Sertifikat, MCU (+ data terbatas), Permit Site | **selesai** |
 | B | Pelatihan (rencana, kalender, peserta, kehadiran, bukti) | **selesai** |
-| C | Kontraktor & Legalitas, PJO/PJA | belum |
+| C | Kontraktor & Legalitas, PJO/PJA | **selesai** |
 | D | Prosedur & Dokumen (approval jenis A), Evaluasi Peraturan, Register KO | belum |
 | E | Impor Data (wizard) + pengingat kedaluwarsa (MCU, sertifikat, izin, dokumen) | belum |
 
@@ -50,3 +50,19 @@ Entitas (`db/app/17_people.sql`): `employees`, `position_requirements`, `compete
 Tulis lewat RPC `training_save`, `training_participants_set`, `training_attendance_set`, `training_set_status`, `training_sync_evidence`
 (`db/app/18_pelatihan.sql`); bukti di Storage `pelatihan/<id>/` (baca = pelatihan terlihat, unggah = HR/HSE/admin). Perubahan peserta/kehadiran
 masuk `trainings_logs` (aksi `participants`, `attendance`). Uji: `db/tests/10_pelatihan.sql` (Y1-Y4).
+
+## Bagian C: Kontraktor & PJO/PJA (keputusan sendiri Z1-Z7, menunggu konfirmasi)
+
+| # | Keputusan | Alasan |
+|---|---|---|
+| Z1 | Pengelola = `kontraktor_admin`, `hse`, admin app (bukan auditor). Baca = staf K3 non-Karyawan. Nilai kontrak hanya `manajemen`, `kontraktor_admin`, admin | Rancangan §4.7: nilai = kolom komersial |
+| Z2 | Status legalitas = TURUNAN dari izin terbaru per NAMA izin: ada yang kedaluwarsa = Kedaluwarsa; ada yang <= 30 hari = Akan Kedaluwarsa; tanpa izin = Belum Ada Izin. Perpanjang = tambah izin baru bernama sama (lama jadi riwayat) | Tidak ada master "izin wajib" per jenis mitra; ditunda |
+| Z3 | Checklist dokumen wajib = 6 jenis tetap (`contractor_doc_types`: akta, NIB, NPWP, SBU, BPJS, SMK3); lengkap = status Diterima dan belum lewat masa berlaku. Tidak ada UI pengelola jenis dokumen | Cukup untuk kelengkapan; pengelola jenis menyusul bila diminta |
+| Z4 | CSMS = penilaian bersejarah (skor 0-100). Hasil dari skor: >= 80 lulus, 60-79 bersyarat, < 60 gagal; berlaku default 1 tahun. Ambang ini tebakan saya | Rancangan hanya menyebut "pra-kualifikasi, skor, hasil" |
+| Z5 | PJO/PJA = penunjukan karyawan aktif (peran, lingkup bebas, nomor SK, periode); site mengikuti site karyawan; tidak ada pemeriksaan tumpang tindih | Register, bukan penentu hak akses |
+| Z6 | Personel mitra = `employees.contractor_id` (X4); tab Personel hanya membaca | Tanpa tabel baru |
+| Z7 | Bukti Storage `izin/<id>/`, `kdok/<id>/`, `pjo/<id>/` (baca = record terlihat; unggah = pengelola). Kontrak tidak punya file | Berkas kontrak memuat nilai; tidak dibuka lewat bucket umum |
+
+Tulis lewat RPC `contractor_save`, `contractor_permit_save`, `contractor_contract_save`, `csms_save`, `contractor_document_set`, `pjo_pja_save`,
+`kontraktor_sync_evidence` (`db/app/19_kontraktor.sql`). Baca: `contractor_overview`. Nilai kontrak di `contractor_contract_values` (RLS fungsi, tidak dilog).
+Uji: `db/tests/11_kontraktor.sql` (Z1-Z4). Pengingat izin kedaluwarsa menyusul di bagian E.

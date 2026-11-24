@@ -875,3 +875,66 @@ begin
   end loop;
   alter table __APP__.trainings enable trigger trainings_log;
 end $$;
+
+-- ---------- data DEMO fase 4C: kontraktor (izin, kontrak, CSMS, checklist), PJO/PJA ----------
+do $$
+declare
+  v_hr uuid := (select id from public.profiles where email = 'hr@demo.lourdes.test');
+  v_site uuid := (select id from public.locations where name = 'Site MIFA');
+  c record; v_c uuid;
+begin
+  if v_hr is null or v_site is null or exists (select 1 from __APP__.contractor_permits) then return; end if;
+  alter table __APP__.contractor_permits disable trigger contractor_permits_log;
+  alter table __APP__.contractor_contracts disable trigger contractor_contracts_log;
+  alter table __APP__.csms_assessments disable trigger csms_assessments_log;
+  alter table __APP__.contractor_documents disable trigger contractor_documents_log;
+  alter table __APP__.pjo_pja_appointments disable trigger pjo_pja_appointments_log;
+
+  update __APP__.contractors set pic_name = 'Budi Santoso', pic_contact = '0812-0000-0001' where name = 'PT Sinar Teknik Mandiri';
+  update __APP__.contractors set pic_name = 'Rina Marlina', pic_contact = '0812-0000-0002' where name = 'PT Cipta Lingkungan Aceh';
+
+  for c in
+    select * from (values
+      ('PT Sinar Teknik Mandiri', 'NIB', 'NIB-8120001', 'OSS RBA', current_date + 400),
+      ('PT Sinar Teknik Mandiri', 'SBU Jasa Konstruksi', 'SBU-0021/2025', 'LPJK', current_date + 20),
+      ('PT Cipta Lingkungan Aceh', 'NIB', 'NIB-8120077', 'OSS RBA', current_date + 600),
+      ('PT Cipta Lingkungan Aceh', 'Izin Pengelolaan Limbah', 'IPL-114/2024', 'DLH Aceh', current_date - 12),
+      ('PT Bara Safety Indonesia', 'NIB', 'NIB-8120123', 'OSS RBA', current_date + 300)
+    ) as t(mitra, name, num, issuer, until)
+  loop
+    insert into __APP__.contractor_permits (contractor_id, name, number, issuer, valid_until, created_by)
+    values ((select id from __APP__.contractors where name = c.mitra), c.name, c.num, c.issuer, c.until, v_hr);
+  end loop;
+
+  for c in
+    select * from (values
+      ('PT Sinar Teknik Mandiri', 'KTR/GMI/2025/014', 'Jasa Perawatan Unit AC Site MIFA', current_date - 200, current_date + 165, 480000000),
+      ('PT Cipta Lingkungan Aceh', 'KTR/GMI/2025/021', 'Pengelolaan Limbah B3', current_date - 100, current_date + 265, 215000000)
+    ) as t(mitra, num, title, s, e, amount)
+  loop
+    insert into __APP__.contractor_contracts (contractor_id, number, title, starts_on, ends_on, created_by)
+    values ((select id from __APP__.contractors where name = c.mitra), c.num, c.title, c.s, c.e, v_hr);
+    insert into __APP__.contractor_contract_values (contract_id, amount)
+    select k.id, c.amount from __APP__.contractor_contracts k where k.number = c.num;
+  end loop;
+
+  insert into __APP__.csms_assessments (contractor_id, assessed_on, score, result, valid_until, note, created_by) values
+    ((select id from __APP__.contractors where name = 'PT Sinar Teknik Mandiri'), current_date - 90, 86, 'pass', current_date + 275, null, v_hr),
+    ((select id from __APP__.contractors where name = 'PT Cipta Lingkungan Aceh'), current_date - 60, 67, 'conditional', current_date + 305, 'Perlu perbaikan prosedur tanggap darurat', v_hr);
+
+  for c in select id, name from __APP__.contractors where name in ('PT Sinar Teknik Mandiri', 'PT Cipta Lingkungan Aceh') loop
+    insert into __APP__.contractor_documents (contractor_id, type_id, status)
+    select c.id, t.id, case when t.code in ('akta', 'nib', 'npwp') or c.name like '%Sinar%' then 'received' else 'pending' end
+      from __APP__.contractor_doc_types t;
+  end loop;
+
+  insert into __APP__.pjo_pja_appointments (company_code, location_id, employee_id, role, scope, sk_number, starts_on, valid_until, created_by) values
+    ('GMI', v_site, (select id from __APP__.employees where code = 'GMI-0004'), 'pja', 'Area Workshop Service', 'SK/GMI/K3/2025/011', current_date - 120, current_date + 245, v_hr),
+    ('GMI', v_site, (select id from __APP__.employees where code = 'GMI-0008'), 'pjo', 'Operasional Site MIFA', 'SK/GMI/K3/2025/003', current_date - 300, current_date + 25, v_hr);
+
+  alter table __APP__.contractor_permits enable trigger contractor_permits_log;
+  alter table __APP__.contractor_contracts enable trigger contractor_contracts_log;
+  alter table __APP__.csms_assessments enable trigger csms_assessments_log;
+  alter table __APP__.contractor_documents enable trigger contractor_documents_log;
+  alter table __APP__.pjo_pja_appointments enable trigger pjo_pja_appointments_log;
+end $$;

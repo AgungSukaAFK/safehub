@@ -90,7 +90,7 @@ async function contactSheet(file, items, { cols = 4, width = 420 } = {}) {
   return file;
 }
 
-const APP_PAGES = ["/", "/tugas", "/kejadian", "/kejadian/lapor", "/temuan", "/temuan/baru", "/inspeksi", "/inspeksi/template", "/observasi", "/observasi/baru", "/kpi", "/kpi/jam-kerja", "/tsp", "/pengingat", "/audit", "/laporan", "/manpower", "/kompetensi", "/pelatihan", "/mcu", "/master", "/notifikasi", "/pengajuan", "/pengajuan/baru", "__DETAIL__", "/pengguna", "/approval/template", "/approval/kepala-departemen", "/bantuan", "/bantuan/kelola", "/feedback", "/feedback/kelola", "/pembaruan", "/pembaruan/baru", "/dokumentasi", "/tentang", "/profil"];
+const APP_PAGES = ["/", "/tugas", "/kejadian", "/kejadian/lapor", "/temuan", "/temuan/baru", "/inspeksi", "/inspeksi/template", "/observasi", "/observasi/baru", "/kpi", "/kpi/jam-kerja", "/tsp", "/pengingat", "/audit", "/laporan", "/manpower", "/kompetensi", "/pelatihan", "/kontraktor", "/pjo-pja", "/mcu", "/master", "/notifikasi", "/pengajuan", "/pengajuan/baru", "__DETAIL__", "/pengguna", "/approval/template", "/approval/kepala-departemen", "/bantuan", "/bantuan/kelola", "/feedback", "/feedback/kelola", "/pembaruan", "/pembaruan/baru", "/dokumentasi", "/tentang", "/profil"];
 
 const chrome = await launch();
 const page = await chrome.newPage();
@@ -423,6 +423,27 @@ try {
     await loginPage(page, BASE, USER("karyawan"));
     await visit(page, "/pelatihan", 2500);
     check("pelatihan: karyawan dialihkan ke Beranda", (await page.eval("location.pathname")) === "/", await page.eval("location.href"));
+
+    // ---- Kontraktor & PJO/PJA (nilai kontrak = data komersial)
+    await loginPage(page, BASE, USER("kontraktor"));
+    await visit(page, "/kontraktor", 2500);
+    const kl = await page.text();
+    check("kontraktor: daftar, legalitas turunan, tombol tambah", kl.includes("Daftar Kontraktor") && kl.includes("PT Sinar Teknik Mandiri") && kl.includes("Akan Kedaluwarsa") && kl.includes("Tambah Kontraktor"), kl.slice(0, 160));
+    const ktDb = await asUser(USER("kontraktor"), APP_ID);
+    const { data: sinar } = await ktDb.from("contractors").select("id").eq("name", "PT Sinar Teknik Mandiri").maybeSingle();
+    await visit(page, `/kontraktor/${sinar?.id}?tab=kontrak`, 2500);
+    check("kontraktor: pengelola melihat nilai kontrak", (await page.text()).includes("480.000.000"));
+    await visit(page, `/kontraktor/${sinar?.id}?tab=dokumen`, 2500);
+    check("kontraktor: checklist dokumen wajib tampil", (await page.text()).includes("Checklist Dokumen Wajib") && (await page.text()).includes("NIB / SIUP"));
+    await visit(page, "/pjo-pja", 2500);
+    check("pjo-pja: register + tombol tetapkan", (await page.text()).includes("Register Penunjukan") && (await page.text()).includes("Tetapkan PJO/PJA"));
+    await loginPage(page, BASE, USER("pengawas"));
+    await visit(page, `/kontraktor/${sinar?.id}?tab=kontrak`, 2500);
+    const kpg = await page.text();
+    check("kontraktor: pengawas TIDAK melihat nilai kontrak (data komersial)", !kpg.includes("480.000.000") && kpg.includes("Terbatas"), kpg.slice(0, 160));
+    await loginPage(page, BASE, USER("karyawan"));
+    await visit(page, "/kontraktor", 2500);
+    check("kontraktor: karyawan dialihkan ke Beranda", (await page.eval("location.pathname")) === "/", await page.eval("location.href"));
 
     // ---- Laporan Periode: daftar + detail (laporan dibuat lewat RPC, bulan lalu, template PJO)
     await loginPage(page, BASE, USER("hse"));

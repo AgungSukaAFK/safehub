@@ -424,21 +424,197 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
-                },"contractors": {
+                },"contractor_contract_values": {
                   Row: {
-                    "company_code": string,"created_at": string,"created_by": string | null,"id": string,"is_active": boolean,"kind": string,"name": string,"updated_at": string
+                    "amount": number,"contract_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "company_code": string,"created_at"?: string,"created_by"?: string | null,"id"?: string,"is_active"?: boolean,"kind"?: string,"name": string,"updated_at"?: string
+                    "amount": number,"contract_id": string
                   }
                   Update: {
-                    "company_code"?: string,"created_at"?: string,"created_by"?: string | null,"id"?: string,"is_active"?: boolean,"kind"?: string,"name"?: string,"updated_at"?: string
+                    "amount"?: number,"contract_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "contractor_contract_values_contract_id_fkey"
+      columns: ["contract_id"]
+isOneToOne: true
+      referencedRelation: "contractor_contracts"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"contractor_contracts": {
+                  Row: {
+                    "contractor_id": string,"created_at": string,"created_by": string | null,"ends_on": string,"id": string,"number": string,"starts_on": string,"title": string,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "contractor_id": string,"created_at"?: string,"created_by"?: string | null,"ends_on": string,"id"?: string,"number": string,"starts_on": string,"title": string,"updated_at"?: string
+                  }
+                  Update: {
+                    "contractor_id"?: string,"created_at"?: string,"created_by"?: string | null,"ends_on"?: string,"id"?: string,"number"?: string,"starts_on"?: string,"title"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "contractor_contracts_contractor_id_fkey"
+      columns: ["contractor_id"]
+isOneToOne: false
+      referencedRelation: "contractors"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"contractor_contracts_logs": {
+                  Row: {
+                    "action": string,"actor_id": string | null,"at": string,"changes": Json | null,"id": number,"note": string | null,"record_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "action": string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id": string
+                  }
+                  Update: {
+                    "action"?: string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"contractor_doc_types": {
+                  Row: {
+                    "code": string,"id": string,"is_active": boolean,"name": string,"sort_order": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "code": string,"id"?: string,"is_active"?: boolean,"name": string,"sort_order"?: number
+                  }
+                  Update: {
+                    "code"?: string,"id"?: string,"is_active"?: boolean,"name"?: string,"sort_order"?: number
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"contractor_documents": {
+                  Row: {
+                    "contractor_id": string,"created_at": string,"evidence_count": number,"id": string,"note": string | null,"status": string,"type_id": string,"updated_at": string,"valid_until": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "contractor_id": string,"created_at"?: string,"evidence_count"?: number,"id"?: string,"note"?: string | null,"status"?: string,"type_id": string,"updated_at"?: string,"valid_until"?: string | null
+                  }
+                  Update: {
+                    "contractor_id"?: string,"created_at"?: string,"evidence_count"?: number,"id"?: string,"note"?: string | null,"status"?: string,"type_id"?: string,"updated_at"?: string,"valid_until"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "contractor_documents_contractor_id_fkey"
+      columns: ["contractor_id"]
+isOneToOne: false
+      referencedRelation: "contractors"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "contractor_documents_type_id_fkey"
+      columns: ["type_id"]
+isOneToOne: false
+      referencedRelation: "contractor_doc_types"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"contractor_documents_logs": {
+                  Row: {
+                    "action": string,"actor_id": string | null,"at": string,"changes": Json | null,"id": number,"note": string | null,"record_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "action": string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id": string
+                  }
+                  Update: {
+                    "action"?: string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"contractor_permits": {
+                  Row: {
+                    "contractor_id": string,"created_at": string,"created_by": string | null,"evidence_count": number,"id": string,"issuer": string | null,"name": string,"number": string | null,"updated_at": string,"valid_until": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "contractor_id": string,"created_at"?: string,"created_by"?: string | null,"evidence_count"?: number,"id"?: string,"issuer"?: string | null,"name": string,"number"?: string | null,"updated_at"?: string,"valid_until": string
+                  }
+                  Update: {
+                    "contractor_id"?: string,"created_at"?: string,"created_by"?: string | null,"evidence_count"?: number,"id"?: string,"issuer"?: string | null,"name"?: string,"number"?: string | null,"updated_at"?: string,"valid_until"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "contractor_permits_contractor_id_fkey"
+      columns: ["contractor_id"]
+isOneToOne: false
+      referencedRelation: "contractors"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"contractor_permits_logs": {
+                  Row: {
+                    "action": string,"actor_id": string | null,"at": string,"changes": Json | null,"id": number,"note": string | null,"record_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "action": string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id": string
+                  }
+                  Update: {
+                    "action"?: string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"contractors": {
+                  Row: {
+                    "company_code": string,"created_at": string,"created_by": string | null,"id": string,"is_active": boolean,"kind": string,"name": string,"notes": string | null,"pic_contact": string | null,"pic_name": string | null,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "company_code": string,"created_at"?: string,"created_by"?: string | null,"id"?: string,"is_active"?: boolean,"kind"?: string,"name": string,"notes"?: string | null,"pic_contact"?: string | null,"pic_name"?: string | null,"updated_at"?: string
+                  }
+                  Update: {
+                    "company_code"?: string,"created_at"?: string,"created_by"?: string | null,"id"?: string,"is_active"?: boolean,"kind"?: string,"name"?: string,"notes"?: string | null,"pic_contact"?: string | null,"pic_name"?: string | null,"updated_at"?: string
                   }
                   Relationships: [
                     
                   ]
                 },"contractors_logs": {
+                  Row: {
+                    "action": string,"actor_id": string | null,"at": string,"changes": Json | null,"id": number,"note": string | null,"record_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "action": string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id": string
+                  }
+                  Update: {
+                    "action"?: string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"csms_assessments": {
+                  Row: {
+                    "assessed_on": string,"contractor_id": string,"created_at": string,"created_by": string | null,"id": string,"note": string | null,"result": string,"score": number,"updated_at": string,"valid_until": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "assessed_on": string,"contractor_id": string,"created_at"?: string,"created_by"?: string | null,"id"?: string,"note"?: string | null,"result": string,"score": number,"updated_at"?: string,"valid_until": string
+                  }
+                  Update: {
+                    "assessed_on"?: string,"contractor_id"?: string,"created_at"?: string,"created_by"?: string | null,"id"?: string,"note"?: string | null,"result"?: string,"score"?: number,"updated_at"?: string,"valid_until"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "csms_assessments_contractor_id_fkey"
+      columns: ["contractor_id"]
+isOneToOne: false
+      referencedRelation: "contractors"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"csms_assessments_logs": {
                   Row: {
                     "action": string,"actor_id": string | null,"at": string,"changes": Json | null,"id": number,"note": string | null,"record_id": string
                   }
@@ -1190,6 +1366,40 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"pjo_pja_appointments": {
+                  Row: {
+                    "company_code": string,"created_at": string,"created_by": string | null,"employee_id": string,"evidence_count": number,"id": string,"location_id": string,"role": string,"scope": string,"sk_number": string,"starts_on": string,"updated_at": string,"valid_until": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "company_code": string,"created_at"?: string,"created_by"?: string | null,"employee_id": string,"evidence_count"?: number,"id"?: string,"location_id": string,"role": string,"scope": string,"sk_number": string,"starts_on": string,"updated_at"?: string,"valid_until": string
+                  }
+                  Update: {
+                    "company_code"?: string,"created_at"?: string,"created_by"?: string | null,"employee_id"?: string,"evidence_count"?: number,"id"?: string,"location_id"?: string,"role"?: string,"scope"?: string,"sk_number"?: string,"starts_on"?: string,"updated_at"?: string,"valid_until"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "pjo_pja_appointments_employee_id_fkey"
+      columns: ["employee_id"]
+isOneToOne: false
+      referencedRelation: "employees"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"pjo_pja_appointments_logs": {
+                  Row: {
+                    "action": string,"actor_id": string | null,"at": string,"changes": Json | null,"id": number,"note": string | null,"record_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "action": string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id": string
+                  }
+                  Update: {
+                    "action"?: string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
                 },"position_requirements": {
                   Row: {
                     "company_code": string,"created_at": string,"id": string,"job_title": string,"location_id": string,"required": number,"updated_at": string
@@ -1817,6 +2027,9 @@ isOneToOne: false
 "certificate_save":
 { Args: { "p": Json,"p_id": string }; Returns: Json
                            },
+"commercial_viewer":
+{ Args: Record<PropertyKey, never>; Returns: boolean
+                           },
 "company_visible":
 { Args: { "p_company": string }; Returns: boolean
                            },
@@ -1826,6 +2039,32 @@ isOneToOne: false
             }[]
                            },
 "competency_save":
+{ Args: { "p": Json,"p_id": string }; Returns: Json
+                           },
+"contractor_contract_save":
+{ Args: { "p": Json,"p_id": string }; Returns: Json
+                           },
+"contractor_document_set":
+{ Args: { "p": Json }; Returns: Json
+                           },
+"contractor_manager":
+{ Args: Record<PropertyKey, never>; Returns: boolean
+                           },
+"contractor_overview":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "active_contracts": number,"contractor_id": string,"csms_result": string,"csms_until": string,"docs_ok": number,"docs_total": number,"legal_state": string,"permit_count": number,"permit_nearest": string,"personnel": number
+            }[]
+                           },
+"contractor_permit_save":
+{ Args: { "p": Json,"p_id": string }; Returns: Json
+                           },
+"contractor_save":
+{ Args: { "p": Json,"p_id": string }; Returns: Json
+                           },
+"contractor_visible":
+{ Args: { "p_id": string }; Returns: boolean
+                           },
+"csms_save":
 { Args: { "p": Json,"p_id": string }; Returns: Json
                            },
 "dashboard_by_department":
@@ -2013,6 +2252,9 @@ isOneToOne: false
 "k3_writer":
 { Args: Record<PropertyKey, never>; Returns: boolean
                            },
+"kontraktor_sync_evidence":
+{ Args: { "p_id": string,"p_kind": string }; Returns: Json
+                           },
 "kpi_approve":
 { Args: { "p_code": string,"p_note": string }; Returns: Json
                            },
@@ -2112,6 +2354,9 @@ isOneToOne: false
                            },
 "pica_verify":
 { Args: { "p_decision": string,"p_id": string,"p_note": string }; Returns: Json
+                           },
+"pjo_pja_save":
+{ Args: { "p": Json,"p_id": string }; Returns: Json
                            },
 "position_requirement_save":
 { Args: { "p": Json }; Returns: Json

@@ -4,6 +4,7 @@
 import { revalidatePath } from "next/cache";
 import { fail, invalid, NOT_ALLOWED, ok, type FormState } from "@/lib/action-state";
 import { actionAccess } from "@/lib/auth";
+import { cctv } from "@/lib/cctv";
 import { k3DbError } from "@/lib/k3-actions";
 import { createReportSchema, narrativesSchema } from "@/lib/laporan-rules";
 import { notificationIds, sendPushForNotifications } from "@/lib/push";
@@ -72,6 +73,12 @@ export async function cancelReportAction(id: string, note: string): Promise<Form
   await sendPushForNotifications(notificationIds(data));
   refresh(id);
   return ok("Pengajuan ditarik dan kembali menjadi draf.");
+}
+
+/** Dipanggil sebelum printWithFileName (CCTV). Gagal = cetak tetap jalan. */
+export async function logReportPrintAction(id: string, code: string): Promise<void> {
+  if (!isUuid(id) || !(await actionAccess("viewer"))) return;
+  await cctv({ category: "export", action: "export.print", summary: `Mencetak laporan ${code}`, entity: "reports", recordId: id, recordLabel: code });
 }
 
 export async function startCorrectionAction(id: string, reason: string): Promise<FormState> {

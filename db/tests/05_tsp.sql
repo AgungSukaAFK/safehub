@@ -126,3 +126,24 @@ set role authenticated;
 select zz_test.expect_error('M6i realisasi bulan yang disetujui terkunci',
   format($q$select __APP__.tsp_realization_save(%L, 1, 3, null)$q$, :'prog_new'), 'P0001', '%dikunci%');
 reset role;
+
+-- ================================================================ M7. salin program antar tahun
+select zz_test.login('pengawas@demo.lourdes.test');
+set role authenticated;
+select zz_test.expect_error('M7a pengawas tidak bisa menyalin',
+  format($q$select __APP__.tsp_programs_copy(%s, %s, %L)$q$, :yr, :yr + 1, :'site'), '42501');
+reset role;
+select zz_test.login('hse@demo.lourdes.test');
+set role authenticated;
+select zz_test.expect_error('M7b tahun sama ditolak',
+  format($q$select __APP__.tsp_programs_copy(%s, %s, %L)$q$, :yr, :yr, :'site'), 'P0001', '%berbeda%');
+select zz_test.expect_error('M7c tahun asal kosong ditolak',
+  format($q$select __APP__.tsp_programs_copy(%s, %s, %L)$q$, :yr + 5, :yr + 6, :'site'), 'P0001', '%Tidak ada program%');
+select (__APP__.tsp_programs_copy(:yr, :yr + 1, :'site') ->> 'copied')::integer as copied \gset
+select zz_test.check('M7d program aktif tahun asal tersalin tanpa realisasi; salin ulang ditolak (nomor sudah ada)',
+  :copied >= 9
+  and (select count(*) from __APP__.tsp_programs where year = :yr + 1) = :copied
+  and not exists (select 1 from __APP__.tsp_realizations r join __APP__.tsp_programs p on p.id = r.program_id where p.year = :yr + 1));
+select zz_test.expect_error('M7e salin ulang tidak menggandakan',
+  format($q$select __APP__.tsp_programs_copy(%s, %s, %L)$q$, :yr, :yr + 1, :'site'), 'P0001', '%Tidak ada program%');
+reset role;

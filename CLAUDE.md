@@ -279,8 +279,11 @@ Spesifikasi & keputusan sendiri V1-V7: [docs/spec/fase-3-tsp-laporan.md](docs/sp
   bergantung scope approver) lewat `report_data`; tampilan terbit HANYA membaca snapshot. Koreksi = `report_start_correction` (alasan >= 10) →
   draf → approval lagi. Bagian modul yang belum ada = `unavailable` ("Belum tersedia", tanpa angka). Narasi = teks biasa (bukan rich text).
   Lib: `lib/laporan-rules.ts`, `lib/laporan.ts`; halaman `app/(app)/laporan/` (daftar, `create-sheet.tsx`, `[id]/laporan-view.tsx`).
-- **Belum dibangun (fase 3)**: ekspor PDF/Excel & cetak Laporan Periode, blok Beranda "Pencapaian TSP", rich text narasi, template laporan
-  yang bisa diubah di UI.
+- **Penutup fase 3**: Excel laporan (`/laporan/[id]/ekspor`, snapshot bila terbit; CCTV `export.excel`), cetak = `printWithFileName` + CCTV
+  `export.print` (PDF lewat "Simpan sebagai PDF" browser; tidak ada generator PDF server), blok Beranda `TspBlock` (loader TSP yang sama
+  dengan `/tsp`), RPC `tsp_programs_copy` (tombol "Salin dari tahun lalu" saat tahun belum punya program).
+- **Belum dibangun (fase 3, sengaja)**: rich text narasi laporan (teks biasa, W2), UI pengelola template laporan (W3), push untuk pengingat
+  (V8), cetak evaluasi TSP, tautan aktivitas ke Leading Indicator.
 
 ## Koreksi terhadap guide (sudah diterapkan di `db/`)
 

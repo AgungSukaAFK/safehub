@@ -76,5 +76,5 @@ Keputusan sendiri (mohon dikonfirmasi):
 | W6 | Jalur approval dari template engine (D9), tanpa kepala departemen (departemen null) | Persetujuan per jabatan tetap, mengikuti prototipe |
 
 ## 3. Belum dibangun
-Ekspor PDF/Excel dan cetak Laporan Periode, blok Beranda "Pencapaian TSP per elemen", tautan aktivitas ke Leading Indicator dashboard, salin
-program TSP antar tahun, cetak evaluasi TSP, rich text narasi.
+Rich text narasi (W2), UI pengelola template laporan (W3), push untuk pengingat (V8), cetak evaluasi TSP, tautan aktivitas ke Leading
+Indicator dashboard. Selesai di penutup: Excel + cetak laporan, blok Beranda TSP, salin program TSP antar tahun (V7 diganti).

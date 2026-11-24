@@ -384,6 +384,10 @@ try {
     await visit(page, "/audit", 2000);
     check("audit trail: auditor boleh membuka", (await page.eval("location.pathname")) === "/audit");
 
+    // ---- Beranda: blok Pencapaian TSP per elemen
+    await loginPage(page, BASE, USER("hse"));
+    await visit(page, "/", 2500);
+    check("beranda: blok Pencapaian TSP per Elemen", (await page.text()).includes("Pencapaian TSP per Elemen"));
     // ---- Laporan Periode: daftar + detail (laporan dibuat lewat RPC, bulan lalu, template PJO)
     await loginPage(page, BASE, USER("hse"));
     const repDb = await asUser(USER("hse"), APP_ID);
@@ -398,6 +402,9 @@ try {
     if (rep?.id) {
       await visit(page, `/laporan/${rep.id}`, 2500);
       const ld = await page.text();
+      const xl = await page.eval(`fetch("/laporan/${rep.id}/ekspor").then((r) => r.status + "|" + r.headers.get("content-type"))`);
+      check("laporan: ekspor Excel 200 (xlsx)", String(xl).startsWith("200|") && String(xl).includes("spreadsheetml"), String(xl));
+      check("laporan: tombol Excel + Cetak", (await page.text()).includes("Excel") && (await page.text()).includes("Cetak"));
       check("laporan: workspace memuat outline, kelengkapan, jalur approval", ld.includes("Pemeriksaan Kelengkapan") && ld.includes("Kinerja Keselamatan") && ld.includes("Jalur Approval") && ld.includes("Belum tersedia"), ld.slice(0, 160));
     }
     await loginPage(page, BASE, USER("karyawan"));

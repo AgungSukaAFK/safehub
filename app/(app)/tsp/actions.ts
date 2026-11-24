@@ -27,6 +27,15 @@ export async function saveProgramAction(id: string | null, values: unknown): Pro
   return ok(id ? "Program diperbarui." : "Program ditambahkan.", { id: (data as { id: string }).id });
 }
 
+export async function copyProgramsAction(fromYear: number, toYear: number, siteId: string): Promise<FormState> {
+  if (!Number.isInteger(fromYear) || !Number.isInteger(toYear) || !isUuid(siteId) || !(await actionAccess("viewer"))) return NOT_ALLOWED;
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("tsp_programs_copy", { p_from_year: fromYear, p_to_year: toYear, p_location: siteId });
+  if (error) return k3DbError(error);
+  refresh();
+  return ok(`${(data as { copied: number }).copied} program disalin ke ${toYear}.`);
+}
+
 /** Catat realisasi program x bulan. Bukti sudah diunggah browser ke tsp/<program>/<YYYY-MM>/ sebelum action ini. */
 export async function saveRealizationAction(values: unknown): Promise<FormState> {
   if (!(await actionAccess("viewer"))) return NOT_ALLOWED;

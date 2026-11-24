@@ -1899,6 +1899,9 @@ isOneToOne: false
 "tsp_program_visible":
 { Args: { "p_id": string }; Returns: boolean
                            },
+"tsp_programs_copy":
+{ Args: { "p_from_year": number,"p_location": string,"p_to_year": number }; Returns: Json
+                           },
 "tsp_realization_save":
 { Args: { "p_actual": number,"p_month": number,"p_note"?: string,"p_program": string }; Returns: Json
                            },

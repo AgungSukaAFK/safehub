@@ -5,14 +5,15 @@
 import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, Check, CircleHelp, Lock, Pencil, Send, Undo2 } from "lucide-react";
+import { AlertTriangle, Check, CircleHelp, Download, Lock, Pencil, Printer, Send, Undo2 } from "lucide-react";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { ActivityLogDialog } from "@/components/detail/activity-log-dialog";
 import { ApprovalPath } from "@/components/detail/approval-path";
 import { StatusBadge } from "@/components/detail/status-badge";
 import { Content } from "@/components/list/content";
 import { PageHeader } from "@/components/page-header";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { printWithFileName } from "@/lib/print";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { formatDate, formatDateTime, formatNumber } from "@/lib/format";
@@ -24,7 +25,7 @@ import { useOnline } from "@/lib/offline/use-online";
 import { toast } from "@/lib/toast";
 import { MONTHS_LONG } from "@/lib/tsp-rules";
 import { cn } from "@/lib/utils";
-import { cancelReportAction, decideReportAction, saveNarrativesAction, startCorrectionAction, submitReportAction } from "../actions";
+import { cancelReportAction, decideReportAction, logReportPrintAction, saveNarrativesAction, startCorrectionAction, submitReportAction } from "../actions";
 
 type Props = { doc: ReportDetail; userId: string; canEdit: boolean; incidentCategories: Record<string, string>; inspectionTypes: Record<string, string> };
 
@@ -195,7 +196,24 @@ export function LaporanView({ doc, userId, canEdit, incidentCategories, inspecti
           </span>
         }
         description={`${doc.templateName} · ${doc.templateCode} ${doc.revision} · ${monthLabel(doc.period)}`}
-        actions={<ActivityLogDialog entity="reports" recordId={doc.id} fieldLabels={REPORT_FIELD_LABELS} />}
+        actions={
+          <>
+            <a href={`/laporan/${doc.id}/ekspor${doc.shownVersion ? `?versi=${doc.shownVersion}` : ""}`} className={buttonVariants({ variant: "outline" })}>
+              <Download /> Excel
+            </a>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                void logReportPrintAction(doc.id, doc.code).catch(() => undefined);
+                void printWithFileName(`${doc.code}${doc.shownVersion ? `-v${doc.shownVersion}` : "-draf"}`);
+              }}
+            >
+              <Printer /> Cetak
+            </Button>
+            <ActivityLogDialog entity="reports" recordId={doc.id} fieldLabels={REPORT_FIELD_LABELS} />
+          </>
+        }
       />
 
       {doc.correctionReason && doc.status !== "published" && (
@@ -210,7 +228,7 @@ export function LaporanView({ doc, userId, canEdit, incidentCategories, inspecti
       )}
 
       <div className="col-span-12 grid gap-4 lg:grid-cols-[14rem_minmax(0,1fr)_20rem] lg:gap-6 [&>*]:min-w-0">
-        <nav aria-label="Outline laporan" className="hidden lg:block">
+        <nav aria-label="Outline laporan" className="no-print hidden lg:block">
           <ol className="sticky top-20 space-y-1 text-sm">
             {d.sections.map((s, i) => (
               <li key={s.key}>
@@ -240,7 +258,7 @@ export function LaporanView({ doc, userId, canEdit, incidentCategories, inspecti
           )}
         </main>
 
-        <aside className="space-y-4">
+        <aside className="no-print space-y-4">
           <Content title="Pemeriksaan Kelengkapan" description={`${comp.pct}% terpenuhi`}>
             <ul className="space-y-2 text-sm">
               {doc.completeness.map((c) => (

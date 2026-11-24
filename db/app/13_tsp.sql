@@ -580,6 +580,35 @@ begin
   return jsonb_build_object('id', p_id, 'notification_ids', coalesce(v_notif, '{}'));
 end $$;
 
+-- Salin program aktif satu site dari tahun lain (rencana, target, bukti wajib ikut; realisasi tidak). Nomor yang sudah ada dilewati.
+create or replace function __APP__.tsp_programs_copy(p_from_year integer, p_to_year integer, p_location uuid)
+returns jsonb language plpgsql security definer set search_path = '' as $$
+declare v_company text; v_n integer;
+begin
+  if not (public.has_app_role('__APP__', 'admin') or (__APP__.k3_writer() and __APP__.has_function('hse'))) then
+    raise exception 'Hanya HSE atau admin yang bisa menyalin program TSP.' using errcode = '42501';
+  end if;
+  select pr.company into v_company from public.profiles pr where pr.id = auth.uid();
+  if p_location is null or v_company is null or not __APP__.k3_in_scope(v_company, p_location) then
+    raise exception 'Site tidak valid atau di luar akses Anda.' using errcode = 'P0001';
+  end if;
+  if p_from_year is null or p_to_year is null or p_from_year = p_to_year or p_to_year not between 2020 and 2100 or p_from_year not between 2020 and 2100 then
+    raise exception 'Tahun asal dan tujuan harus berbeda dan valid.' using errcode = 'P0001';
+  end if;
+  insert into __APP__.tsp_programs (company_code, location_id, year, no, element, name, owner_label, indicator, evidence_required,
+                                    annual_target, plan, is_active, sort_order)
+  select s.company_code, s.location_id, p_to_year, s.no, s.element, s.name, s.owner_label, s.indicator, s.evidence_required,
+         s.annual_target, s.plan, true, s.sort_order
+    from __APP__.tsp_programs s
+   where s.company_code = v_company and s.location_id = p_location and s.year = p_from_year and s.is_active
+     and not exists (select 1 from __APP__.tsp_programs t where t.company_code = s.company_code and t.location_id = s.location_id
+                      and t.year = p_to_year and t.no = s.no);
+  get diagnostics v_n = row_count;
+  if v_n = 0 then raise exception 'Tidak ada program baru untuk disalin (kosong atau semua nomor sudah ada).' using errcode = 'P0001'; end if;
+  return jsonb_build_object('copied', v_n);
+end $$;
+revoke execute on function __APP__.tsp_programs_copy(integer, integer, uuid) from public, anon;
+
 revoke execute on function __APP__.tsp_program_save(uuid, jsonb), __APP__.tsp_realization_save(uuid, integer, integer, text),
   __APP__.safety_activity_save(jsonb), __APP__.safety_activity_sync_evidence(uuid),
   __APP__.tsp_evaluation_submit(integer, integer, uuid), __APP__.tsp_evaluation_decide(uuid, boolean, text) from public, anon;

@@ -19,6 +19,7 @@ import { ACTIVITY_EVIDENCE, ACTIVITY_TYPE_LABEL, MONTHS_LONG } from "@/lib/tsp-r
 import { cn } from "@/lib/utils";
 import { ActivitySheet } from "./activity-sheet";
 import { EvaluationPanel } from "./evaluation-panel";
+import { CopyProgramsButton } from "./copy-button";
 import { ProgramSheet } from "./program-sheet";
 import { TspMatrix } from "./tsp-matrix";
 
@@ -73,6 +74,7 @@ export default async function TspPage({ searchParams }: PageProps<"/tsp">) {
             <a href={`/tsp/ekspor?${new URLSearchParams({ tahun: String(p.tahun), bulan: String(p.bulan), ...(siteId ? { site: siteId } : {}) })}`} className={buttonVariants({ variant: "outline" })}>
               <Download /> Ekspor
             </a>
+            {canManage && siteId && rows.length === 0 && all.length === 0 && <CopyProgramsButton fromYear={p.tahun - 1} toYear={p.tahun} siteId={siteId} />}
             {canManage && formSite && <ProgramSheet year={p.tahun} sites={sites.filter((s) => !siteId || s.id === siteId)} />}
             {canRecord && formSite && (
               <ActivitySheet

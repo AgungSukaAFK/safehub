@@ -353,6 +353,21 @@ Spesifikasi & keputusan sendiri M1-M8: [docs/spec/fase-5-maintenance.md](docs/sp
   `shapes.ts` (urutan `SHAPES` = urutan elemen `[data-shape]`). Animasi masuk = `animation-timeline: view()` di dalam
   `@supports` (tanpa dukungan = langsung terlihat); semua gerak mati saat `prefers-reduced-motion`.
 
+## Pemasangan DB produksi (dari catatan lourdes-db, 2026-11-25)
+
+- SQL app DISERAHKAN ke repo `lourdes-db` (urutan: migration → `scripts/push.sh --dry-run` → konfirmasi user → push → commit di sana).
+  Repo app TIDAK menjalankan `supabase db push` dan TIDAK punya folder `supabase/migrations`. Format lourdes-db: satu file per
+  migration `<ts>_<nama>.sql`; migration pertama app `<ts>_app_<app_id>.sql`; platform dan app dipisah.
+- Platform produksi BUKAN stub dev: `public.has_app_role(text, app_role)` (enum), `app_access.role` enum. Panggilan di SQL app memakai
+  literal (`has_app_role('safehub','admin')`), jangan oper variabel `text` sebagai role. Perubahan di schema `public` (companies, cctv,
+  `pg_trgm`) hanya dengan persetujuan eksplisit user dan harus backward compatible.
+- Prasyarat yang HARUS ada sebelum SQL app: `public.companies`, `public.cctv_log`, `pg_trgm` di schema `extensions` (index `*_search_idx`).
+  Cek DB lebih dulu (`scripts/query.sh` di lourdes-db) dan tulis prasyarat di awal file. `db/app/00_schema.sql` itu rekonstruksi: gunakan
+  `lourdes-db/templates/new_app.sql` yang asli, jangan menebak.
+- Daftar schema API diatur lewat env `PGRST_DB_SCHEMAS` di Coolify (bukan role `authenticator`).
+- Belum dikerjakan: timer `lourdes-maintenance` di VPS (`db/platform/infra/`; tanpa itu pengingat otomatis tidak berjalan), akses user ke app
+  (`app_access`), dan `types/database.ts` dari DB produksi (`npm run db:types` hanya membaca Supabase lokal).
+
 ## Koreksi terhadap guide (sudah diterapkan di `db/`)
 
 | # | Masalah di guide | Perbaikan |

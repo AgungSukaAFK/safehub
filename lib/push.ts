@@ -9,7 +9,7 @@ import { VAPID_PUBLIC_KEY } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
 
 const PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY ?? "";
-const SUBJECT = process.env.VAPID_SUBJECT ?? "mailto:it@garudamart.com";
+const SUBJECT = process.env.VAPID_SUBJECT || "mailto:it@garudamart.com";
 const enabled = !!(VAPID_PUBLIC_KEY && PRIVATE_KEY);
 if (enabled) webpush.setVapidDetails(SUBJECT, VAPID_PUBLIC_KEY, PRIVATE_KEY);
 

@@ -25,7 +25,13 @@ export async function loginAction(_: FormState, fd: FormData): Promise<FormState
     email: parsed.data.email,
     password: parsed.data.password,
   });
-  if (error) return fail(authErrorMessage(error));
+  if (error) {
+    // Kegagalan tak terduga (bukan salah password/rate limit) dicatat di log server supaya bisa dilacak.
+    if (error.code !== "invalid_credentials" && error.status !== 429) {
+      console.error("[login] signInWithPassword gagal:", { status: error.status, code: error.code, message: error.message });
+    }
+    return fail(authErrorMessage(error));
+  }
 
   await cctv({ category: "auth", action: "auth.login", summary: "Masuk ke app" });
   redirect(getSafeNextPath(parsed.data.next) ?? "/");

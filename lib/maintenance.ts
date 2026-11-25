@@ -3,10 +3,16 @@
 import "server-only";
 import { daysBetween } from "@/lib/expiry";
 import { todayWibIso } from "@/lib/k3";
-import { MNT_TABS, type MntTab } from "@/lib/maintenance-rules";
+import { libState, MNT_TABS, type LibState, type MntTab } from "@/lib/maintenance-rules";
 import { enumParam, textParam, type SearchParams } from "@/lib/search-params";
 import type { SiteChoice } from "@/lib/site-types";
 import type { ServerClient } from "@/lib/supabase/server";
+
+/** URL dasar sistem maintenance (opsional, env MAINTENANCE_SYSTEM_URL). Hanya https; tidak ada URL per record yang diketahui (D12). */
+export const MAINTENANCE_SYSTEM_URL = (() => {
+  const v = (process.env.MAINTENANCE_SYSTEM_URL ?? "").trim();
+  return /^https:\/\/\S+$/.test(v) ? v : "";
+})();
 
 export type MntParams = { site: SiteChoice; bulan: string; from: string; to: string; tab: MntTab; q: string };
 
@@ -79,6 +85,75 @@ export async function getMntDashboard(supabase: ServerClient, p: Pick<MntParams,
     sync,
     lastSync: times.at(-1) ?? null,
   };
+}
+
+// ---------------------------------------------------------------- LIB + Scrap (RPC mnt_extra, SATU sumber dengan Laporan Periode)
+export type MntExtra = {
+  lib: {
+    total: number;
+    withMin: number;
+    ready: number;
+    belowMin: number;
+    nonMoving: number;
+    nonMovingDays: number;
+    readinessPct: number | null;
+    topNonMoving: { code: string; name: string; qty: number; uom: string | null; lastMovedOn: string | null; days: number | null }[];
+    syncedAt: string | null;
+  };
+  scrap: { actualKg: number | null; forecastKg: number | null; nextForecastKg: number | null; achievementPct: number | null; byMetal: { metal: string; actualKg: number | null; forecastKg: number | null }[]; syncedAt: string | null };
+};
+type RawExtra = {
+  lib: {
+    total: number; with_min: number; ready: number; below_min: number; non_moving: number; non_moving_days: number; readiness_pct: number | null; synced_at: string | null;
+    top_non_moving: { code: string; name: string; qty: number; uom: string | null; last_moved_on: string | null; days: number | null }[];
+  };
+  scrap: { actual_kg: number | null; forecast_kg: number | null; next_forecast_kg: number | null; achievement_pct: number | null; by_metal: { metal: string; actual_kg: number | null; forecast_kg: number | null }[]; synced_at: string | null };
+};
+const numOrNull = (v: number | string | null | undefined) => (v === null || v === undefined ? null : Number(v));
+
+export async function getMntExtra(supabase: ServerClient, p: Pick<MntParams, "site" | "from" | "to">): Promise<MntExtra> {
+  const { data, error } = await supabase.rpc("mnt_extra", { p_location: (p.site ?? null) as string, p_from: p.from, p_to: p.to, p_company: null as unknown as string });
+  if (error) throw error;
+  const r = data as unknown as RawExtra;
+  return {
+    lib: {
+      total: r.lib.total, withMin: r.lib.with_min, ready: r.lib.ready, belowMin: r.lib.below_min, nonMoving: r.lib.non_moving, nonMovingDays: r.lib.non_moving_days,
+      readinessPct: numOrNull(r.lib.readiness_pct), syncedAt: r.lib.synced_at,
+      topNonMoving: (r.lib.top_non_moving ?? []).map((t) => ({ code: t.code, name: t.name, qty: Number(t.qty), uom: t.uom, lastMovedOn: t.last_moved_on, days: t.days })),
+    },
+    scrap: {
+      actualKg: numOrNull(r.scrap.actual_kg), forecastKg: numOrNull(r.scrap.forecast_kg), nextForecastKg: numOrNull(r.scrap.next_forecast_kg), achievementPct: numOrNull(r.scrap.achievement_pct),
+      byMetal: (r.scrap.by_metal ?? []).map((m) => ({ metal: m.metal, actualKg: numOrNull(m.actual_kg), forecastKg: numOrNull(m.forecast_kg) })), syncedAt: r.scrap.synced_at,
+    },
+  };
+}
+
+export type MntLibRow = { id: string; code: string; name: string; uom: string | null; qty: number; minQty: number; lastMovedOn: string | null; idleDays: number | null; state: LibState };
+export async function listMntLib(supabase: ServerClient, p: Pick<MntParams, "site" | "q">): Promise<MntLibRow[]> {
+  const today = todayWibIso();
+  let q = supabase.from("mnt_lib").select("id, part_code, name, uom, qty, min_qty, last_moved_on").order("part_code").limit(2000);
+  if (p.site) q = q.eq("location_id", p.site);
+  const { data, error } = await q;
+  if (error) throw error;
+  const needle = p.q.toLowerCase();
+  const rank: Record<LibState, number> = { non_moving: 0, below_min: 1, ok: 2 };
+  return (data ?? [])
+    .map((r) => {
+      const row = { qty: Number(r.qty), minQty: Number(r.min_qty), lastMovedOn: r.last_moved_on };
+      return { id: r.id, code: r.part_code, name: r.name, uom: r.uom, ...row, idleDays: r.last_moved_on ? daysBetween(r.last_moved_on, today) : null, state: libState(row, today) };
+    })
+    .filter((r) => !needle || `${r.code} ${r.name}`.toLowerCase().includes(needle))
+    .sort((a, b) => rank[a.state] - rank[b.state] || (b.idleDays ?? 99999) - (a.idleDays ?? 99999));
+}
+
+export type MntScrapRow = { id: string; month: string; metal: string; actualKg: number | null; forecastKg: number | null };
+export async function listMntScrap(supabase: ServerClient, p: Pick<MntParams, "site" | "q"> & { year: number }): Promise<MntScrapRow[]> {
+  let q = supabase.from("mnt_scrap").select("id, month, metal, actual_kg, forecast_kg").gte("month", `${p.year}-01-01`).lte("month", `${p.year}-12-01`).order("month", { ascending: false }).order("metal").limit(1000);
+  if (p.site) q = q.eq("location_id", p.site);
+  const { data, error } = await q;
+  if (error) throw error;
+  const needle = p.q.toLowerCase();
+  return (data ?? []).map((r) => ({ id: r.id, month: r.month, metal: r.metal, actualKg: numOrNull(r.actual_kg), forecastKg: numOrNull(r.forecast_kg) })).filter((r) => !needle || r.metal.toLowerCase().includes(needle));
 }
 
 // ---------------------------------------------------------------- tabel (baca saja)

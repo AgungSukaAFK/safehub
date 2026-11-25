@@ -1,17 +1,18 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ChevronLeft, ChevronRight, Upload } from "lucide-react";
+import { ChevronLeft, ChevronRight, ExternalLink, Upload } from "lucide-react";
 import { StatusBadge } from "@/components/detail/status-badge";
 import { KpiHelp, KpiStatusBadge, type KpiDefinition } from "@/components/kpi-help";
 import { Content } from "@/components/list/content";
 import { PageHeader } from "@/components/page-header";
 import { buttonVariants } from "@/components/ui/button";
 import { requireAccess } from "@/lib/auth";
+import { LibTab, MrTab, ScrapTab } from "./extra-tabs";
 import { formatDate, formatDateTime, formatNumber } from "@/lib/format";
 import { getKpi, type KpiDef } from "@/lib/kpi";
-import { getMntDashboard, listMntBacklog, listMntDowntime, listMntPs, listMntUnits, parseMntParams, shiftMonth } from "@/lib/maintenance";
-import { MNT_BACKLOG_STATUS, MNT_DOWNTIME_KIND, MNT_KPI_CODES, MNT_PRIORITY, MNT_SOURCE, MNT_TABS, MNT_UNIT_STATUS } from "@/lib/maintenance-rules";
+import { getMntDashboard, getMntExtra, listMntBacklog, listMntDowntime, listMntPs, listMntUnits, MAINTENANCE_SYSTEM_URL, parseMntParams, shiftMonth } from "@/lib/maintenance";
+import { MNT_BACKLOG_STATUS, MNT_DOWNTIME_KIND, MNT_KPI_CODES, MNT_NON_MOVING_DAYS, MNT_PRIORITY, MNT_SOURCE, MNT_TABS, MNT_UNIT_STATUS } from "@/lib/maintenance-rules";
 import { MONTHS_LONG } from "@/lib/tsp-rules";
 import { hrefWith } from "@/lib/search-params";
 import { parseSiteParam } from "@/lib/sites";
@@ -34,7 +35,7 @@ export default async function MaintenancePage({ searchParams }: PageProps<"/main
   const p = parseMntParams(sp, siteId);
   const supabase = await createClient();
   const canImport = isAdmin || (!access.functions.includes("auditor") && (access.functions.includes("maintenance") || access.functions.includes("hse")));
-  const [dash, kpis] = await Promise.all([getMntDashboard(supabase, p), Promise.all(MNT_KPI_CODES.map((c) => getKpi(supabase, c)))]);
+  const [dash, kpis, extra] = await Promise.all([getMntDashboard(supabase, p), Promise.all(MNT_KPI_CODES.map((c) => getKpi(supabase, c))), getMntExtra(supabase, p)]);
   const kpi = (code: string) => kpis.find((k) => k?.code === code) ?? null;
   const [y, m] = p.bulan.split("-").map(Number);
   const href = (c: Record<string, string | null>) => hrefWith("/maintenance", sp, c);
@@ -47,7 +48,16 @@ export default async function MaintenancePage({ searchParams }: PageProps<"/main
       <PageHeader
         title="Maintenance"
         description={`Ketersediaan unit, PS, dan backlog · ${label}`}
-        actions={canImport ? <Link href="/impor" className={buttonVariants({ variant: "outline" })}><Upload /> Impor Data Maintenance</Link> : undefined}
+        actions={
+          <>
+            {MAINTENANCE_SYSTEM_URL && (
+              <a href={MAINTENANCE_SYSTEM_URL} target="_blank" rel="noopener noreferrer" className={buttonVariants({ variant: "outline" })}>
+                <ExternalLink /> Buka sistem maintenance
+              </a>
+            )}
+            {canImport && <Link href="/impor" className={buttonVariants({ variant: "outline" })}><Upload /> Impor Data Maintenance</Link>}
+          </>
+        }
       />
       <div className="col-span-12 flex flex-wrap items-center justify-between gap-2">
         <p className="text-xs text-muted-foreground" role="note">
@@ -67,7 +77,7 @@ export default async function MaintenancePage({ searchParams }: PageProps<"/main
         ))}
       </nav>
 
-      {dash.units.total === 0 && (
+      {dash.units.total === 0 && !["lib", "scrap", "mr"].includes(p.tab) && (
         <p role="status" className="col-span-12 rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
           Belum ada data unit untuk site ini. {canImport ? <>Impor <Link href="/impor" className="font-medium underline underline-offset-2">Unit</Link> lebih dulu, lalu Downtime, PS, dan Backlog.</> : "Minta Service/Maintenance atau HSE mengimpor data dari sistem maintenance."}
         </p>
@@ -81,6 +91,12 @@ export default async function MaintenancePage({ searchParams }: PageProps<"/main
             <Kpi title="MTTR" value={num(dash.mttrHours, " jam")} kpi={kpi("mnt_mttr")} hint={`${formatNumber(dash.breakdownHours)} jam breakdown`} />
             <Kpi title="PS Accuracy" value={num(dash.ps.accuracy, "%")} kpi={kpi("mnt_ps_accuracy")} hint={`${dash.ps.onTime}/${dash.ps.planned} tepat${dash.ps.overdue ? ` · ${dash.ps.overdue} belum dikerjakan` : ""}`} warn={dash.ps.overdue > 0} />
             <Kpi title="Backlog Open" value={String(dash.backlog.total)} kpi={kpi("mnt_backlog_open")} hint={`${dash.backlog.high} prioritas tinggi · tertua ${dash.backlog.oldestDays} hari`} warn={dash.backlog.high > 0} />
+          </section>
+          <section className="col-span-12 grid grid-cols-2 gap-3 lg:grid-cols-4" aria-label="LIB dan scrap">
+            <Kpi title="Readiness LIB" value={num(extra.lib.readinessPct, "%")} kpi={null} hint={extra.lib.withMin > 0 ? `${extra.lib.ready}/${extra.lib.withMin} part ber-minimum siap` : "Belum ada part ber-minimum"} warn={extra.lib.belowMin > 0} />
+            <Kpi title="Part Non-moving" value={String(extra.lib.nonMoving)} kpi={null} hint={`stok > 0, tidak bergerak > ${MNT_NON_MOVING_DAYS} hari`} warn={extra.lib.nonMoving > 0} />
+            <Kpi title="Scrap Aktual" value={extra.scrap.actualKg === null ? "Belum tersedia" : `${formatNumber(extra.scrap.actualKg)} kg`} kpi={null} hint={extra.scrap.achievementPct === null ? "Belum ada forecast bulan ini" : `${extra.scrap.achievementPct}% dari forecast ${formatNumber(extra.scrap.forecastKg)} kg`} />
+            <Kpi title="Forecast Scrap Bulan Depan" value={extra.scrap.nextForecastKg === null ? "Belum tersedia" : `${formatNumber(extra.scrap.nextForecastKg)} kg`} kpi={null} hint="Dari impor Metal Scrap" />
           </section>
           <Content title="Breakdown Terbanyak" description="Jam breakdown per unit pada periode (maks. 5 unit)" size="md">
             {dash.topBreakdown.length === 0 ? (
@@ -112,6 +128,9 @@ export default async function MaintenancePage({ searchParams }: PageProps<"/main
       {p.tab === "downtime" && <DowntimeTab supabase={supabase} p={p} />}
       {p.tab === "ps" && <PsTab supabase={supabase} p={p} />}
       {p.tab === "backlog" && <BacklogTab supabase={supabase} p={p} />}
+      {p.tab === "lib" && <LibTab supabase={supabase} p={p} syncedAt={extra.lib.syncedAt} search={searchForm(p, "Cari kode / nama part")} />}
+      {p.tab === "scrap" && <ScrapTab supabase={supabase} p={p} syncedAt={extra.scrap.syncedAt} search={searchForm(p, "Cari jenis logam")} />}
+      {p.tab === "mr" && <MrTab />}
     </>
   );
 }

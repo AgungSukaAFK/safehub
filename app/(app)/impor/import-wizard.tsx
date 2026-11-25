@@ -23,10 +23,13 @@ const AFTER_LINK: Record<ImportTargetId, { href: string; label: string }> = {
   mnt_downtime: { href: "/maintenance?tab=downtime", label: "Buka Maintenance" },
   mnt_ps: { href: "/maintenance?tab=ps", label: "Buka Maintenance" },
   mnt_backlog: { href: "/maintenance?tab=backlog", label: "Buka Maintenance" },
+  mnt_lib: { href: "/maintenance?tab=lib", label: "Buka Readiness LIB" },
+  mnt_scrap: { href: "/maintenance?tab=scrap", label: "Buka Metal Scrap" },
+  tsp_realizations: { href: "/tsp", label: "Buka TSP" },
 };
 const selectCls = "h-9 w-full rounded-md border bg-background px-2 text-sm";
 
-const GROUP_LABEL: Record<ImportGroup, string> = { people: "People & Compliance", maintenance: "Maintenance (cermin sistem maintenance, hanya baca di Safe Hub)" };
+const GROUP_LABEL: Record<ImportGroup, string> = { people: "People & Compliance", maintenance: "Maintenance (cermin sistem maintenance, hanya baca di Safe Hub)", tsp: "TSP & Aktivitas" };
 
 export function ImportWizard({ sites, defaultSite, groups }: { sites: { id: string; name: string }[]; defaultSite: string | null; groups: ImportGroup[] }) {
   const online = useOnline();

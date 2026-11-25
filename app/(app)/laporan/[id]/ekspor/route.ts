@@ -69,6 +69,46 @@ export async function GET(request: Request, ctx: RouteContext<"/laporan/[id]/eks
       ],
       rows: d.inspections,
     },
+    ...(d.maintenance?.has_data
+      ? [
+          {
+            name: "Maintenance",
+            columns: cols,
+            rows: kv([
+              { label: "Unit operasi", value: d.maintenance.units_operating },
+              { label: "PA (%)", value: d.maintenance.pa },
+              { label: "MTBF (jam)", value: d.maintenance.mtbf_hours },
+              { label: "MTTR (jam)", value: d.maintenance.mttr_hours },
+              { label: "Breakdown (kejadian)", value: d.maintenance.breakdown_count },
+              { label: "Breakdown (jam)", value: d.maintenance.breakdown_hours },
+              { label: "PS direncanakan", value: d.maintenance.ps.planned },
+              { label: "PS tepat waktu", value: d.maintenance.ps.on_time },
+              { label: "PS Accuracy (%)", value: d.maintenance.ps.accuracy },
+              { label: "Backlog Open", value: d.maintenance.backlog.total },
+              { label: "Backlog Open prioritas tinggi", value: d.maintenance.backlog.high },
+              { label: "Readiness LIB (%)", value: d.maintenance.lib.readiness_pct },
+              { label: "Part non-moving", value: d.maintenance.lib.non_moving },
+              { label: "Scrap aktual (kg)", value: d.maintenance.scrap.actual_kg },
+              { label: "Scrap forecast (kg)", value: d.maintenance.scrap.forecast_kg },
+              { label: "Forecast scrap bulan berikutnya (kg)", value: d.maintenance.scrap.next_forecast_kg },
+            ]),
+          },
+        ]
+      : []),
+    ...(d.issues
+      ? [
+          {
+            name: "Isu Terbuka",
+            columns: [
+              { header: "No", value: (r: (typeof d.issues.rows)[number]) => r.code },
+              { header: "Judul", value: (r: (typeof d.issues.rows)[number]) => r.title },
+              { header: "Due date", value: (r: (typeof d.issues.rows)[number]) => r.due_date },
+              { header: "Status", value: (r: (typeof d.issues.rows)[number]) => r.status },
+            ],
+            rows: d.issues.rows,
+          },
+        ]
+      : []),
     {
       name: "Narasi",
       columns: [

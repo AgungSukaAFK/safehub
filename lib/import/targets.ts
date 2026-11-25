@@ -12,9 +12,12 @@ export type ImportColumn = {
   hint?: string;
 };
 
-export type ImportTargetId = "employees" | "certificates" | "mcu" | "site_permits" | "mnt_units" | "mnt_downtime" | "mnt_ps" | "mnt_backlog";
-/** people = HR/HSE/admin; maintenance = Service/Maintenance/HSE/admin (cermin data sistem maintenance, fase 5) */
-export type ImportGroup = "people" | "maintenance";
+export type ImportTargetId =
+  | "employees" | "certificates" | "mcu" | "site_permits"
+  | "mnt_units" | "mnt_downtime" | "mnt_ps" | "mnt_backlog" | "mnt_lib" | "mnt_scrap"
+  | "tsp_realizations";
+/** people = HR/HSE/admin; maintenance = Service/Maintenance/HSE/admin (cermin data sistem maintenance, fase 5); tsp = HSE/Pengawas/PJO (realisasi TSP) */
+export type ImportGroup = "people" | "maintenance" | "tsp";
 export type ImportMode = "insert" | "upsert";
 
 export type ImportTarget = {
@@ -110,6 +113,45 @@ const UNIT_STATUS = { aktif: "active", active: "active", standby: "standby", bre
 const DT_KIND = { breakdown: "breakdown", rusak: "breakdown", planned: "planned", terencana: "planned", terjadwal: "planned" };
 const PRIORITY = { high: "high", tinggi: "high", medium: "medium", sedang: "medium", low: "low", rendah: "low" };
 const BL_STATUS = { open: "open", terbuka: "open", baru: "open", done: "done", selesai: "done", closed: "done", ditutup: "done" };
+
+/** Angka (koma atau titik), 0..max; kosong diizinkan bila `optional`. */
+const qtyNum = (label: string, max: number, optional = false) =>
+  z.string().transform((v, ctx) => {
+    const t = clean(v).replace(",", ".");
+    if (!t && optional) return "";
+    if (!/^\d+(\.\d+)?$/.test(t) || Number(t) > max) {
+      ctx.addIssue({ code: "custom", message: t ? `${label} harus angka 0 sampai ${max}` : `${label} wajib diisi` });
+      return z.NEVER;
+    }
+    return String(Number(t));
+  });
+/** Bulan: YYYY-MM, MM/YYYY, MM-YYYY, atau tanggal/nomor seri Excel apa pun di bulan itu → YYYY-MM-01. */
+const monthVal = (label: string) =>
+  z.string().transform((v, ctx) => {
+    const t = clean(v);
+    let ym: string | null = null;
+    let m = /^(\d{4})-(\d{1,2})$/.exec(t);
+    if (m) ym = `${m[1]}-${m[2].padStart(2, "0")}`;
+    else if ((m = /^(\d{1,2})[/-](\d{4})$/.exec(t))) ym = `${m[2]}-${m[1].padStart(2, "0")}`;
+    else {
+      const d = normalizeDate(t);
+      if (d) ym = d.slice(0, 7);
+    }
+    if (!ym || !/^\d{4}-(0[1-9]|1[0-2])$/.test(ym)) {
+      ctx.addIssue({ code: "custom", message: t ? `${label} bukan bulan yang valid (pakai 2026-10 atau 10/2026)` : `${label} wajib diisi` });
+      return z.NEVER;
+    }
+    return `${ym}-01`;
+  });
+const intIn = (label: string, min: number, max: number) =>
+  z.string().transform((v, ctx) => {
+    const t = clean(v);
+    if (!/^\d+$/.test(t) || Number(t) < min || Number(t) > max) {
+      ctx.addIssue({ code: "custom", message: `${label} harus angka ${min} sampai ${max}` });
+      return z.NEVER;
+    }
+    return t;
+  });
 
 const strRecord = <T extends z.ZodRawShape>(shape: T) => z.object(shape) as unknown as z.ZodType<Record<string, string>, z.ZodTypeDef, Record<string, string>>;
 
@@ -306,6 +348,81 @@ export const IMPORT_TARGETS: Record<ImportTargetId, ImportTarget> = {
       id_sumber: optText(80, "ID sumber"),
     }),
   },
+  mnt_lib: {
+    id: "mnt_lib",
+    group: "maintenance",
+    label: "Maintenance: Readiness LIB (stok part)",
+    description: "Stok part per site untuk Readiness LIB dan part non-moving. Ini potret stok saat ini; impor ulang memperbarui. Part ber-minimum = stok minimum lebih dari 0.",
+    needsSite: false,
+    keyLabel: "Site + kode part",
+    keyOf: (d) => `${d.site.toLowerCase()}|${d.kode_part.toLowerCase()}`,
+    columns: [
+      { key: "site", label: "Site", required: true, aliases: ["site", "lokasi", "location", "gudang"], example: "Site MIFA", hint: "Nama site persis seperti di Safe Hub" },
+      { key: "kode_part", label: "Kode part", required: true, aliases: ["kode part", "part number", "part no", "kode", "material", "kode material"], example: "FLT-0101" },
+      { key: "nama", label: "Nama part", required: true, aliases: ["nama", "nama part", "deskripsi", "description", "uraian"], example: "Filter oli engine" },
+      { key: "satuan", label: "Satuan", aliases: ["satuan", "uom", "unit of measure"], example: "pcs" },
+      { key: "stok", label: "Stok", required: true, aliases: ["stok", "stock", "qty", "jumlah", "on hand"], example: "12" },
+      { key: "minimum", label: "Stok minimum", aliases: ["minimum", "stok minimum", "min", "min stock", "safety stock"], example: "6", hint: "Kosong = tidak punya batas minimum" },
+      { key: "terakhir_bergerak", label: "Pergerakan terakhir", aliases: ["terakhir bergerak", "pergerakan terakhir", "last movement", "last issue", "tanggal terakhir keluar"], example: "15/09/2026", hint: "Kosong = belum pernah bergerak" },
+    ],
+    schema: strRecord({
+      site: text(2, 120, "Site"),
+      kode_part: text(1, 60, "Kode part"),
+      nama: text(1, 160, "Nama part"),
+      satuan: optText(20, "Satuan"),
+      stok: qtyNum("Stok", 99_999_999),
+      minimum: qtyNum("Stok minimum", 99_999_999, true),
+      terakhir_bergerak: optDate("Pergerakan terakhir"),
+    }),
+  },
+  mnt_scrap: {
+    id: "mnt_scrap",
+    group: "maintenance",
+    label: "Maintenance: Metal Scrap (aktual & forecast)",
+    description: "Berat scrap per site, bulan, dan jenis logam (kg). Isi aktual untuk bulan yang sudah berjalan dan forecast untuk rencana; minimal salah satu.",
+    needsSite: false,
+    keyLabel: "Site + bulan + jenis logam",
+    keyOf: (d) => `${d.site.toLowerCase()}|${d.bulan}|${d.logam.toLowerCase()}`,
+    columns: [
+      { key: "site", label: "Site", required: true, aliases: ["site", "lokasi", "location"], example: "Site MIFA", hint: "Nama site persis seperti di Safe Hub" },
+      { key: "bulan", label: "Bulan", required: true, aliases: ["bulan", "periode", "month", "tanggal"], example: "2026-10", hint: "2026-10 atau 10/2026" },
+      { key: "logam", label: "Jenis logam", required: true, aliases: ["logam", "jenis logam", "metal", "jenis scrap", "material"], example: "Besi/baja" },
+      { key: "aktual_kg", label: "Aktual (kg)", aliases: ["aktual", "aktual kg", "actual", "actual kg", "realisasi"], example: "4200" },
+      { key: "forecast_kg", label: "Forecast (kg)", aliases: ["forecast", "forecast kg", "rencana", "target"], example: "4000" },
+    ],
+    schema: strRecord({
+      site: text(2, 120, "Site"),
+      bulan: monthVal("Bulan"),
+      logam: text(1, 60, "Jenis logam"),
+      aktual_kg: qtyNum("Aktual (kg)", 99_999_999, true),
+      forecast_kg: qtyNum("Forecast (kg)", 99_999_999, true),
+    }),
+  },
+  tsp_realizations: {
+    id: "tsp_realizations",
+    group: "tsp",
+    label: "TSP: Realisasi bulanan",
+    description: "Realisasi per program TSP per bulan. Program dicari lewat site + tahun + nomor program (harus sudah dibuat di TSP). Bulan yang evaluasinya sudah disetujui terkunci; bukti file tetap diunggah di halaman TSP.",
+    needsSite: false,
+    keyLabel: "Site + tahun + no program + bulan",
+    keyOf: (d) => `${d.site.toLowerCase()}|${d.tahun}|${d.no_program.toLowerCase()}|${d.bulan}`,
+    columns: [
+      { key: "site", label: "Site", required: true, aliases: ["site", "lokasi", "location"], example: "Site MIFA", hint: "Nama site persis seperti di Safe Hub" },
+      { key: "tahun", label: "Tahun", required: true, aliases: ["tahun", "year"], example: "2026" },
+      { key: "no_program", label: "No program", required: true, aliases: ["no program", "no", "nomor", "nomor program", "kode program"], example: "3.5" },
+      { key: "bulan", label: "Bulan (1-12)", required: true, aliases: ["bulan", "month", "bln"], example: "10", hint: "Angka 1 sampai 12" },
+      { key: "aktual", label: "Aktual", required: true, aliases: ["aktual", "realisasi", "actual", "jumlah"], example: "1" },
+      { key: "catatan", label: "Catatan", aliases: ["catatan", "keterangan", "note"], example: "" },
+    ],
+    schema: strRecord({
+      site: text(2, 120, "Site"),
+      tahun: intIn("Tahun", 2020, 2100),
+      no_program: text(1, 12, "No program"),
+      bulan: intIn("Bulan", 1, 12),
+      aktual: intIn("Aktual", 0, 366),
+      catatan: optText(1000, "Catatan"),
+    }),
+  },
 };
 
 export const IMPORT_TARGET_LIST = Object.values(IMPORT_TARGETS);
@@ -318,6 +435,7 @@ function crossCheck(id: ImportTargetId, d: Record<string, string>): string | nul
     if (d.status === "open" && d.ditutup) return "Backlog Open tidak boleh punya tanggal ditutup";
     if (d.ditutup && d.ditutup < d.dibuka) return "Tanggal ditutup tidak boleh sebelum tanggal dibuka";
   }
+  if (id === "mnt_scrap" && !d.aktual_kg && !d.forecast_kg) return "Isi aktual atau forecast (kg)";
   if (id === "mcu" && d.berlaku_sampai < d.tanggal) return "Berlaku sampai tidak boleh sebelum tanggal MCU";
   return null;
 }

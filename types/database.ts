@@ -1374,6 +1374,20 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"mnt_lib": {
+                  Row: {
+                    "company_code": string,"id": string,"last_moved_on": string | null,"location_id": string,"min_qty": number,"name": string,"part_code": string,"qty": number,"synced_at": string,"uom": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "company_code": string,"id"?: string,"last_moved_on"?: string | null,"location_id": string,"min_qty"?: number,"name": string,"part_code": string,"qty": number,"synced_at"?: string,"uom"?: string | null
+                  }
+                  Update: {
+                    "company_code"?: string,"id"?: string,"last_moved_on"?: string | null,"location_id"?: string,"min_qty"?: number,"name"?: string,"part_code"?: string,"qty"?: number,"synced_at"?: string,"uom"?: string | null
+                  }
+                  Relationships: [
+                    
+                  ]
                 },"mnt_ps": {
                   Row: {
                     "done_on": string | null,"id": string,"name": string,"planned_on": string,"source_key": string,"synced_at": string,"unit_id": string
@@ -1393,6 +1407,20 @@ isOneToOne: false
       referencedRelation: "mnt_units"
       referencedColumns: ["id"]
     }
+                  ]
+                },"mnt_scrap": {
+                  Row: {
+                    "actual_kg": number | null,"company_code": string,"forecast_kg": number | null,"id": string,"location_id": string,"metal": string,"month": string,"synced_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "actual_kg"?: number | null,"company_code": string,"forecast_kg"?: number | null,"id"?: string,"location_id": string,"metal": string,"month": string,"synced_at"?: string
+                  }
+                  Update: {
+                    "actual_kg"?: number | null,"company_code"?: string,"forecast_kg"?: number | null,"id"?: string,"location_id"?: string,"metal"?: string,"month"?: string,"synced_at"?: string
+                  }
+                  Relationships: [
+                    
                   ]
                 },"mnt_sync_state": {
                   Row: {
@@ -2481,6 +2509,12 @@ isOneToOne: false
 "import_row_mnt":
 { Args: { "d": Json,"p_company": string,"p_mode": string,"p_target": string }; Returns: undefined
                            },
+"import_row_mnt_ext":
+{ Args: { "d": Json,"p_company": string,"p_mode": string,"p_target": string }; Returns: undefined
+                           },
+"import_row_tsp":
+{ Args: { "d": Json,"p_company": string,"p_mode": string }; Returns: undefined
+                           },
 "incident_classify":
 { Args: { "p": Json,"p_id": string }; Returns: Json
                            },
@@ -2623,6 +2657,12 @@ isOneToOne: false
                            },
 "mnt_dashboard":
 { Args: { "p_from": string,"p_location": string,"p_to": string }; Returns: Json
+                           },
+"mnt_dashboard_for":
+{ Args: { "p_company": string,"p_from": string,"p_location": string,"p_to": string }; Returns: Json
+                           },
+"mnt_extra":
+{ Args: { "p_company"?: string,"p_from": string,"p_location": string,"p_to": string }; Returns: Json
                            },
 "mnt_manager":
 { Args: Record<PropertyKey, never>; Returns: boolean

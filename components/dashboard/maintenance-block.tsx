@@ -6,7 +6,7 @@ import { KpiHelp, KpiStatusBadge, type KpiDefinition } from "@/components/kpi-he
 import { formatDateTime, formatNumber } from "@/lib/format";
 import type { KpiDef } from "@/lib/kpi";
 import { todayWibIso } from "@/lib/k3";
-import { getMntDashboard } from "@/lib/maintenance";
+import { getMntDashboard, getMntExtra } from "@/lib/maintenance";
 import { MNT_SOURCE } from "@/lib/maintenance-rules";
 import { MONTHS_LONG } from "@/lib/tsp-rules";
 import type { SiteChoice } from "@/lib/site-types";
@@ -18,7 +18,8 @@ export async function MaintenanceBlock({ supabase, bulan, site, kpis }: { supaba
   const today = todayWibIso();
   if (`${bulan}-01` > today) return null; // periode belum berjalan
   const eom = new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10);
-  const d = await getMntDashboard(supabase, { site, from: `${bulan}-01`, to: eom > today ? today : eom });
+  const range = { site, from: `${bulan}-01`, to: eom > today ? today : eom };
+  const [d, x] = await Promise.all([getMntDashboard(supabase, range), getMntExtra(supabase, range)]);
   const help = (code: string): KpiDefinition | null => {
     const k = kpis.find((x) => x?.code === code);
     return k ? { code: k.code, name: k.name, definition: k.definition, formula: k.formula, source: k.source, owner: k.owner, unit: k.unit, status: k.status, version: `v${k.version}` } : null;
@@ -52,6 +53,12 @@ export async function MaintenanceBlock({ supabase, bulan, site, kpis }: { supaba
             );
           })}
         </ul>
+      )}
+      {d.units.total > 0 && (
+        <p className="mt-3 text-xs text-muted-foreground">
+          Readiness LIB {x.lib.readinessPct === null ? "belum tersedia" : `${x.lib.readinessPct}%`} · {x.lib.nonMoving} part non-moving · Scrap {x.scrap.actualKg === null ? "belum tersedia" : `${formatNumber(x.scrap.actualKg)} kg`}
+          {x.scrap.forecastKg !== null ? ` dari forecast ${formatNumber(x.scrap.forecastKg)} kg` : ""}
+        </p>
       )}
     </Content>
   );

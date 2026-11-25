@@ -73,6 +73,10 @@ export function LaporanView({ doc, userId, canEdit, incidentCategories, inspecti
         return { n: d.inspections.reduce((s, x) => s + x.actual, 0), href: `/inspeksi?bulan=${doc.period}&tampilan=daftar` };
       case "tsp":
         return { n: d.tsp.programs_total, href: `/tsp?tahun=${yr}&bulan=${mo}` };
+      case "maintenance":
+        return { n: d.maintenance?.has_data ? d.maintenance.units_operating : null, href: `/maintenance?bulan=${doc.period}` };
+      case "issues":
+        return { n: d.issues?.open_end ?? null, href: "/temuan?sumber=meeting" };
       case "kpi":
         return { n: null, href: "/kpi" };
       default:
@@ -174,6 +178,57 @@ export function LaporanView({ doc, userId, canEdit, incidentCategories, inspecti
             )}
           </div>
         );
+      case "maintenance": {
+        const m = d.maintenance;
+        if (!m || !m.has_data) return <Unavailable>Belum ada data maintenance diimpor untuk site ini.</Unavailable>;
+        const cells: [string, string][] = [
+          ["PA", m.pa === null ? "Belum tersedia" : `${m.pa}%`],
+          ["MTBF", m.mtbf_hours === null ? "Belum tersedia" : `${formatNumber(m.mtbf_hours)} jam`],
+          ["MTTR", m.mttr_hours === null ? "Belum tersedia" : `${formatNumber(m.mttr_hours)} jam`],
+          ["PS Accuracy", m.ps.accuracy === null ? "Belum tersedia" : `${m.ps.accuracy}% (${m.ps.on_time}/${m.ps.planned})`],
+          ["Backlog Open", `${m.backlog.total} (${m.backlog.high} prioritas tinggi)`],
+          ["Readiness LIB", m.lib.readiness_pct === null ? "Belum tersedia" : `${m.lib.readiness_pct}%`],
+          ["Part non-moving", String(m.lib.non_moving)],
+          ["Scrap aktual", m.scrap.actual_kg === null ? "Belum tersedia" : `${formatNumber(m.scrap.actual_kg)} kg`],
+        ];
+        return (
+          <div className="space-y-2">
+            <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {cells.map(([label, v]) => (
+                <div key={label} className="rounded-lg border p-3">
+                  <dt className="text-xs text-muted-foreground">{label}</dt>
+                  <dd className={cn("text-lg font-semibold tabular-nums", v === "Belum tersedia" && "text-sm font-medium text-muted-foreground")}>{v}</dd>
+                </div>
+              ))}
+            </dl>
+            <p className="text-xs text-muted-foreground">
+              Sumber: sistem maintenance (impor Excel){m.last_sync ? `, diperbarui ${formatDateTime(m.last_sync)}` : ""}. {m.units_operating} unit operasi · {m.breakdown_count} breakdown ({formatNumber(m.breakdown_hours)} jam).{" "}
+              <span className="rounded border border-dashed px-1.5">Rumus belum disahkan</span>
+            </p>
+          </div>
+        );
+      }
+      case "issues": {
+        const i = d.issues;
+        if (!i) return <Unavailable>Isu Terbuka belum tercatat pada versi laporan ini.</Unavailable>;
+        return (
+          <div className="space-y-2 text-sm">
+            <p>
+              <strong>{i.open_end}</strong> isu terbuka di akhir periode (temuan bersumber Rapat/MOM) · {i.opened} baru · {i.closed} ditutup · {i.overdue_now} overdue saat ini
+            </p>
+            {i.rows.length > 0 && (
+              <ul className="space-y-1">
+                {i.rows.map((r) => (
+                  <li key={r.id} className="flex flex-wrap justify-between gap-2 border-b py-1">
+                    <Link href={`/temuan/${r.id}`} className="underline underline-offset-2">{r.code} · {r.title}</Link>
+                    <span className="text-muted-foreground">Due {formatDate(r.due_date)}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        );
+      }
       default:
         return (
           <p className="flex items-center gap-2 rounded-lg border border-dashed p-3 text-sm text-muted-foreground">
@@ -386,5 +441,13 @@ export function LaporanView({ doc, userId, canEdit, incidentCategories, inspecti
         </aside>
       </div>
     </>
+  );
+}
+
+function Unavailable({ children }: { children: ReactNode }) {
+  return (
+    <p className="flex items-center gap-2 rounded-lg border border-dashed p-3 text-sm text-muted-foreground">
+      <CircleHelp className="size-4 shrink-0" aria-hidden /> {children}
+    </p>
   );
 }

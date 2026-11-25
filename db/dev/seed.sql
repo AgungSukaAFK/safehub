@@ -1067,3 +1067,27 @@ begin
     ('GMI', 'mnt_units', now() - interval '1 day', 8, 'unit.xlsx'), ('GMI', 'mnt_downtime', now() - interval '1 day', 6, 'downtime.xlsx'),
     ('GMI', 'mnt_ps', now() - interval '1 day', 6, 'ps.xlsx'), ('GMI', 'mnt_backlog', now() - interval '1 day', 6, 'backlog.xlsx');
 end $$;
+
+-- ---------- data DEMO fase 5 (lanjutan): Readiness LIB + Metal Scrap ----------
+do $$
+declare
+  v_site uuid := (select id from public.locations where name = 'Site MIFA');
+  v_p date := (date_trunc('month', current_date) - interval '1 month')::date;
+  v_cur date := date_trunc('month', current_date)::date;
+begin
+  if v_site is null or exists (select 1 from __APP__.mnt_lib) then return; end if;
+  insert into __APP__.mnt_lib (company_code, location_id, part_code, name, uom, qty, min_qty, last_moved_on) values
+    ('GMI', v_site, 'FLT-0101', 'Filter oli engine PC400', 'pcs', 12, 6, current_date - 20),
+    ('GMI', v_site, 'FLT-0215', 'Filter hydraulic HD785', 'pcs', 3, 8, current_date - 35),
+    ('GMI', v_site, 'SEL-0442', 'Seal kit boom cylinder', 'set', 2, 2, current_date - 400),
+    ('GMI', v_site, 'TRK-0910', 'Track shoe D85', 'pcs', 6, 0, current_date - 260),
+    ('GMI', v_site, 'BRG-0033', 'Bearing swing circle', 'pcs', 1, 1, null),
+    ('GMI', v_site, 'LMP-0007', 'Lampu sorot LED 60W', 'pcs', 0, 4, current_date - 15);
+  insert into __APP__.mnt_scrap (company_code, location_id, month, metal, actual_kg, forecast_kg) values
+    ('GMI', v_site, v_p, 'Besi/baja', 4200, 4000), ('GMI', v_site, v_p, 'Tembaga', 180, 200), ('GMI', v_site, v_p, 'Aluminium', 95, 120),
+    ('GMI', v_site, v_cur, 'Besi/baja', 1500, 4000), ('GMI', v_site, v_cur, 'Tembaga', null, 200),
+    ('GMI', v_site, (v_cur + interval '1 month')::date, 'Besi/baja', null, 3800), ('GMI', v_site, (v_cur + interval '1 month')::date, 'Tembaga', null, 220);
+  insert into __APP__.mnt_sync_state (company_code, target, synced_at, row_count, filename) values
+    ('GMI', 'mnt_lib', now() - interval '1 day', 6, 'lib.xlsx'), ('GMI', 'mnt_scrap', now() - interval '1 day', 7, 'scrap.xlsx')
+  on conflict (company_code, target) do nothing;
+end $$;

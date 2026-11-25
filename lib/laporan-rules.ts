@@ -13,7 +13,7 @@ export const REPORT_STATUS: Record<string, StatusDef> = {
 };
 export const REPORT_STATUS_ORDER = ["draft", "pending_approval", "rejected", "published"] as const;
 
-export type ReportSource = "narrative" | "kpi" | "incidents" | "findings" | "inspections" | "tsp" | "unavailable";
+export type ReportSource = "narrative" | "kpi" | "incidents" | "findings" | "inspections" | "tsp" | "maintenance" | "issues" | "unavailable";
 export type ReportSection = { key: string; title: string; source: ReportSource; narrative: string | null };
 
 export type ReportData = {
@@ -24,6 +24,33 @@ export type ReportData = {
   findings: { opened: number; closed: number; open_end: number; overdue_now: number; actions_closed: number; actions_waiting: number };
   inspections: { type_code: string; plan: number; actual: number }[];
   tsp: TspSummary;
+  /** Snapshot lama (sebelum fase 5 lanjutan) tidak memuat dua kunci ini: tampilan harus menangani undefined. */
+  maintenance?: ReportMaintenance;
+  issues?: ReportIssues;
+};
+
+export type ReportMaintenance = {
+  has_data: boolean;
+  units_operating: number;
+  pa: number | null;
+  mtbf_hours: number | null;
+  mttr_hours: number | null;
+  breakdown_count: number;
+  breakdown_hours: number;
+  ps: { planned: number; on_time: number; overdue: number; accuracy: number | null };
+  backlog: { total: number; high: number; oldest_days: number };
+  last_sync: string | null;
+  lib: { total: number; with_min: number; ready: number; below_min: number; non_moving: number; non_moving_days: number; readiness_pct: number | null };
+  scrap: { actual_kg: number | null; forecast_kg: number | null; next_forecast_kg: number | null; achievement_pct: number | null; by_metal: { metal: string; actual_kg: number | null; forecast_kg: number | null }[] };
+};
+
+/** Isu Terbuka (D8) = temuan bersumber Rapat/MOM yang belum ditutup pada akhir periode. */
+export type ReportIssues = {
+  open_end: number;
+  opened: number;
+  closed: number;
+  overdue_now: number;
+  rows: { id: string; code: string; title: string; due_date: string; status: string }[];
 };
 
 export type Completeness = { key: string; label: string; ok: boolean; required: boolean; detail: string | null; href: string | null };

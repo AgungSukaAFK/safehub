@@ -485,7 +485,7 @@ try {
     check("pengingat: jenis kedaluwarsa baru tampil (MCU, sertifikat, izin kontraktor, review dokumen, KO)", pgPeng.includes("MCU akan berakhir") && pgPeng.includes("Sertifikat kompetensi") && pgPeng.includes("Izin kontraktor") && pgPeng.includes("Review dokumen") && pgPeng.includes("Register KO"), pgPeng.slice(0, 160));
     await loginPage(page, BASE, USER("pengawas"));
     await visit(page, "/impor", 2500);
-    check("impor: pengawas dialihkan ke Beranda", (await page.eval("location.pathname")) === "/", await page.eval("location.href"));
+    check("impor: pengawas hanya melihat target TSP (bukan people/maintenance)", (await page.eval("location.pathname")) === "/impor" && (await page.text()).includes("TSP: Realisasi bulanan") && !(await page.text()).includes("Manpower (karyawan & tenaga mitra)") && !(await page.text()).includes("Maintenance: Unit"), await page.eval("location.href"));
 
     // ---- Maintenance (cermin, hanya baca)
     await loginPage(page, BASE, USER("maintenance"));
@@ -497,6 +497,13 @@ try {
     check("maintenance: tab Backlog menampilkan item + prioritas, tanpa tombol ubah", (await page.text()).includes("Ganti final drive") && (await page.text()).includes("Tinggi") && !(await page.text()).includes("Tambah Backlog"));
     await visit(page, "/impor", 2500);
     check("impor: target maintenance tersedia untuk Service/Maintenance, target people tidak", (await page.text()).includes("Maintenance: Unit") && (await page.text()).includes("Maintenance: Backlog") && !(await page.text()).includes("Manpower (karyawan & tenaga mitra)"), (await page.text()).slice(0, 200));
+    await visit(page, "/maintenance?tab=lib", 2500);
+    const libPg = await page.text();
+    check("maintenance: tab Readiness LIB menampilkan part + status non-moving / di bawah minimum", libPg.includes("FLT-0215") && libPg.includes("Non-moving") && libPg.includes("Di bawah minimum"), libPg.slice(0, 200));
+    await visit(page, "/maintenance?tab=scrap", 2500);
+    check("maintenance: tab Metal Scrap menampilkan aktual vs forecast", (await page.text()).includes("Besi/baja") && (await page.text()).includes("Forecast (kg)"), (await page.text()).slice(0, 200));
+    await visit(page, "/maintenance?tab=mr", 2500);
+    check("maintenance: tab Material Request = segera hadir", (await page.text()).includes("Segera hadir"), (await page.text()).slice(0, 200));
     await visit(page, "/kejadian/lapor", 2500);
     check("lapor kejadian: datalist saran unit dari data maintenance", (await page.eval("document.querySelectorAll('#lp-unit-list option').length")) >= 7, String(await page.eval("document.querySelectorAll('#lp-unit-list option').length")));
     await loginPage(page, BASE, USER("karyawan"));

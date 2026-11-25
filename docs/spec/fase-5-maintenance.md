@@ -35,9 +35,23 @@ Sistem maintenance tetap satu-satunya sumber kebenaran. Di Safe Hub tidak ada fo
 | M7 | Site unit diimpor lewat NAMA site persis seperti di Safe Hub | Sistem sumber tidak punya id site Safe Hub |
 | M8 | Nama kolom dan nilai (status unit, jenis downtime, prioritas, status backlog) dikenali dalam Bahasa Indonesia/Inggris lewat alias; kolom sebenarnya di Excel sistem maintenance belum dilihat, jadi pemetaan manual di wizard mungkin perlu | Kontrak data hanya perkiraan |
 
+## Lanjutan (2026-11-25): `db/app/23_maintenance_lanjutan.sql`
+
+Dibangun: Readiness LIB, Metal Scrap, impor realisasi TSP, bagian Maintenance + Isu Terbuka di Laporan Periode, tab Material Request "Segera hadir", tautan keluar (URL dasar opsional).
+
+| # | Keputusan sendiri (mohon dikonfirmasi) | Alasan |
+|---|---|---|
+| L1 | Part **non-moving** = stok > 0 dan pergerakan terakhir > 180 hari lalu (atau belum pernah). Stok 0 tidak dihitung | Ambang 180 hari adalah usulan; ubah `v_days` di `mnt_extra` + `MNT_NON_MOVING_DAYS` |
+| L2 | **Readiness LIB** = part ber-minimum (min > 0) yang stoknya >= minimum ÷ part ber-minimum. Tanpa part ber-minimum = "Belum tersedia". Ini potret stok saat impor terakhir, bukan per periode | Definisi "LIB" di sistem sumber belum dilihat; kolom Excel ditebak (kode part, nama, satuan, stok, minimum, pergerakan terakhir) |
+| L3 | **Metal Scrap**: satu baris per site + bulan + jenis logam berisi aktual dan/atau forecast (kg). Capaian = aktual ÷ forecast bulan yang sama; forecast bulan berikutnya terpisah | Kolom Excel ditebak; aktual bulan yang belum berjalan ditolak |
+| L4 | **Isu Terbuka** (D8) = temuan bersumber "Rapat/MOM" yang belum ditutup (tanpa entitas baru) | Mengikuti default rancangan |
+| L5 | **Impor TSP** = realisasi per program per bulan (site + tahun + no program + bulan + aktual). Program harus sudah ada; hak = HSE/Pengawas/PJO; aturan kunci evaluasi tetap berlaku (lewat `tsp_realization_save`) | Tidak membuat program baru lewat impor |
+| L6 | Laporan: bagian Maintenance memakai `mnt_dashboard_for` (rumus SAMA dengan `mnt_dashboard`, dibatasi satu site + company laporan). Laporan terbit tetap memakai snapshot; snapshot lama tanpa data ini tampil "belum tercatat" | Hook approval berjalan sebagai approver, jadi tidak boleh bergantung pada scope pemanggil |
+
+Uji: `db/tests/14_maintenance.sql` (M1-M5), `db/tests/15_maintenance_lanjutan.sql` (L1-L6).
+
 ## Belum dibangun
 
-Material Request, Readiness LIB/part non-moving, Metal Scrap; bagian "Maintenance" dan "Isu Terbuka" di Laporan Periode (masih "Belum tersedia"); sinkron otomatis (API/schema);
-tautan keluar ke sistem sumber; impor langsung nilai KPI hasil hitung sistem sumber (rumus tetap di Kamus KPI Safe Hub, jangan dihitung dua kali).
-
-Uji: `db/tests/14_maintenance.sql` (M1-M5).
+Material Request (tab "Segera hadir"; perlu kontrak data dari sistem sumber); **sinkron otomatis** (API/schema; butuh info sistem sumber dan kredensialnya, mengingat app tidak memakai secret key Supabase);
+tautan per record ke sistem sumber (hanya URL dasar lewat env `MAINTENANCE_SYSTEM_URL`); impor langsung nilai KPI hasil hitung sistem sumber (rumus tetap di Kamus KPI Safe Hub, jangan dihitung dua kali);
+hapus contoh Pengajuan (ditunda atas keputusan Anda 2026-11-25).

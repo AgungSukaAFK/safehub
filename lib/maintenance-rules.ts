@@ -29,10 +29,30 @@ export const MNT_TABS = [
   { key: "downtime", label: "Downtime" },
   { key: "ps", label: "PS" },
   { key: "backlog", label: "Backlog" },
+  { key: "lib", label: "Readiness LIB" },
+  { key: "scrap", label: "Metal Scrap" },
+  { key: "mr", label: "Material Request" },
 ] as const;
 export type MntTab = (typeof MNT_TABS)[number]["key"];
 
 /** Kode KPI di Kamus KPI (draf, rumus belum disahkan). */
 export const MNT_KPI_CODES = ["mnt_pa", "mnt_mtbf", "mnt_mttr", "mnt_ps_accuracy", "mnt_backlog_open"] as const;
 
-export const MNT_TARGET_LABEL: Record<string, string> = { mnt_units: "Unit", mnt_downtime: "Downtime", mnt_ps: "PS", mnt_backlog: "Backlog" };
+export const MNT_TARGET_LABEL: Record<string, string> = { mnt_units: "Unit", mnt_downtime: "Downtime", mnt_ps: "PS", mnt_backlog: "Backlog", mnt_lib: "Readiness LIB", mnt_scrap: "Metal Scrap" };
+
+/** Part non-moving = stok > 0 dan tidak bergerak lebih dari N hari (cermin mnt_extra di DB). */
+export const MNT_NON_MOVING_DAYS = 180;
+/** Status baris LIB (turunan, tidak disimpan): cermin aturan di mnt_extra. */
+export type LibState = "non_moving" | "below_min" | "ok";
+export function libState(r: { qty: number; minQty: number; lastMovedOn: string | null }, today: string): LibState {
+  if (r.qty > 0) {
+    const idle = r.lastMovedOn === null ? Infinity : (Date.parse(`${today}T00:00:00Z`) - Date.parse(`${r.lastMovedOn}T00:00:00Z`)) / 86_400_000;
+    if (idle > MNT_NON_MOVING_DAYS) return "non_moving";
+  }
+  return r.minQty > 0 && r.qty < r.minQty ? "below_min" : "ok";
+}
+export const LIB_STATE: Record<LibState, StatusDef> = {
+  non_moving: { label: "Non-moving", color: "amber" },
+  below_min: { label: "Di bawah minimum", color: "red" },
+  ok: { label: "Siap", color: "green" },
+};

@@ -334,7 +334,14 @@ Spesifikasi & keputusan sendiri M1-M8: [docs/spec/fase-5-maintenance.md](docs/sp
   KPI `mnt_pa/mtbf/mttr/ps_accuracy/backlog_open` di Kamus KPI. Tanpa breakdown = "Belum tersedia".
 - **Lib**: `lib/maintenance-rules.ts` (label, aman client), `lib/maintenance.ts` (loader, server). Target impor baru = entri `IMPORT_TARGETS` (group `maintenance`) + cabang `import_row_mnt`.
 - Unit di record K3 tetap isian bebas (D15); data cermin hanya jadi saran datalist di Lapor Kejadian (`listUnitSuggestions`).
-- **Belum**: Material Request, Readiness LIB, Metal Scrap, bagian Maintenance di Laporan Periode, sinkron otomatis, tautan keluar ke sistem sumber. **Belum**: impor TSP/PS-backlog, pengingat laporan periode, push untuk pengingat, ambang ExpiryChip dari aturan pengingat.
+- **Fase 5 lanjutan** (`db/app/23_maintenance_lanjutan.sql`, spesifikasi L1-L6 di docs/spec/fase-5-maintenance.md): `mnt_lib` (Readiness LIB; non-moving = stok > 0 dan > 180 hari tanpa
+  pergerakan; readiness = part ber-minimum yang stoknya >= minimum) dan `mnt_scrap` (aktual + forecast kg per site/bulan/logam), keduanya cermin impor (target `mnt_lib`, `mnt_scrap`;
+  `import_row_mnt_ext`). Angka = RPC `mnt_extra(site, dari, sampai, company?)` (SATU sumber: tab `?tab=lib|scrap` di `/maintenance`, blok Beranda, Laporan Periode; LIB = potret stok saat ini).
+  Tab `?tab=mr` Material Request = **"Segera hadir"** (tanpa tabel). Target impor `tsp_realizations` (grup `tsp`, hak `tsp_recorder`; program dicari lewat site + tahun + no program,
+  tulis lewat `tsp_realization_save`). `report_build_data` (didefinisikan ulang di 23) memuat `maintenance` (lewat `mnt_dashboard_for`, definer, satu site + company laporan; rumus SAMA dengan
+  `mnt_dashboard` di 22, jaga keduanya sinkron) dan `issues`; template PJO memakai sumber `maintenance` dan `issues`. Snapshot lama tidak punya kunci itu (tipe opsional di `ReportData`).
+  **Isu Terbuka (D8)** = temuan `source_kind = 'meeting'` belum ditutup (blok Beranda `IssuesBlock`, bagian laporan). Tautan keluar = env opsional `MAINTENANCE_SYSTEM_URL` (https, URL dasar saja).
+- **Belum**: Material Request (segera hadir), sinkron otomatis (butuh info sistem sumber), tautan per record ke sistem sumber, pengingat laporan periode, push untuk pengingat, ambang ExpiryChip dari aturan pengingat.
 
 ## Koreksi terhadap guide (sudah diterapkan di `db/`)
 

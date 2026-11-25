@@ -64,7 +64,7 @@ export async function commitImportAction(
   if (error) return k3DbError(error);
   const r = data as { job_id: string; total: number; ok: number; failed: number; errors: { row: number; message: string }[] };
   await cctv({ category: "config", action: "import.commit", summary: `Impor ${target.label}: ${r.ok} berhasil, ${r.failed + invalid} gagal/dilewati (${filename})`, entity: "import_jobs", recordId: r.job_id, recordLabel: filename });
-  for (const p of ["/manpower", "/kompetensi", "/mcu", "/impor", "/maintenance", "/"]) revalidatePath(p);
+  for (const p of ["/manpower", "/kompetensi", "/mcu", "/impor", "/maintenance", "/tsp", "/"]) revalidatePath(p);
   return {
     ...ok(`${r.ok} baris berhasil diimpor.`),
     result: { total: checked.length, ok: r.ok, failed: r.failed + invalid, errors: r.errors, jobId: r.job_id },

@@ -19,6 +19,7 @@ export default async function ImporPage({ searchParams }: PageProps<"/impor">) {
   const groups: ImportGroup[] = [];
   if (isAdmin || (writer && (access.functions.includes("hr") || access.functions.includes("hse")))) groups.push("people");
   if (isAdmin || (writer && (access.functions.includes("maintenance") || access.functions.includes("hse")))) groups.push("maintenance");
+  if (isAdmin || (writer && (access.functions.includes("hse") || access.functions.includes("pengawas") || access.functions.includes("pjo")))) groups.push("tsp");
   if (groups.length === 0) redirect("/");
   const sp = await searchParams;
   const { siteId, sites } = await parseSiteParam(sp, access);

@@ -8,7 +8,7 @@
      <meta name="x-no-offline"> tidak pernah disimpan.
    NAIKKAN CACHE_VERSION setiap file ini atau /~offline berubah. */
 
-const CACHE_VERSION = "v5";
+const CACHE_VERSION = "v6";
 const STATIC = `static-${CACHE_VERSION}`;
 const META = "sw-meta";
 const PAGES_PREFIX = "pages-";
@@ -17,7 +17,7 @@ const PRECACHE = [OFFLINE_URL, "/manifest.json", "/icon.svg", "/icons/icon-192.p
 const MAX_PAGES = 30;
 const MAX_AGE_MS = 3 * 24 * 3600 * 1000;
 const NET_TIMEOUT_MS = 4000;
-const NO_CACHE_PATHS = [/^\/auth(\/|$)/, /^\/api\//, /\/ekspor(\/|$)/, /^\/verifikasi(\/|$)/, /^\/no-access(\/|$)/, /^\/~offline$/];
+const NO_CACHE_PATHS = [/^\/auth(\/|$)/, /^\/selamat-datang(\/|$)/, /^\/api\//, /\/ekspor(\/|$)/, /^\/verifikasi(\/|$)/, /^\/no-access(\/|$)/, /^\/~offline$/];
 const STATIC_PATHS = [/^\/_next\/static\//, /^\/_next\/image$/, /^\/icons\//, /\.(?:woff2?|svg|png|jpg|jpeg|webp|gif|ico)$/];
 
 // ---------------------------------------------------------------- pemilik cache (userId)

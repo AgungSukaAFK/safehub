@@ -343,6 +343,16 @@ Spesifikasi & keputusan sendiri M1-M8: [docs/spec/fase-5-maintenance.md](docs/sp
   **Isu Terbuka (D8)** = temuan `source_kind = 'meeting'` belum ditutup (blok Beranda `IssuesBlock`, bagian laporan). Tautan keluar = env opsional `MAINTENANCE_SYSTEM_URL` (https, URL dasar saja).
 - **Belum**: Material Request (segera hadir), sinkron otomatis (butuh info sistem sumber), tautan per record ke sistem sumber, pengingat laporan periode, push untuk pengingat, ambang ExpiryChip dari aturan pengingat.
 
+## Landing publik (`/selamat-datang`)
+
+- Tamu di `/` diarahkan ke sini (`lib/supabase/proxy.ts`); deep link tetap ke login. Tombol Masuk = `/auth/login`
+  (user yang sudah login diteruskan proxy ke `/`). Tidak membaca data; tidak masuk cache SW (`NO_CACHE_PATHS`).
+- **SEO**: hanya landing yang diindeks (layout akar = noindex, jangan diubah); `app/robots.ts`, `app/sitemap.ts` (publik di proxy), JSON-LD di
+  `page.tsx`, gambar berbagi `opengraph-image.png` 1200×630 (tangkapan hero; ganti bila hero berubah).
+- Isi = `app/selamat-datang/content.ts`; gaya `landing.css` (prefix `lp-`, satu tampilan, tidak ikut 4 mode tema). Bentuk partikel =
+  `shapes.ts` (urutan `SHAPES` = urutan elemen `[data-shape]`). Animasi masuk = `animation-timeline: view()` di dalam
+  `@supports` (tanpa dukungan = langsung terlihat); semua gerak mati saat `prefers-reduced-motion`.
+
 ## Koreksi terhadap guide (sudah diterapkan di `db/`)
 
 | # | Masalah di guide | Perbaikan |

@@ -6,6 +6,9 @@ import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from "@/lib/env";
 /** Path yang boleh dibuka tanpa login. */
 const PUBLIC_PREFIXES = [
   "/auth",
+  "/selamat-datang",
+  "/robots.txt",
+  "/sitemap.xml",
   "/api/health",
   "/~offline",
   "/verifikasi",
@@ -42,7 +45,8 @@ export async function updateSession(request: NextRequest) {
 
   if (!signedIn && !isPublicPath(pathname)) {
     const url = request.nextUrl.clone();
-    url.pathname = "/auth/login";
+    // Tamu yang membuka alamat app → landing; deep link tetap ke login (dengan next)
+    url.pathname = pathname === "/" ? "/selamat-datang" : "/auth/login";
     url.search = "";
     if (pathname !== "/") url.searchParams.set("next", pathname + search);
     const redirect = NextResponse.redirect(url);

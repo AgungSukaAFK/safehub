@@ -107,3 +107,18 @@ export async function logPrintIncidentAction(id: string, code: string): Promise<
   if (!isUuid(id) || !(await actionAccess("viewer"))) return;
   await cctv({ category: "export", action: "export.print", summary: `Mencetak kejadian ${code}`, entity: "incidents", recordId: id, recordLabel: code });
 }
+
+/** Dipanggil sebelum mencetak Laporan Investigasi (CCTV). Gagal = cetak tetap jalan. */
+export async function logIncidentPrintAction(id: string, code: string, mode: "digital" | "basah"): Promise<void> {
+  if (!isUuid(id) || !(await actionAccess("viewer"))) return;
+  await cctv({
+    category: "export",
+    action: "export.print",
+    summary: `Mencetak Laporan Investigasi ${code} (${mode === "digital" ? "tanda tangan digital" : "tanda tangan basah"})`,
+    entity: "incidents",
+    recordId: id,
+    recordLabel: code,
+    url: `/kejadian/${id}`,
+    metadata: { mode, form: "GMI.MR.F.013-001" },
+  });
+}

@@ -47,6 +47,8 @@ const LOG_ENTITIES = [
   "regulations",
   "regulation_evaluations",
   "ko_register",
+  "apd_requests",
+  "apd_stock_moves",
 ] as const;
 type LogEntity = (typeof LOG_ENTITIES)[number];
 

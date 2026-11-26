@@ -220,7 +220,15 @@ Spesifikasi & keputusan sendiri S1-S7: [docs/spec/fase-1-kejadian-pica.md](docs/
   HSE) dan `findings` (overdue) dari RPC `k3_badges`.
 - **Seed DEMO**: 8 kejadian + 8 temuan + 15 tindakan dari prototipe, dibuat LEWAT RPC sebagai persona (log,
   notifikasi, nomor wajar) lalu tanggal dimundurkan; plus 6 draf Pengajuan contoh (budi/GMI, sari/GIS).
-- **Belum dibangun (fase 1)**: cetak/PDF kejadian, matriks akses fungsi x modul di `/pengguna`, tautan unit ke
+- **Cetak Laporan Investigasi** (2026-11-26, formulir GMI.MR.F.013-001 Rev 00; contoh PDF di root repo): `investigation-print.tsx`
+  (`InvestigationPrint` print-only + `InvestigationPrintButton` di header detail; mode tanda tangan digital/basah lewat event window;
+  CCTV `logIncidentPrintAction`). Halaman: data kejadian & korban, kronologis + rekonstruksi, analisa/penyebab/action plan/review, lampiran foto
+  (maks. 6, signed URL dari page). Kop = logo company + `public/print/k3-logo.png`; diagram tubuh `public/print/body-*.png` (diambil dari PDF).
+  Kolom formulir baru (`db/app/26_kejadian_cetak.sql`): `incidents.shift/overtime/activity/occupational/victim_employee_id` (data karyawan dari
+  Manpower), `incident_restricted.illnesses/injuries/treatment_items` + data pribadi korban OPSIONAL (alamat, telp, tgl lahir; kosong = isi
+  tangan), `incident_investigations.facts/basic_cause_summary`. Penyebab = checklist baku `CAUSE_OPTIONS` (label formulir, struktur jsonb
+  tidak berubah; teks lain tercetak "Lain-lain"). Data terbatas/biaya tercetak "Terbatas" bagi yang tidak berhak.
+- **Belum dibangun (fase 1)**: matriks akses fungsi x modul di `/pengguna`, tautan unit ke
   sistem maintenance (D15: isian bebas), unggah lampiran dari antrean offline.
 
 ## Safe Hub: Inspeksi, Observasi, KPI & Beranda (fase 2)
@@ -343,6 +351,39 @@ Spesifikasi & keputusan sendiri M1-M8: [docs/spec/fase-5-maintenance.md](docs/sp
   **Isu Terbuka (D8)** = temuan `source_kind = 'meeting'` belum ditutup (blok Beranda `IssuesBlock`, bagian laporan). Tautan keluar = env opsional `MAINTENANCE_SYSTEM_URL` (https, URL dasar saja).
 - **Belum**: Material Request (segera hadir), sinkron otomatis (butuh info sistem sumber), tautan per record ke sistem sumber, pengingat laporan periode, push untuk pengingat, ambang ExpiryChip dari aturan pengingat.
 
+## Safe Hub: Monitoring APD (fase 6)
+
+Sumber: folder `Monitoring APD/` (Excel + Form Berita Acara + Form Request). Spesifikasi & keputusan U1-U4 (user), P1-P11:
+[docs/spec/fase-6-apd.md](docs/spec/fase-6-apd.md). Bagian A (DB + konversi data) dan B (UI) selesai; C (data per karyawan) menunggu daftar NRP.
+
+- **DB** (`db/app/24_apd.sql`): `apd_types` (jenis + masa periodik; nilai awal = sheet Matrix APD, U1; `interval_days`, `warn_days`, `tracked`),
+  `apd_items` (kode gudang `SS-01-40`, tanpa harga), `apd_stock_moves` (buku besar `opening/in/out/return/adjust`; stok TIDAK disimpan; batal =
+  `voided_at`, tidak dihapus; OUT/adjust minus ditolak bila stok kurang; satu `opening` per barang per gudang), `apd_requests` + `apd_request_lines`
+  (jenis A, doc_type `apd_request`, `APD-YYYY-NNNN`), `apd_employee_sizes`, `apd_issue_history` (riwayat awal Populasi, diisi migration data).
+  Tulis HANYA lewat RPC (`apd_type_save`, `apd_item_save`, `apd_size_set`, `apd_move_save`, `apd_move_void`, `apd_request_save/cancel/sync_evidence`).
+  Hak: `apd_manager()` = hse/hse_senior/scm/admin; `apd_policy_editor()` = hse/hse_senior/admin; Karyawan = pengajuan & APD miliknya (`my_employee_ids()`).
+- **Angka SATU sumber**: `apd_stock_overview(gudang?)`, view `apd_request_line_progress`/`apd_request_progress` (OS = qty − OUT tertaut −
+  `legacy_supplied`, lead time = disetujui/tgl MR → OUT terakhir), `apd_holdings(site?, karyawan?)` (terakhir terima per jenis dari OUT +
+  riwayat awal; state `expired/due_soon/ok`), `apd_summary(site?)` (stok = semua gudang; sisanya per site karyawan), `apd_my_holdings()`.
+- **Approval**: hook `apd_request_on_approval` (submitted: rusak wajib foto `apd/<id>/`, rusak/hilang wajib tanggal + penjelasan >= 10, hilang /
+  rusak karena kelalaian wajib `deduction_ack`; approved: notifikasi HSE/SCM site + karyawan). Template demo: HSE → HR → HSE Senior. Data lama
+  (`source = 'import'`) tidak lewat approval dan boleh tanpa `employee_id` (snapshot `recipient_name`).
+- **Pengingat** `apd_due` (`run_apd_reminders`, offset 14/0 hari; `run_reminders` dibungkus lagi di 24). Kategori notifikasi `apd`.
+- **UI**: `/apd` (tab `ringkasan/stok/mutasi/karyawan/periodik/barang`, staf K3; Karyawan dialihkan ke `/apd/saya`), `/apd/pengajuan` (+ `baru`,
+  `[id]`, `[id]/ubah`), `/apd/saya`. Lib: `lib/apd-rules.ts` (label, zod; aman client), `lib/apd.ts` (loader). Pengiriman untuk pengajuan =
+  tombol Kirim per baris (`MoveSheet` dengan `lineId`). Cetak Berita Acara = `PrintableDocument` + CCTV `export.print`.
+- **Data Excel** (U4, diubah 2026-11-26): lewat app, BUKAN psql (lourdes-db melarang tulis data manual di produksi). `/apd/impor`
+  (pengelola APD): workbook dibaca server `lib/apd-excel.ts` (`parseApdWorkbook`: master, SO 1 Okt 2026, IN, OUT, MTR MR → pengajuan
+  `approved` data lama; aturan bersih P10) → admin memetakan tiap kode site ke lokasi (dropdown nama persis `public.locations`; lokasi baru
+  dibuat dulu di konsol platform) → RPC `apd_import_legacy` (`db/app/25_apd_impor.sql`, definer, sekali saja, log per baris dimatikan, satu
+  CCTV `import.commit`). Hasil dicocokkan dengan sheet Update Stock: 50/51 barang identik (`SS-05-42` memang tidak ada di sheet stok
+  Excel). Populasi Manpower TIDAK dibaca (U2).
+- **Produksi**: `20261126120000_safehub_apd.sql` (= 15 audit_trail + 24) terpasang di lourdes-db `a152337`. `25_apd_impor` diserahkan
+  sebagai `20261126150000_safehub_apd_impor.sql`. `public.locations` produksi saat itu hanya `HEAD OFFICE (J5|KM 8A|KM 8B)`; HO APD =
+  `HEAD OFFICE (KM 8A)`. Template approval `apd_request` belum ada di produksi (diisi admin di `/approval/template`).
+- **Belum**: data per karyawan (ukuran + riwayat Populasi) setelah daftar NRP, tautan OUT/pengajuan lama ke karyawan, ekspor Excel stok/mutasi,
+  blok Beranda APD, harga barang, tugas "kirim APD" di Tugas Saya (sementara lewat filter Belum Terpenuhi).
+
 ## Landing publik (`/selamat-datang`)
 
 - Tamu di `/` diarahkan ke sini (`lib/supabase/proxy.ts`); deep link tetap ke login. Tombol Masuk = `/auth/login`
@@ -365,6 +406,13 @@ Spesifikasi & keputusan sendiri M1-M8: [docs/spec/fase-5-maintenance.md](docs/sp
   Cek DB lebih dulu (`scripts/query.sh` di lourdes-db) dan tulis prasyarat di awal file. `db/app/00_schema.sql` itu rekonstruksi: gunakan
   `lourdes-db/templates/new_app.sql` yang asli, jangan menebak.
 - Daftar schema API diatur lewat env `PGRST_DB_SCHEMAS` di Coolify (bukan role `authenticator`).
+- Serah-terima SQL ke sesi `lourdes-db` (mesin lain): `db/out/` ada di `.gitignore`, jadi file di sana TIDAK terjangkau lewat git. Sebelum
+  menyuruh sesi lain mengambil file, pastikan bisa dijangkau (`git add -f` ke branch sementara, atau minta user menaruh folder di root
+  `lourdes-db`) dan sebut SATU path yang konsisten. Migration yang sudah di-push tidak diedit; perubahan berikutnya = file baru.
+  Susulan 20→25 Nov (modul K3 ke DB yang sudah berisi boilerplate) terpasang di lourdes-db commit `fe23150`; bandingkan skema
+  hasil susulan dengan pemasangan bersih di container sebelum menyerahkan (hasilnya harus identik).
+- `drop function safehub.next_doc_number(text,text)` di susulan aman: versi baru `(text,text,text)` punya default `p_reset = 'month'`,
+  jadi panggilan lama dua argumen tetap jalan. `notify pgrst, 'reload schema'` cukup (tanpa restart REST).
 - Belum dikerjakan: timer `lourdes-maintenance` di VPS (`db/platform/infra/`; tanpa itu pengingat otomatis tidak berjalan), akses user ke app
   (`app_access`), dan `types/database.ts` dari DB produksi (`npm run db:types` hanya membaca Supabase lokal).
 

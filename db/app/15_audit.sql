@@ -281,6 +281,34 @@ begin
         and (p_actor is null or l.actor_id = p_actor) and (p_action is null or l.action = p_action)
         and (p_before is null or l.at < p_before)
       order by l.at desc, l.id desc limit least(greatest(p_limit, 1), 200) + 1)
+    union all
+    (select 'apd_types'::text as entity, l.id, l.record_id, l.at, l.actor_id, l.action, l.note, l.changes
+       from __APP__.apd_types_logs l
+      where (p_entities is null or 'apd_types' = any (p_entities)) and l.at >= p_from and l.at < p_to
+        and (p_actor is null or l.actor_id = p_actor) and (p_action is null or l.action = p_action)
+        and (p_before is null or l.at < p_before)
+      order by l.at desc, l.id desc limit least(greatest(p_limit, 1), 200) + 1)
+    union all
+    (select 'apd_items'::text as entity, l.id, l.record_id, l.at, l.actor_id, l.action, l.note, l.changes
+       from __APP__.apd_items_logs l
+      where (p_entities is null or 'apd_items' = any (p_entities)) and l.at >= p_from and l.at < p_to
+        and (p_actor is null or l.actor_id = p_actor) and (p_action is null or l.action = p_action)
+        and (p_before is null or l.at < p_before)
+      order by l.at desc, l.id desc limit least(greatest(p_limit, 1), 200) + 1)
+    union all
+    (select 'apd_requests'::text as entity, l.id, l.record_id, l.at, l.actor_id, l.action, l.note, l.changes
+       from __APP__.apd_requests_logs l
+      where (p_entities is null or 'apd_requests' = any (p_entities)) and l.at >= p_from and l.at < p_to
+        and (p_actor is null or l.actor_id = p_actor) and (p_action is null or l.action = p_action)
+        and (p_before is null or l.at < p_before)
+      order by l.at desc, l.id desc limit least(greatest(p_limit, 1), 200) + 1)
+    union all
+    (select 'apd_stock_moves'::text as entity, l.id, l.record_id, l.at, l.actor_id, l.action, l.note, l.changes
+       from __APP__.apd_stock_moves_logs l
+      where (p_entities is null or 'apd_stock_moves' = any (p_entities)) and l.at >= p_from and l.at < p_to
+        and (p_actor is null or l.actor_id = p_actor) and (p_action is null or l.action = p_action)
+        and (p_before is null or l.at < p_before)
+      order by l.at desc, l.id desc limit least(greatest(p_limit, 1), 200) + 1)
   ) u
   order by u.at desc, u.id desc
   limit least(greatest(p_limit, 1), 200) + 1;

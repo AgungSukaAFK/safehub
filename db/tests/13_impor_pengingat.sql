@@ -96,7 +96,7 @@ reset role;
 -- ---------------------------------------------------------------- pengingat kedaluwarsa
 -- pelaku = sistem (bukan sesi karyawan terakhir), supaya notify() tidak mengecualikan penerima yang kebetulan sama dengan sesi
 select set_config('request.jwt.claims', '', false), set_config('request.jwt.claim.sub', '', false);
-select zz_test.check('P1a 9 aturan aktif (3 lama + 6 kedaluwarsa)', (select count(*) from __APP__.reminder_rules where is_active) = 9);
+select zz_test.check('P1a 10 aturan aktif (3 lama + 6 kedaluwarsa + apd_due)', (select count(*) from __APP__.reminder_rules where is_active) = 10);
 set session_replication_role = replica;
 update __APP__.mcu_records set valid_until = :'today'::date + 14 where employee_id = (select id from __APP__.employees where code = 'GMI-0017');
 update __APP__.certificates set valid_until = :'today'::date + 7 where employee_id = (select id from __APP__.employees where code = 'GMI-0017') and competency_id = (select id from __APP__.competencies where code = 'bmc');

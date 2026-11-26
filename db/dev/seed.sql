@@ -1091,3 +1091,98 @@ begin
     ('GMI', 'mnt_lib', now() - interval '1 day', 6, 'lib.xlsx'), ('GMI', 'mnt_scrap', now() - interval '1 day', 7, 'scrap.xlsx')
   on conflict (company_code, target) do nothing;
 end $$;
+
+-- ---------- data DEMO fase 6: Monitoring APD (master dari Excel Monitoring APD GMI 2026; transaksi rekaan) ----------
+do $$
+declare
+  v_ho uuid := (select id from public.locations where name = 'Kantor Pusat Bekasi');
+  v_site uuid := (select id from public.locations where name = 'Site MIFA');
+  v_hse uuid := (select id from public.profiles where email = 'hse@demo.lourdes.test');
+  v_kar uuid := (select id from public.profiles where email = 'karyawan@demo.lourdes.test');
+  v_rudi uuid := (select id from __APP__.employees where code = 'GMI-0017');
+  v_agus uuid := (select id from __APP__.employees where code = 'GMI-0024');
+  v_req uuid; v_line uuid; v_tpl uuid;
+begin
+  if v_ho is null or v_site is null or v_rudi is null or exists (select 1 from __APP__.apd_items) then return; end if;
+  alter table __APP__.apd_items disable trigger apd_items_log;
+  alter table __APP__.apd_stock_moves disable trigger apd_stock_moves_log;
+  alter table __APP__.apd_requests disable trigger apd_requests_log;
+
+  insert into __APP__.apd_items (code, name, type_id, brand, size, uom, min_stock)
+  select x.code, x.name, t.id, x.brand, x.size, x.uom, x.min_stock
+    from (values
+      ('SS-01-40', 'Krusher Safety Shoes Uk 40', 'safety_shoes', 'Krusher', '40', 'Pasang', 2),
+      ('SS-01-41', 'Krusher Safety Shoes Uk 41', 'safety_shoes', 'Krusher', '41', 'Pasang', 2),
+      ('SS-01-42', 'Krusher Safety Shoes Uk 42', 'safety_shoes', 'Krusher', '42', 'Pasang', 2),
+      ('KM-01-03', 'Kemeja Mekanik Uk L', 'uniform_shirt', 'Lourdes', 'L', 'Pcs', 10),
+      ('KM-01-04', 'Kemeja Mekanik Uk XL', 'uniform_shirt', 'Lourdes', 'XL', 'Pcs', 10),
+      ('KS-01-03', 'Kaos Mekanik Uk L', 'uniform_tshirt', 'Lourdes', 'L', 'Pcs', 10),
+      ('KS-01-04', 'Kaos Mekanik Uk XL', 'uniform_tshirt', 'Lourdes', 'XL', 'Pcs', 10),
+      ('SG-01', 'Safety Glasses Clear', 'safety_glass', 'Kings', 'Clear', 'Pcs', 5),
+      ('HLM-01', 'Helm Yellow', 'safety_helmet', 'Lourdes', 'Kuning', 'Pcs', 3),
+      ('HLM-04', 'Helm White', 'safety_helmet', 'Lourdes', 'Putih', 'Pcs', 2),
+      ('EPL-01', 'Earplug', 'earplug', 'Lourdes', null, 'Pasang', 10),
+      ('MSK-01', 'Masker Carbon', 'mask_carbon', 'Lourdes', null, 'Pcs', 5),
+      ('SRT-02', 'Sarung Tangan', 'safety_glove', 'Lourdes', null, 'Pasang', 20),
+      ('PDL-01', 'Padlock Red', 'padlock', 'Lourdes', 'Merah', 'Pcs', 0)
+    ) as x(code, name, type, brand, size, uom, min_stock) join __APP__.apd_types t on t.code = x.type;
+
+  -- stok awal (SO) di gudang HO + barang masuk
+  insert into __APP__.apd_stock_moves (company_code, location_id, kind, item_id, qty, moved_on, ref_no, pic, created_by)
+  select 'GMI', v_ho, 'opening', i.id, x.qty, current_date - 60, 'SO-2026', 'Gudang HO', v_hse
+    from (values ('SS-01-40', 2), ('SS-01-41', 1), ('SS-01-42', 1), ('KM-01-03', 5), ('KM-01-04', 4), ('KS-01-03', 10), ('KS-01-04', 4),
+                 ('SG-01', 5), ('HLM-01', 11), ('HLM-04', 4), ('MSK-01', 17), ('SRT-02', 75)) x(code, qty)
+    join __APP__.apd_items i on i.code = x.code;
+  insert into __APP__.apd_stock_moves (company_code, location_id, kind, item_id, qty, moved_on, ref_no, pic, created_by)
+  select 'GMI', v_ho, 'in', i.id, x.qty, current_date - 20, 'GMI/MR/X/26/HSE/707', 'Gudang HO', v_hse
+    from (values ('KM-01-03', 42), ('KS-01-03', 76), ('PDL-01', 8)) x(code, qty) join __APP__.apd_items i on i.code = x.code;
+
+  -- riwayat penerimaan karyawan demo (OUT tanpa pengajuan, sebelum sistem)
+  insert into __APP__.apd_stock_moves (company_code, location_id, kind, item_id, qty, moved_on, pic, dest_location_id, employee_id, recipient_name, created_by)
+  select 'GMI', v_ho, 'out', i.id, x.qty, current_date - x.ago, 'Gudang HO', v_site, x.emp, e.name, v_hse
+    from (values ('SS-01-41', 1, 330, v_rudi), ('HLM-01', 1, 200, v_rudi), ('KS-01-03', 2, 190, v_rudi), ('SG-01', 1, 60, v_rudi),
+                 ('SS-01-42', 1, 30, v_agus), ('KM-01-04', 2, 100, v_agus)) x(code, qty, ago, emp)
+    join __APP__.apd_items i on i.code = x.code join __APP__.employees e on e.id = x.emp;
+  insert into __APP__.apd_employee_sizes (employee_id, type_id, size, updated_by)
+  select v_rudi, t.id, x.size, v_hse
+    from (values ('safety_shoes', '41'), ('uniform_tshirt', 'L'), ('uniform_shirt', 'L'), ('safety_helmet', 'Kuning')) x(type, size)
+    join __APP__.apd_types t on t.code = x.type;
+
+  -- pengajuan disetujui (berkala, Rudi): kaos L x2, sudah terkirim 1
+  insert into __APP__.apd_requests (company_code, location_id, code, employee_id, recipient_name, job_title, reason, requested_on, approved_on,
+                                    status, created_by, created_at)
+  values ('GMI', v_site, __APP__.next_doc_number('APD', 'GMI', 'year'), v_rudi, 'Rudi Hartono', 'Teknisi AC', 'periodic', current_date - 6,
+          current_date - 4, 'approved', v_kar, now() - interval '6 days')
+  returning id into v_req;
+  insert into __APP__.apd_request_lines (request_id, line_no, type_id, item_id, size, qty)
+  select v_req, 1, t.id, i.id, 'L', 2 from __APP__.apd_types t join __APP__.apd_items i on i.code = 'KS-01-03' where t.code = 'uniform_tshirt'
+  returning id into v_line;
+  insert into __APP__.apd_stock_moves (company_code, location_id, kind, item_id, qty, moved_on, ref_no, pic, dest_location_id, employee_id,
+                                       recipient_name, request_line_id, created_by)
+  select 'GMI', v_ho, 'out', i.id, 1, current_date - 2, 'BAST-DEMO-01', 'Gudang HO', v_site, v_rudi, 'Rudi Hartono', v_line, v_hse
+    from __APP__.apd_items i where i.code = 'KS-01-03';
+
+  -- draf (rusak, Rudi): belum ada foto bukti
+  insert into __APP__.apd_requests (company_code, location_id, code, employee_id, recipient_name, job_title, reason, negligence, incident_on,
+                                    explanation, status, created_by)
+  values ('GMI', v_site, __APP__.next_doc_number('APD', 'GMI', 'year'), v_rudi, 'Rudi Hartono', 'Teknisi AC', 'damaged', false, current_date - 1,
+          'Sol sepatu lepas saat pekerjaan di area workshop.', 'draft', v_kar)
+  returning id into v_req;
+  insert into __APP__.apd_request_lines (request_id, line_no, type_id, size, qty)
+  select v_req, 1, t.id, '41', 1 from __APP__.apd_types t where t.code = 'safety_shoes';
+
+  alter table __APP__.apd_items enable trigger apd_items_log;
+  alter table __APP__.apd_stock_moves enable trigger apd_stock_moves_log;
+  alter table __APP__.apd_requests enable trigger apd_requests_log;
+
+  -- template approval (P5): HSE Staff memeriksa, HR Manager mengetahui, HSE Dept Head menyetujui
+  if not exists (select 1 from __APP__.approval_templates where doc_type = 'apd_request') then
+    insert into __APP__.approval_templates (doc_type, name, description, priority)
+    values ('apd_request', 'Pengajuan APD standar', 'HSE Staff > HR Manager > HSE Dept Head (Form Berita Acara APD, DEMO)', 0)
+    returning id into v_tpl;
+    insert into __APP__.approval_template_steps (template_id, step_no, approval_type, approver_kind, approver_id, due_hours)
+    values (v_tpl, 1, 'memeriksa',  'user', v_hse, 24),
+           (v_tpl, 2, 'mengetahui', 'user', (select id from public.profiles where email = 'hr@demo.lourdes.test'), 48),
+           (v_tpl, 3, 'menyetujui', 'user', (select id from public.profiles where email = 'hse.senior@demo.lourdes.test'), 48);
+  end if;
+end $$;

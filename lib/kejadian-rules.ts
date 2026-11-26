@@ -104,6 +104,22 @@ export const BODY_PARTS = [
   "Lutut kiri",
   "Telapak kaki kanan",
   "Telapak kaki kiri",
+  // tambahan sesuai formulir Laporan Investigasi
+  "Telinga kanan",
+  "Telinga kiri",
+  "Gigi",
+  "Siku kanan",
+  "Siku kiri",
+  "Pergelangan tangan kanan",
+  "Pergelangan tangan kiri",
+  "Jempol kanan",
+  "Jempol kiri",
+  "Pinggang",
+  "Pantat",
+  "Tungkai kanan",
+  "Tungkai kiri",
+  "Pergelangan kaki kanan",
+  "Pergelangan kaki kiri",
 ] as const;
 
 export const COMPANY_KINDS = [
@@ -202,6 +218,12 @@ export const classifySchema = z.object({
   ppe: z.record(z.boolean()).default({}),
   damage_description: optText(1000),
   estimated_cost: z.number().min(0).max(1e15).nullable().optional(),
+  // kolom formulir Laporan Investigasi (GMI.MR.F.013-001)
+  shift: optText(40),
+  overtime: z.boolean().nullable().optional(),
+  activity: optText(1000),
+  occupational: z.enum(["occupational", "re_treatment", "non_occupational"]).nullable().optional(),
+  victim_employee_id: uuid.or(z.literal("")).nullable().optional(),
   restricted: z
     .object({
       injury_type: optText(200),
@@ -210,6 +232,12 @@ export const classifySchema = z.object({
       facility: optText(200),
       lost_days: z.number().int().min(0).max(3650).nullable().optional(),
       restricted_days: z.number().int().min(0).max(3650).nullable().optional(),
+      illnesses: z.array(z.string().max(60)).max(30).default([]),
+      injuries: z.array(z.string().max(60)).max(30).default([]),
+      treatment_items: z.array(z.string().max(60)).max(30).default([]),
+      victim_address: optText(300),
+      victim_phone: optText(40),
+      victim_birth_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).or(z.literal("")).nullable().optional(),
     })
     .optional(),
 });
@@ -231,8 +259,102 @@ export const investigationSchema = z.object({
     personal_factor: z.array(causeItem).max(30).default([]),
   }),
   recommendations: z.array(z.object({ text: z.string().trim().max(500) })).max(50),
+  facts: optText(4000),
+  basic_cause_summary: optText(4000),
 });
 export type InvestigationValues = z.input<typeof investigationSchema>;
+
+// ---------------------------------------------------------------- formulir Laporan Investigasi (GMI.MR.F.013-001 Rev 00)
+// Label checklist = teks formulir apa adanya (dicetak tercentang bila tersimpan). Penyebab: item `text` = label baku;
+// teks lain (data lama / isian bebas) tercetak di "Lain-lain".
+export const INVESTIGATION_FORM = { docNo: "GMI.MR.F.013-001", effective: "02 September 2024", revision: "00" } as const;
+
+export const CAUSE_OPTIONS: Record<CauseKey, readonly string[]> = {
+  unsafe_act: [
+    "Mengoperasikan Alat Yang Bukan Wewenang",
+    "Tidak Memberikan Peringatan/Sinyal",
+    "Gagal Mengamankan Dari Pergerakan Yang Tidak Diinginkan",
+    "Mengoperasikan Dengan Kecepatan Yang Salah",
+    "Menggunakan Alat Yang Rusak",
+    "Membuat Safety Device Tidak Berfungsi",
+    "Tidak Menggunakan APD",
+    "Bercanda/Bermain",
+    "Penempatan Yang Tidak Sesuai",
+    "Dalam Pengaruh Obat",
+    "Posisi Tubuh Yang Salah",
+  ],
+  unsafe_condition: [
+    "Pengaman Yang Tidak Memadai",
+    "Material, Alat Atau Mesin Yang Rusak",
+    "Ruang Gerak Terbatas",
+    "Warning System Tidak Memadai",
+    "Bahaya Kebakaran Dan Ledakan",
+    "Kondisi Lingkungan (Kabut, Asap)",
+    "Pencahayaan Kurang Memadai",
+    "Tata Letak Yang Buruk",
+  ],
+  job_factor: [
+    "Tidak Ada Prosedur Tertulis",
+    "Buruknya Pemberlakuan Aturan Safety",
+    "Desain Sistem Yang Tidak Sempurna",
+    "Maintenance Yang Kurang Memadai",
+    "Metode/Keputusan Pembelian Yang Buruk",
+  ],
+  personal_factor: [
+    "Kurang Motivasi",
+    "Kurang Terampil",
+    "Kurang Pengetahuan",
+    "Stress Fisik",
+    "Ketidakmampuan Psikologis",
+    "Stress Mental",
+    "Keterbatasan Fisik",
+  ],
+};
+/** Item penyebab yang bukan label baku (tercetak di "Lain-lain"). */
+export const isStandardCause = (key: CauseKey, text: string) => CAUSE_OPTIONS[key].some((o) => o.toLowerCase() === text.trim().toLowerCase());
+
+export const ILLNESSES = ["Demam/Radang Tenggorokan", "Congestion", "Gangguan Gigi", "Diare", "Gangguan Mata", "Sakit Kepala", "Digigit Serangga", "Sakit Urat/Otot", "Nyeri", "Sakit Perut", "Mual"] as const;
+export const INJURIES = ["Lecet", "Amputasi", "Luka Bakar", "Luka Memar", "Iritasi Mata", "Fracture", "Benda Asing Kena Mata", "Foreign Body (Splinter)", "Luka Robek", "Luka Lobang", "Terkilir"] as const;
+export const TREATMENT_ITEMS = ["Antibiotik", "Plester", "Handiplast", "Barrier Cream", "Betadine", "Butterfly Bandage", "Dikompres", "Balutan Kering", "Eye Wash", "Foreign Body Removal", "Heat", "None"] as const;
+export const TREATMENT_REFERRALS = ["Telepon Perawat", "Dibawa ke Dokter", "Dibawa ke RS/Klinik", "Ambulance"] as const;
+/** Bagian tubuh formulir; * = kanan/kiri (BODY_PARTS sistem memuat sisi). */
+export const FORM_BODY_PARTS = [
+  { label: "Perut", match: ["Perut"] },
+  { label: "Pergelangan Kaki*", match: ["Pergelangan kaki"] },
+  { label: "Lengan*", match: ["Lengan"] },
+  { label: "Punggung", match: ["Punggung"] },
+  { label: "Pantat*", match: ["Pantat"] },
+  { label: "Dada", match: ["Dada"] },
+  { label: "Telinga*", match: ["Telinga"] },
+  { label: "Siku*", match: ["Siku"] },
+  { label: "Mata*", match: ["Mata"] },
+  { label: "Wajah", match: ["Wajah"] },
+  { label: "Jari*", match: ["Jari tangan", "Jari kaki", "Jari"] },
+  { label: "Kaki*", match: ["Kaki", "Telapak kaki"] },
+  { label: "Tangan*", match: ["Tangan"] },
+  { label: "Kepala", match: ["Kepala"] },
+  { label: "Pinggang*", match: ["Pinggang", "Pinggul"] },
+  { label: "Lutut*", match: ["Lutut"] },
+  { label: "Tungkai*", match: ["Tungkai"] },
+  { label: "Leher", match: ["Leher"] },
+  { label: "Bahu*", match: ["Bahu"] },
+  { label: "Gigi", match: ["Gigi"] },
+  { label: "Jempol*", match: ["Jempol"] },
+  { label: "Pergelangan Tangan*", match: ["Pergelangan tangan"] },
+] as const;
+export const OCCUPATIONAL = [
+  { value: "occupational", label: "Occupational" },
+  { value: "re_treatment", label: "Re-treatment" },
+  { value: "non_occupational", label: "Non-occupational" },
+] as const;
+export const SHIFTS = ["Non-shift", "Shift 1", "Shift 2", "Shift 3"] as const;
+/** Status korban formulir dari data orang terlibat. */
+export function victimStatus(p: { companyKind: string; employment: string | null } | null): string | null {
+  if (!p) return null;
+  if (p.companyKind === "contractor") return "SUBKONTRAKTOR";
+  if (p.companyKind === "visitor" || p.employment === "visitor") return "OTHER";
+  return p.employment === "permanent" ? "PERMANEN" : p.employment === "contract" ? "KONTRAK" : p.employment === "daily" ? "PART TIME" : null;
+}
 
 // ---------------------------------------------------------------- fungsi murni
 /** Umur kejadian dalam hari (berhenti saat ditutup). */

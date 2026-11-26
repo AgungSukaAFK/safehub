@@ -312,6 +312,13 @@ export type KejadianDetail = {
   isEmergency: boolean;
   ppe: Record<string, boolean>;
   damageDescription: string | null;
+  /** kolom formulir Laporan Investigasi (26) */
+  shift: string | null;
+  overtime: boolean | null;
+  activity: string | null;
+  occupational: string | null;
+  /** korban tertaut Manpower (No. karyawan, jabatan, tgl masuk) */
+  victim: { id: string; code: string; name: string; jobTitle: string; department: string | null; joinDate: string | null } | null;
   status: IncidentStatus;
   returnNote: string | null;
   returnedAt: string | null;
@@ -332,6 +339,13 @@ export type KejadianDetail = {
     facility: string | null;
     lostDays: number | null;
     restrictedDays: number | null;
+    illnesses: string[];
+    injuries: string[];
+    treatmentItems: string[];
+    /** data pribadi opsional (kosong = diisi tangan setelah dicetak) */
+    victimAddress: string | null;
+    victimPhone: string | null;
+    victimBirthDate: string | null;
   } | null;
   canSeeRestricted: boolean;
   /** null = tidak berhak / belum diisi (lihat canSeeCost) */
@@ -343,6 +357,8 @@ export type KejadianDetail = {
     reconstruction: string | null;
     causes: Record<CauseKey, { text: string; note: string }[]>;
     recommendations: { text: string }[];
+    facts: string | null;
+    basicCauseSummary: string | null;
     updatedAt: string | null;
     updatedBy: string | null;
   };
@@ -361,7 +377,7 @@ export async function getKejadianDetail(supabase: ServerClient, id: string, opts
   const { data: d } = await supabase
     .from("incidents")
     .select(
-      "id, code, company_code, location_id, area_id, location_detail, occurred_at, reported_at, reported_category, category, injury_class, severity, potential_severity, unit_code, unit_label, description, is_emergency, supervisor_id, ppe, damage_description, status, return_note, returned_at, lead_investigator_id, classified_at, classified_by, closed_at, close_note, closed_exception, created_by, updated_at",
+      "id, code, company_code, location_id, area_id, location_detail, occurred_at, reported_at, reported_category, category, injury_class, severity, potential_severity, unit_code, unit_label, description, is_emergency, supervisor_id, ppe, damage_description, shift, overtime, activity, occupational, victim_employee_id, status, return_note, returned_at, lead_investigator_id, classified_at, classified_by, closed_at, close_note, closed_exception, created_by, updated_at",
     )
     .eq("id", id)
     .maybeSingle();
@@ -370,11 +386,11 @@ export async function getKejadianDetail(supabase: ServerClient, id: string, opts
   const [persons, restricted, cost, team, inv, reviews, actions, files, check, related, site, area, logs] = await Promise.all([
     supabase.from("incident_persons").select("id, role, line_no, name, company_kind, contractor_id, employment, position, contact").eq("incident_id", id).order("role").order("line_no"),
     opts.canSeeRestricted
-      ? supabase.from("incident_restricted").select("injury_type, body_parts, treatment, facility, lost_days, restricted_days").eq("incident_id", id).maybeSingle()
+      ? supabase.from("incident_restricted").select("injury_type, body_parts, treatment, facility, lost_days, restricted_days, illnesses, injuries, treatment_items, victim_address, victim_phone, victim_birth_date").eq("incident_id", id).maybeSingle()
       : Promise.resolve({ data: null }),
     opts.canSeeCost ? supabase.from("incident_costs").select("estimated_cost").eq("incident_id", id).maybeSingle() : Promise.resolve({ data: null }),
     supabase.from("incident_team").select("user_id, role").eq("incident_id", id),
-    supabase.from("incident_investigations").select("timeline, reconstruction, causes, recommendations, updated_at, updated_by").eq("incident_id", id).maybeSingle(),
+    supabase.from("incident_investigations").select("timeline, reconstruction, causes, recommendations, facts, basic_cause_summary, updated_at, updated_by").eq("incident_id", id).maybeSingle(),
     supabase.from("incident_reviews").select("stage, decision, note, actor_id, at").eq("incident_id", id).order("at"),
     listActions(supabase, { incidentId: id }),
     supabase.storage.from(BUCKET_LAMPIRAN).list(`kejadian/${id}`, { limit: 100, sortBy: { column: "created_at", order: "asc" } }),
@@ -385,6 +401,9 @@ export async function getKejadianDetail(supabase: ServerClient, id: string, opts
     supabase.from("incidents_logs").select("action, at, actor_id").eq("record_id", id).order("at"),
   ]);
 
+  const victimRow = d.victim_employee_id
+    ? (await supabase.from("employees").select("id, code, name, job_title, department, join_date").eq("id", d.victim_employee_id).maybeSingle()).data
+    : null;
   const contractorIds = [...new Set((persons.data ?? []).map((p) => p.contractor_id).filter((x): x is string => !!x))];
   const contractors = contractorIds.length ? ((await supabase.from("contractors").select("id, name").in("id", contractorIds)).data ?? []) : [];
   const people = await getPeople(supabase, [
@@ -399,7 +418,7 @@ export async function getKejadianDetail(supabase: ServerClient, id: string, opts
     const p = uid ? people.get(uid) : undefined;
     return p ? { id: p.id, name: p.name, avatarUrl: p.avatarUrl, jobTitle: p.jobTitle } : null;
   };
-  const invData = inv.data as { timeline: unknown; reconstruction: string | null; causes: unknown; recommendations: unknown; updated_at: string; updated_by: string | null } | null;
+  const invData = inv.data as { timeline: unknown; reconstruction: string | null; causes: unknown; recommendations: unknown; facts: string | null; basic_cause_summary: string | null; updated_at: string; updated_by: string | null } | null;
   const causes = { ...EMPTY_CAUSES, ...((invData?.causes as Record<CauseKey, { text: string; note: string }[]>) ?? {}) };
 
   return {
@@ -424,6 +443,11 @@ export async function getKejadianDetail(supabase: ServerClient, id: string, opts
     isEmergency: d.is_emergency,
     ppe: (d.ppe as Record<string, boolean>) ?? {},
     damageDescription: d.damage_description,
+    shift: d.shift,
+    overtime: d.overtime,
+    activity: d.activity,
+    occupational: d.occupational,
+    victim: victimRow ? { id: victimRow.id, code: victimRow.code, name: victimRow.name, jobTitle: victimRow.job_title, department: victimRow.department, joinDate: victimRow.join_date } : null,
     status: d.status as IncidentStatus,
     returnNote: d.return_note,
     returnedAt: d.returned_at,
@@ -453,6 +477,12 @@ export async function getKejadianDetail(supabase: ServerClient, id: string, opts
           facility: restricted.data.facility,
           lostDays: restricted.data.lost_days,
           restrictedDays: restricted.data.restricted_days,
+          illnesses: restricted.data.illnesses ?? [],
+          injuries: restricted.data.injuries ?? [],
+          treatmentItems: restricted.data.treatment_items ?? [],
+          victimAddress: restricted.data.victim_address,
+          victimPhone: restricted.data.victim_phone,
+          victimBirthDate: restricted.data.victim_birth_date,
         }
       : null,
     canSeeRestricted: opts.canSeeRestricted,
@@ -467,6 +497,8 @@ export async function getKejadianDetail(supabase: ServerClient, id: string, opts
       reconstruction: invData?.reconstruction ?? null,
       causes,
       recommendations: (invData?.recommendations as { text: string }[]) ?? [],
+      facts: invData?.facts ?? null,
+      basicCauseSummary: invData?.basic_cause_summary ?? null,
       updatedAt: invData?.updated_at ?? null,
       updatedBy: invData?.updated_by ? (people.get(invData.updated_by)?.name ?? null) : null,
     },

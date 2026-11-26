@@ -48,3 +48,7 @@ next-env.d.ts
 /scripts/qa/out/
 # migration hasil create-app
 /db/out/
+
+# Dokumen sumber berisi data pribadi (nama karyawan/korban): jangan di-commit
+/Monitoring APD/
+/Laporan investigasi*.pdf

@@ -15,7 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { UserProfileCard } from "@/components/user/user-profile-card";
 import { formatDateTime } from "@/lib/format";
 import type { KejadianDetail } from "@/lib/kejadian";
-import { CAUSE_GROUPS, CAUSE_LEVEL_LABEL, type CauseKey } from "@/lib/kejadian-rules";
+import { CAUSE_GROUPS, CAUSE_LEVEL_LABEL, CAUSE_OPTIONS, type CauseKey } from "@/lib/kejadian-rules";
 import { useOnline } from "@/lib/offline/use-online";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
@@ -104,6 +104,8 @@ export function TeamCard({ doc, people, canSet }: { doc: KejadianDetail; people:
 }
 
 // ---------------------------------------------------------------- investigasi + penyebab
+/** Label penyebab sama (abaikan besar/kecil & spasi tepi). */
+const same = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
 type Row = { key: string; a: string; b: string };
 const rows = (list: { time?: string; event?: string; text?: string; note?: string }[], mode: "tl" | "cause" | "rec"): Row[] =>
   list.map((x) => ({ key: crypto.randomUUID(), a: mode === "tl" ? (x.time ?? "") : (x.text ?? ""), b: mode === "tl" ? (x.event ?? "") : (x.note ?? "") }));
@@ -131,7 +133,12 @@ export function InvestigationPanel({
   const [recon, setRecon] = useState(inv.reconstruction ?? "");
   const [causes, setCauses] = useState<Record<CauseKey, Row[]>>(() => Object.fromEntries(CAUSE_GROUPS.map((g) => [g.key, rows(inv.causes[g.key] ?? [], "cause")])) as Record<CauseKey, Row[]>);
   const [recs, setRecs] = useState<Row[]>(() => inv.recommendations.map((r) => ({ key: crypto.randomUUID(), a: r.text, b: "" })));
+  const [facts, setFacts] = useState(inv.facts ?? "");
+  const [basicSummary, setBasicSummary] = useState(inv.basicCauseSummary ?? "");
   const [sheet, setSheet] = useState<{ key: number; title: string } | null>(null);
+  const setGroup = (k: CauseKey, f: (rows: Row[]) => Row[]) => setCauses((c) => ({ ...c, [k]: f(c[k]) }));
+  const toggleStd = (k: CauseKey, label: string) =>
+    setGroup(k, (rs) => (rs.some((r) => same(r.a, label)) ? rs.filter((r) => !same(r.a, label)) : [...rs, { key: crypto.randomUUID(), a: label, b: "" }]));
 
   const save = async () => {
     setSaving(true);
@@ -140,6 +147,8 @@ export function InvestigationPanel({
       reconstruction: recon,
       causes: Object.fromEntries(CAUSE_GROUPS.map((g) => [g.key, causes[g.key].filter((r) => r.a.trim()).map((r) => ({ text: r.a, note: r.b }))])),
       recommendations: recs.filter((r) => r.a.trim()).map((r) => ({ text: r.a })),
+      facts,
+      basic_cause_summary: basicSummary,
     });
     setSaving(false);
     if (res.status === "ok") {
@@ -213,21 +222,65 @@ export function InvestigationPanel({
 
   return (
     <>
+      <Content title="Analisa Kejadian Berdasarkan Fakta" size="lg">
+        {canEdit ? (
+          <Textarea rows={4} maxLength={4000} value={facts} onChange={(e) => setFacts(e.target.value)} placeholder="Fakta yang ditemukan saat investigasi (satu fakta per baris)" className="text-base md:text-sm" />
+        ) : facts ? (
+          <p className="[overflow-wrap:anywhere] whitespace-pre-wrap">{facts}</p>
+        ) : (
+          <p className="text-sm text-muted-foreground">Belum diisi.</p>
+        )}
+      </Content>
       {(["direct", "basic"] as const).map((level) => (
         <Content key={level} title={CAUSE_LEVEL_LABEL[level]} size="lg">
           <div className="space-y-5">
-            {CAUSE_GROUPS.filter((g) => g.level === level).map((g) => (
+            {CAUSE_GROUPS.filter((g) => g.level === level).map((g) => {
+              const std = CAUSE_OPTIONS[g.key];
+              const other = causes[g.key].filter((r) => !std.some((o) => same(r.a, o)));
+              const checked = std.filter((o) => causes[g.key].some((r) => same(r.a, o)));
+              return (
               <fieldset key={g.key} className="space-y-2">
-                <legend className="flex w-full items-center justify-between text-sm font-semibold">
-                  {g.label}
+                <legend className="text-sm font-semibold">{g.label}</legend>
+                {canEdit ? (
+                  <ul className="grid gap-1.5 sm:grid-cols-2">
+                    {std.map((o) => {
+                      const row = causes[g.key].find((r) => same(r.a, o));
+                      return (
+                        <li key={o} className={cn("rounded-lg border p-2", row && "border-primary/40 bg-primary/5")}>
+                          <label className="flex cursor-pointer items-start gap-2 text-sm">
+                            <input type="checkbox" checked={!!row} onChange={() => toggleStd(g.key, o)} className="mt-0.5 size-4" />
+                            <span>{o}</span>
+                          </label>
+                          {row && (
+                            <Input value={row.b} maxLength={1000} placeholder="Bukti pendukung (opsional)" aria-label={`Bukti: ${o}`} onChange={(e) => setGroup(g.key, (rs) => rs.map((x) => (x.key === row.key ? { ...x, b: e.target.value } : x)))} className="mt-1.5 h-8 text-base md:text-xs" />
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                ) : checked.length ? (
+                  <ul className="space-y-1.5">
+                    {checked.map((o) => {
+                      const row = causes[g.key].find((r) => same(r.a, o))!;
+                      return (
+                        <li key={o} className="rounded-lg border p-2.5">
+                          <p className="text-sm font-medium">☑ {o}</p>
+                          {row.b && <p className="text-sm text-muted-foreground [overflow-wrap:anywhere]">{row.b}</p>}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                ) : null}
+                <div className="flex items-center justify-between pt-1">
+                  <span className="text-xs font-medium text-muted-foreground">Lain-lain</span>
                   {canEdit && (
-                    <Button type="button" size="xs" variant="ghost" disabled={causes[g.key].length >= 30} onClick={() => setCauses((c) => ({ ...c, [g.key]: [...c[g.key], { key: crypto.randomUUID(), a: "", b: "" }] }))}>
-                      <Plus /> Tambah
+                    <Button type="button" size="xs" variant="ghost" disabled={causes[g.key].length >= 30} onClick={() => setGroup(g.key, (rs) => [...rs, { key: crypto.randomUUID(), a: "", b: "" }])}>
+                      <Plus /> Tambah lain-lain
                     </Button>
                   )}
-                </legend>
-                {causes[g.key].length === 0 && <p className="text-sm text-muted-foreground">Belum ada.</p>}
-                {causes[g.key].map((r) => (
+                </div>
+                {!canEdit && causes[g.key].length === 0 && <p className="text-sm text-muted-foreground">Belum ada.</p>}
+                {other.map((r) => (
                   <div key={r.key} className="space-y-1.5 rounded-lg border p-2.5">
                     {canEdit ? (
                       <>
@@ -248,8 +301,21 @@ export function InvestigationPanel({
                   </div>
                 ))}
               </fieldset>
-            ))}
+              );
+            })}
           </div>
+          {level === "basic" && (
+            <div className="mt-5 space-y-1.5">
+              <p className="text-sm font-semibold">Uraian Penyebab Dasar</p>
+              {canEdit ? (
+                <Textarea rows={4} maxLength={4000} value={basicSummary} onChange={(e) => setBasicSummary(e.target.value)} placeholder="Ringkasan penyebab dasar kejadian" aria-label="Uraian penyebab dasar" className="text-base md:text-sm" />
+              ) : basicSummary ? (
+                <p className="text-sm wrap-anywhere whitespace-pre-wrap">{basicSummary}</p>
+              ) : (
+                <p className="text-sm text-muted-foreground">Belum diisi.</p>
+              )}
+            </div>
+          )}
         </Content>
       ))}
       <Content

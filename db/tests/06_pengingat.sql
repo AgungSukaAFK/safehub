@@ -7,8 +7,8 @@ set client_min_messages = notice;
 select id as r_pica from __APP__.reminder_rules where kind = 'pica_due' \gset
 select id as r_ins from __APP__.reminder_rules where kind = 'inspection_due' \gset
 
-select zz_test.check('N1a seed 9 aturan bawaan aktif; tabel tanpa hak tulis; run_reminders tertutup',
-  (select count(*) from __APP__.reminder_rules where is_active) = 9
+select zz_test.check('N1a seed 10 aturan bawaan aktif (termasuk apd_due fase 6); tabel tanpa hak tulis; run_reminders tertutup',
+  (select count(*) from __APP__.reminder_rules where is_active) = 10
   and not exists (select 1 from information_schema.role_table_grants where grantee = 'authenticated' and table_schema = '__APP__'
                    and table_name in ('reminder_rules', 'reminder_sent') and privilege_type in ('INSERT', 'UPDATE', 'DELETE'))
   and not has_function_privilege('authenticated', '__APP__.run_reminders(date)', 'execute'));
@@ -16,7 +16,7 @@ select zz_test.check('N1a seed 9 aturan bawaan aktif; tabel tanpa hak tulis; run
 -- ---------------------------------------------------------------- ubah aturan
 select zz_test.login('hse@demo.lourdes.test');
 set role authenticated;
-select zz_test.check('N2a staf K3 membaca aturan', (select count(*) from __APP__.reminder_rules) = 9);
+select zz_test.check('N2a staf K3 membaca aturan', (select count(*) from __APP__.reminder_rules) = 10);
 select zz_test.expect_error('N2b HSE (bukan admin) tidak bisa mengubah',
   format($q$select __APP__.reminder_rule_save(%L, '{"offsets":[1],"notify_assignee":true}'::jsonb)$q$, :'r_pica'), '42501');
 reset role;

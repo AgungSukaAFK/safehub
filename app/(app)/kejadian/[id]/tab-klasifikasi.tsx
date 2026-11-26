@@ -16,7 +16,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { formatRupiah } from "@/lib/format";
 import type { KejadianDetail } from "@/lib/kejadian";
-import { BODY_PARTS, INJURY_CLASS_LABEL, INJURY_CLASSES, PPE_ITEMS, TREATMENT_LABEL, TREATMENTS } from "@/lib/kejadian-rules";
+import { formatDate } from "@/lib/format";
+import { BODY_PARTS, ILLNESSES, INJURIES, INJURY_CLASS_LABEL, INJURY_CLASSES, OCCUPATIONAL, PPE_ITEMS, SHIFTS, TREATMENT_ITEMS, TREATMENT_LABEL, TREATMENT_REFERRALS, TREATMENTS } from "@/lib/kejadian-rules";
 import { useOnline } from "@/lib/offline/use-online";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
@@ -46,6 +47,17 @@ export function ClassifyPanel({ doc, masters, canEdit }: { doc: KejadianDetail; 
     facility: r?.facility ?? "",
     lost_days: r?.lostDays != null ? String(r.lostDays) : "",
     restricted_days: r?.restrictedDays != null ? String(r.restrictedDays) : "",
+    shift: doc.shift ?? "",
+    overtime: doc.overtime == null ? "" : doc.overtime ? "true" : "false",
+    activity: doc.activity ?? "",
+    occupational: doc.occupational ?? "",
+    victim_employee_id: doc.victim?.id ?? "",
+    illnesses: r?.illnesses ?? [],
+    injuries: r?.injuries ?? [],
+    treatment_items: r?.treatmentItems ?? [],
+    victim_address: r?.victimAddress ?? "",
+    victim_phone: r?.victimPhone ?? "",
+    victim_birth_date: r?.victimBirthDate ?? "",
   });
   const set = <K extends keyof typeof v>(k: K, val: (typeof v)[K]) => setV((p) => ({ ...p, [k]: val }));
   const active = (list: DetailMasters["categories"], current: string | null) => list.filter((c) => c.isActive || c.value === current).map((c) => ({ value: c.value, label: c.label }));
@@ -62,6 +74,11 @@ export function ClassifyPanel({ doc, masters, canEdit }: { doc: KejadianDetail; 
       ppe: v.ppe,
       damage_description: v.damage_description,
       estimated_cost: num(v.estimated_cost),
+      shift: v.shift,
+      overtime: v.overtime === "" ? null : v.overtime === "true",
+      activity: v.activity,
+      occupational: (v.occupational || null) as "occupational" | "re_treatment" | "non_occupational" | null,
+      victim_employee_id: v.victim_employee_id || null,
       restricted: {
         injury_type: v.injury_type,
         body_parts: v.body_parts,
@@ -69,6 +86,12 @@ export function ClassifyPanel({ doc, masters, canEdit }: { doc: KejadianDetail; 
         facility: v.facility,
         lost_days: num(v.lost_days),
         restricted_days: num(v.restricted_days),
+        illnesses: v.illnesses,
+        injuries: v.injuries,
+        treatment_items: v.treatment_items,
+        victim_address: v.victim_address,
+        victim_phone: v.victim_phone,
+        victim_birth_date: v.victim_birth_date || null,
       },
     });
     setSaving(false);
@@ -121,8 +144,38 @@ export function ClassifyPanel({ doc, masters, canEdit }: { doc: KejadianDetail; 
             </Field>
           </div>
         </Content>
+        <Content title="Data Kejadian & Korban" description="Kolom Laporan Investigasi (GMI.MR.F.013-001)." size="lg">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Karyawan korban (Manpower)" htmlFor="cl-victim" hint="No. karyawan, jabatan, tanggal masuk, dan lama bekerja diambil dari Manpower." className="sm:col-span-2">
+              <SearchableSelect id="cl-victim" value={v.victim_employee_id || null} onValueChange={(x) => set("victim_employee_id", x ?? "")} options={masters.employees} placeholder="Pilih karyawan (opsional)" />
+            </Field>
+            <Field label="Shift" htmlFor="cl-shift">
+              <Input id="cl-shift" list="cl-shift-list" value={v.shift} maxLength={40} onChange={(x) => set("shift", x.target.value)} className="text-base md:text-sm" />
+              <datalist id="cl-shift-list">{SHIFTS.map((x) => <option key={x} value={x} />)}</datalist>
+            </Field>
+            <Field label="Overtime" htmlFor="cl-ot">
+              <select id="cl-ot" value={v.overtime} onChange={(x) => set("overtime", x.target.value)} className="h-9 w-full rounded-md border bg-background px-2 text-sm">
+                <option value="">Belum diisi</option>
+                <option value="true">Ya</option>
+                <option value="false">Tidak</option>
+              </select>
+            </Field>
+            <Field label="Apa yang dilakukan korban saat kejadian" htmlFor="cl-act" className="sm:col-span-2">
+              <Textarea id="cl-act" rows={2} maxLength={1000} value={v.activity} onChange={(x) => set("activity", x.target.value)} className="text-base md:text-sm" />
+            </Field>
+            <Field label="Occupational" htmlFor="cl-occ">
+              <select id="cl-occ" value={v.occupational} onChange={(x) => set("occupational", x.target.value)} className="h-9 w-full rounded-md border bg-background px-2 text-sm">
+                <option value="">Belum diisi</option>
+                {OCCUPATIONAL.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            </Field>
+          </div>
+        </Content>
         <RestrictedData functions={["hse", "hr"]} restricted={false} title="Cedera & Perawatan">
           <div className="grid gap-4 sm:grid-cols-2">
+            <ChipGroup legend="Sakit" options={ILLNESSES} value={v.illnesses} onChange={(x) => set("illnesses", x)} />
+            <ChipGroup legend="Cidera" options={INJURIES} value={v.injuries} onChange={(x) => set("injuries", x)} />
+            <ChipGroup legend="Treatment" options={[...TREATMENT_ITEMS, ...TREATMENT_REFERRALS]} value={v.treatment_items} onChange={(x) => set("treatment_items", x)} />
             <Field label="Jenis cedera" htmlFor="cl-inj" className="sm:col-span-2">
               <Input id="cl-inj" value={v.injury_type} maxLength={200} onChange={(x) => set("injury_type", x.target.value)} placeholder="Contoh: Memar dan luka ringan" className="text-base md:text-sm" />
             </Field>
@@ -156,6 +209,16 @@ export function ClassifyPanel({ doc, masters, canEdit }: { doc: KejadianDetail; 
             </Field>
             <Field label="Hari kerja terbatas" htmlFor="cl-rest">
               <Input id="cl-rest" type="number" inputMode="numeric" min={0} value={v.restricted_days} onChange={(x) => set("restricted_days", x.target.value)} className="text-base md:text-sm" />
+            </Field>
+            <p className="text-xs text-muted-foreground sm:col-span-2">Data pribadi korban di bawah boleh dikosongkan; bagian itu bisa diisi tangan setelah laporan dicetak.</p>
+            <Field label="Alamat korban" htmlFor="cl-addr" className="sm:col-span-2">
+              <Input id="cl-addr" value={v.victim_address} maxLength={300} onChange={(x) => set("victim_address", x.target.value)} className="text-base md:text-sm" />
+            </Field>
+            <Field label="No. telepon rumah/keluarga" htmlFor="cl-phone">
+              <Input id="cl-phone" value={v.victim_phone} maxLength={40} onChange={(x) => set("victim_phone", x.target.value)} className="text-base md:text-sm" />
+            </Field>
+            <Field label="Tanggal lahir" htmlFor="cl-dob">
+              <Input id="cl-dob" type="date" value={v.victim_birth_date} onChange={(x) => set("victim_birth_date", x.target.value)} className="text-base md:text-sm" />
             </Field>
           </div>
         </RestrictedData>
@@ -205,6 +268,14 @@ export function ClassifyPanel({ doc, masters, canEdit }: { doc: KejadianDetail; 
           <Item label="Potensi keparahan" value={risk(doc.potentialSeverity)} />
         </dl>
       </Content>
+      <Content title="Data Kejadian & Korban" size="lg">
+        <dl className="grid gap-4 sm:grid-cols-2">
+          <Item label="Karyawan korban" value={doc.victim ? `${doc.victim.name} · ${doc.victim.code} · ${doc.victim.jobTitle}` : "-"} />
+          <Item label="Shift / Overtime" value={`${dash(doc.shift)} / ${doc.overtime == null ? "-" : doc.overtime ? "Ya" : "Tidak"}`} />
+          <Item label="Aktivitas saat kejadian" value={dash(doc.activity)} />
+          <Item label="Occupational" value={OCCUPATIONAL.find((o) => o.value === doc.occupational)?.label ?? "-"} />
+        </dl>
+      </Content>
       <RestrictedData functions={["hse", "hr"]} restricted={!doc.canSeeRestricted} title="Cedera & Perawatan">
         {r ? (
           <dl className="grid gap-4 sm:grid-cols-2">
@@ -214,6 +285,10 @@ export function ClassifyPanel({ doc, masters, canEdit }: { doc: KejadianDetail; 
             <Item label="Fasilitas" value={dash(r.facility)} />
             <Item label="Hari kerja hilang" value={r.lostDays != null ? `${r.lostDays} hari` : "-"} />
             <Item label="Hari kerja terbatas" value={r.restrictedDays != null ? `${r.restrictedDays} hari` : "-"} />
+            <Item label="Sakit" value={r.illnesses.length ? r.illnesses.join(", ") : "-"} />
+            <Item label="Cidera" value={r.injuries.length ? r.injuries.join(", ") : "-"} />
+            <Item label="Treatment" value={r.treatmentItems.length ? r.treatmentItems.join(", ") : "-"} />
+            <Item label="Data pribadi korban" value={[r.victimAddress, r.victimPhone, r.victimBirthDate && `lahir ${formatDate(r.victimBirthDate)}`].filter(Boolean).join(" · ") || "Belum diisi (isi tangan di cetakan)"} />
           </dl>
         ) : (
           <p className="text-sm text-muted-foreground">Belum ada data cedera.</p>
@@ -242,6 +317,30 @@ export function ClassifyPanel({ doc, masters, canEdit }: { doc: KejadianDetail; 
         </ul>
       </Content>
     </>
+  );
+}
+
+function ChipGroup({ legend, options, value, onChange }: { legend: string; options: readonly string[]; value: string[]; onChange: (v: string[]) => void }) {
+  return (
+    <fieldset className="space-y-2 sm:col-span-2">
+      <legend className="text-sm font-medium">{legend}</legend>
+      <div className="flex flex-wrap gap-1.5">
+        {options.map((o) => {
+          const on = value.includes(o);
+          return (
+            <button
+              key={o}
+              type="button"
+              aria-pressed={on}
+              onClick={() => onChange(on ? value.filter((x) => x !== o) : [...value, o])}
+              className={cn("rounded-full border px-2.5 py-1 text-xs transition-colors", on ? "border-primary bg-primary/10 font-medium text-primary" : "hover:bg-accent")}
+            >
+              {o}
+            </button>
+          );
+        })}
+      </div>
+    </fieldset>
   );
 }
 

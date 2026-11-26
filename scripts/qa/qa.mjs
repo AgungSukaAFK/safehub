@@ -90,7 +90,7 @@ async function contactSheet(file, items, { cols = 4, width = 420 } = {}) {
   return file;
 }
 
-const APP_PAGES = ["/", "/tugas", "/kejadian", "/kejadian/lapor", "/temuan", "/temuan/baru", "/inspeksi", "/inspeksi/template", "/observasi", "/observasi/baru", "/kpi", "/kpi/jam-kerja", "/tsp", "/pengingat", "/audit", "/laporan", "/manpower", "/kompetensi", "/pelatihan", "/kontraktor", "/pjo-pja", "/dokumen", "/peraturan", "/ko", "/impor", "/maintenance", "/mcu", "/master", "/notifikasi", "/pengajuan", "/pengajuan/baru", "__DETAIL__", "/pengguna", "/approval/template", "/approval/kepala-departemen", "/bantuan", "/bantuan/kelola", "/feedback", "/feedback/kelola", "/pembaruan", "/pembaruan/baru", "/dokumentasi", "/tentang", "/profil"];
+const APP_PAGES = ["/", "/tugas", "/kejadian", "/kejadian/lapor", "/temuan", "/temuan/baru", "/inspeksi", "/inspeksi/template", "/observasi", "/observasi/baru", "/kpi", "/kpi/jam-kerja", "/tsp", "/pengingat", "/audit", "/laporan", "/manpower", "/kompetensi", "/pelatihan", "/apd", "/apd?tab=stok", "/apd?tab=mutasi", "/apd?tab=karyawan", "/apd?tab=periodik", "/apd?tab=barang", "/apd/pengajuan", "/apd/pengajuan/baru", "/apd/saya", "/apd/impor", "/kontraktor", "/pjo-pja", "/dokumen", "/peraturan", "/ko", "/impor", "/maintenance", "/mcu", "/master", "/notifikasi", "/pengajuan", "/pengajuan/baru", "__DETAIL__", "/pengguna", "/approval/template", "/approval/kepala-departemen", "/bantuan", "/bantuan/kelola", "/feedback", "/feedback/kelola", "/pembaruan", "/pembaruan/baru", "/dokumentasi", "/tentang", "/profil"];
 
 const chrome = await launch();
 const page = await chrome.newPage();
@@ -423,6 +423,43 @@ try {
     await loginPage(page, BASE, USER("karyawan"));
     await visit(page, "/pelatihan", 2500);
     check("pelatihan: karyawan dialihkan ke Beranda", (await page.eval("location.pathname")) === "/", await page.eval("location.href"));
+
+    // ---- Monitoring APD (fase 6): stok, jatuh tempo, pengajuan, APD saya
+    await loginPage(page, BASE, USER("scm"));
+    await visit(page, "/apd?tab=stok", 2500);
+    const as = await page.text();
+    check("apd: stok per barang (KS-01-03) + tombol catat mutasi", as.includes("Stok per Barang") && as.includes("KS-01-03") && as.includes("Catat Mutasi"), as.slice(0, 160));
+    await visit(page, "/apd?tab=karyawan", 2500);
+    const ah = await page.text();
+    check("apd: jatuh tempo karyawan memuat Rudi (sepatu segera ganti)", ah.includes("Rudi Hartono") && ah.includes("Segera Ganti"), ah.slice(0, 160));
+    await visit(page, "/apd?tab=periodik", 2500);
+    check("apd: masa periodik dari Matrix APD", (await page.text()).includes("1x per 3 tahun"));
+    const apdDb = await asUser(USER("scm"), APP_ID);
+    const { data: apdReq } = await apdDb.from("apd_requests").select("id, code").eq("status", "approved").limit(1).maybeSingle();
+    await visit(page, `/apd/pengajuan/${apdReq?.id}`, 2500);
+    const ad = await page.text();
+    check("apd: detail pengajuan disetujui menampilkan OS + tombol Kirim (gudang)", ad.includes(apdReq?.code ?? "?") && ad.includes("APD Diminta & Pemenuhan") && ad.includes("Kirim"), ad.slice(0, 160));
+    // impor data lama: unggah workbook asli → ringkasan + pemetaan site (tanpa menekan Impor: sekali saja per DB)
+    const apdXlsx = path.resolve("Monitoring APD/Monitoring APD GMI 2026.xlsx");
+    if (fs.existsSync(apdXlsx)) {
+      await visit(page, "/apd/impor", 2500);
+      if ((await page.text()).includes("1. Pilih file")) {
+        const { root } = await page.send("DOM.getDocument", { depth: -1, pierce: true });
+        const { nodeId } = await page.send("DOM.querySelector", { nodeId: root.nodeId, selector: 'input[type="file"]' });
+        await page.send("DOM.setFileInputFiles", { nodeId, files: [apdXlsx] });
+        const shown = await page.waitText("2. Ringkasan isi file", 15000);
+        const it = await page.text();
+        check("apd impor: workbook terbaca (98 pengiriman, 42 pengajuan, 12 site untuk dipetakan)", shown && it.includes("98 baris") && it.includes("42 dari 60 baris MR") && it.includes("3. Petakan site ke lokasi"), it.slice(0, 200));
+      } else check("apd impor: halaman impor tersedia (atau sudah diimpor)", (await page.text()).includes("Sudah diimpor"));
+    }
+    await loginPage(page, BASE, USER("karyawan"));
+    await visit(page, "/apd", 2500);
+    check("apd: karyawan dialihkan ke APD Saya", (await page.eval("location.pathname")) === "/apd/saya", await page.eval("location.href"));
+    const am = await page.text();
+    check("apd: APD saya menampilkan jatuh tempo + pengajuan sendiri", am.includes("APD yang Saya Terima") && am.includes("Safety Shoes") && am.includes("Pengajuan Saya"), am.slice(0, 160));
+    await visit(page, "/apd/pengajuan/baru?alasan=damaged", 2500);
+    const af = await page.text();
+    check("apd: form pengajuan karyawan (alasan rusak: kelalaian + tanggal)", af.includes("Rusak karena kelalaian") && af.includes("Tanggal kerusakan"), af.slice(0, 160));
 
     // ---- Kontraktor & PJO/PJA (nilai kontrak = data komersial)
     await loginPage(page, BASE, USER("kontraktor"));

@@ -234,7 +234,245 @@ isOneToOne: false
           }
         },"safehub": {
           Tables: {
-            "approval_doc_types": {
+            "apd_employee_sizes": {
+                  Row: {
+                    "employee_id": string,"size": string,"type_id": string,"updated_at": string,"updated_by": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "employee_id": string,"size": string,"type_id": string,"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Update: {
+                    "employee_id"?: string,"size"?: string,"type_id"?: string,"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "apd_employee_sizes_employee_id_fkey"
+      columns: ["employee_id"]
+isOneToOne: false
+      referencedRelation: "employees"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "apd_employee_sizes_type_id_fkey"
+      columns: ["type_id"]
+isOneToOne: false
+      referencedRelation: "apd_types"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"apd_issue_history": {
+                  Row: {
+                    "created_at": string,"employee_id": string,"id": string,"issued_on": string,"note": string | null,"qty": number | null,"size": string | null,"type_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"employee_id": string,"id"?: string,"issued_on": string,"note"?: string | null,"qty"?: number | null,"size"?: string | null,"type_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"employee_id"?: string,"id"?: string,"issued_on"?: string,"note"?: string | null,"qty"?: number | null,"size"?: string | null,"type_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "apd_issue_history_employee_id_fkey"
+      columns: ["employee_id"]
+isOneToOne: false
+      referencedRelation: "employees"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "apd_issue_history_type_id_fkey"
+      columns: ["type_id"]
+isOneToOne: false
+      referencedRelation: "apd_types"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"apd_items": {
+                  Row: {
+                    "brand": string | null,"code": string,"created_at": string,"id": string,"is_active": boolean,"min_stock": number,"name": string,"size": string | null,"type_id": string,"uom": string,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "brand"?: string | null,"code": string,"created_at"?: string,"id"?: string,"is_active"?: boolean,"min_stock"?: number,"name": string,"size"?: string | null,"type_id": string,"uom"?: string,"updated_at"?: string
+                  }
+                  Update: {
+                    "brand"?: string | null,"code"?: string,"created_at"?: string,"id"?: string,"is_active"?: boolean,"min_stock"?: number,"name"?: string,"size"?: string | null,"type_id"?: string,"uom"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "apd_items_type_id_fkey"
+      columns: ["type_id"]
+isOneToOne: false
+      referencedRelation: "apd_types"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"apd_items_logs": {
+                  Row: {
+                    "action": string,"actor_id": string | null,"at": string,"changes": Json | null,"id": number,"note": string | null,"record_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "action": string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id": string
+                  }
+                  Update: {
+                    "action"?: string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"apd_request_lines": {
+                  Row: {
+                    "id": string,"item_id": string | null,"legacy_supplied": number,"line_no": number,"note": string | null,"qty": number,"request_id": string,"size": string | null,"type_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "id"?: string,"item_id"?: string | null,"legacy_supplied"?: number,"line_no": number,"note"?: string | null,"qty": number,"request_id": string,"size"?: string | null,"type_id": string
+                  }
+                  Update: {
+                    "id"?: string,"item_id"?: string | null,"legacy_supplied"?: number,"line_no"?: number,"note"?: string | null,"qty"?: number,"request_id"?: string,"size"?: string | null,"type_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "apd_request_lines_item_id_fkey"
+      columns: ["item_id"]
+isOneToOne: false
+      referencedRelation: "apd_items"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "apd_request_lines_request_id_fkey"
+      columns: ["request_id"]
+isOneToOne: false
+      referencedRelation: "apd_request_progress"
+      referencedColumns: ["request_id"]
+    },{
+      foreignKeyName: "apd_request_lines_request_id_fkey"
+      columns: ["request_id"]
+isOneToOne: false
+      referencedRelation: "apd_requests"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "apd_request_lines_type_id_fkey"
+      columns: ["type_id"]
+isOneToOne: false
+      referencedRelation: "apd_types"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"apd_requests": {
+                  Row: {
+                    "approved_on": string | null,"cancel_note": string | null,"code": string,"company_code": string,"created_at": string,"created_by": string | null,"deduction_ack": boolean,"employee_id": string | null,"evidence_count": number,"explanation": string | null,"id": string,"incident_on": string | null,"job_title": string | null,"last_received_on": string | null,"location_id": string,"mr_no": string | null,"negligence": boolean,"reason": string,"recipient_name": string,"requested_on": string | null,"search_text": string | null,"source": string,"status": string,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "approved_on"?: string | null,"cancel_note"?: string | null,"code": string,"company_code": string,"created_at"?: string,"created_by"?: string | null,"deduction_ack"?: boolean,"employee_id"?: string | null,"evidence_count"?: number,"explanation"?: string | null,"id"?: string,"incident_on"?: string | null,"job_title"?: string | null,"last_received_on"?: string | null,"location_id": string,"mr_no"?: string | null,"negligence"?: boolean,"reason": string,"recipient_name": string,"requested_on"?: string | null,"search_text"?: string | null,"source"?: string,"status"?: string,"updated_at"?: string
+                  }
+                  Update: {
+                    "approved_on"?: string | null,"cancel_note"?: string | null,"code"?: string,"company_code"?: string,"created_at"?: string,"created_by"?: string | null,"deduction_ack"?: boolean,"employee_id"?: string | null,"evidence_count"?: number,"explanation"?: string | null,"id"?: string,"incident_on"?: string | null,"job_title"?: string | null,"last_received_on"?: string | null,"location_id"?: string,"mr_no"?: string | null,"negligence"?: boolean,"reason"?: string,"recipient_name"?: string,"requested_on"?: string | null,"search_text"?: string | null,"source"?: string,"status"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "apd_requests_employee_id_fkey"
+      columns: ["employee_id"]
+isOneToOne: false
+      referencedRelation: "employees"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"apd_requests_logs": {
+                  Row: {
+                    "action": string,"actor_id": string | null,"at": string,"changes": Json | null,"id": number,"note": string | null,"record_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "action": string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id": string
+                  }
+                  Update: {
+                    "action"?: string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"apd_stock_moves": {
+                  Row: {
+                    "company_code": string,"created_at": string,"created_by": string | null,"dest_location_id": string | null,"employee_id": string | null,"id": string,"item_id": string,"kind": string,"location_id": string,"moved_on": string,"note": string | null,"pic": string | null,"qty": number,"recipient_name": string | null,"ref_no": string | null,"request_line_id": string | null,"source": string,"updated_at": string,"void_reason": string | null,"voided_at": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "company_code": string,"created_at"?: string,"created_by"?: string | null,"dest_location_id"?: string | null,"employee_id"?: string | null,"id"?: string,"item_id": string,"kind": string,"location_id": string,"moved_on": string,"note"?: string | null,"pic"?: string | null,"qty": number,"recipient_name"?: string | null,"ref_no"?: string | null,"request_line_id"?: string | null,"source"?: string,"updated_at"?: string,"void_reason"?: string | null,"voided_at"?: string | null
+                  }
+                  Update: {
+                    "company_code"?: string,"created_at"?: string,"created_by"?: string | null,"dest_location_id"?: string | null,"employee_id"?: string | null,"id"?: string,"item_id"?: string,"kind"?: string,"location_id"?: string,"moved_on"?: string,"note"?: string | null,"pic"?: string | null,"qty"?: number,"recipient_name"?: string | null,"ref_no"?: string | null,"request_line_id"?: string | null,"source"?: string,"updated_at"?: string,"void_reason"?: string | null,"voided_at"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "apd_stock_moves_employee_id_fkey"
+      columns: ["employee_id"]
+isOneToOne: false
+      referencedRelation: "employees"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "apd_stock_moves_item_id_fkey"
+      columns: ["item_id"]
+isOneToOne: false
+      referencedRelation: "apd_items"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "apd_stock_moves_request_line_id_fkey"
+      columns: ["request_line_id"]
+isOneToOne: false
+      referencedRelation: "apd_request_line_progress"
+      referencedColumns: ["line_id"]
+    },{
+      foreignKeyName: "apd_stock_moves_request_line_id_fkey"
+      columns: ["request_line_id"]
+isOneToOne: false
+      referencedRelation: "apd_request_lines"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"apd_stock_moves_logs": {
+                  Row: {
+                    "action": string,"actor_id": string | null,"at": string,"changes": Json | null,"id": number,"note": string | null,"record_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "action": string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id": string
+                  }
+                  Update: {
+                    "action"?: string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"apd_types": {
+                  Row: {
+                    "code": string,"created_at": string,"id": string,"interval_days": number | null,"interval_label": string | null,"is_active": boolean,"name": string,"note": string | null,"size_kind": string,"sort_order": number,"spec": string | null,"tracked": boolean,"updated_at": string,"warn_days": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "code": string,"created_at"?: string,"id"?: string,"interval_days"?: number | null,"interval_label"?: string | null,"is_active"?: boolean,"name": string,"note"?: string | null,"size_kind"?: string,"sort_order"?: number,"spec"?: string | null,"tracked"?: boolean,"updated_at"?: string,"warn_days"?: number
+                  }
+                  Update: {
+                    "code"?: string,"created_at"?: string,"id"?: string,"interval_days"?: number | null,"interval_label"?: string | null,"is_active"?: boolean,"name"?: string,"note"?: string | null,"size_kind"?: string,"sort_order"?: number,"spec"?: string | null,"tracked"?: boolean,"updated_at"?: string,"warn_days"?: number
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"apd_types_logs": {
+                  Row: {
+                    "action": string,"actor_id": string | null,"at": string,"changes": Json | null,"id": number,"note": string | null,"record_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "action": string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id": string
+                  }
+                  Update: {
+                    "action"?: string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"approval_doc_types": {
                   Row: {
                     "code": string,"context_fn": unknown,"href_prefix": string,"is_active": boolean,"label": string,"on_done_fn": unknown,"table_name": string
                   }
@@ -902,14 +1140,14 @@ isOneToOne: true
                   ]
                 },"incident_investigations": {
                   Row: {
-                    "causes": NonNullable<Json>,"incident_id": string,"recommendations": NonNullable<Json>,"reconstruction": string | null,"timeline": NonNullable<Json>,"updated_at": string,"updated_by": string | null
+                    "basic_cause_summary": string | null,"causes": NonNullable<Json>,"facts": string | null,"incident_id": string,"recommendations": NonNullable<Json>,"reconstruction": string | null,"timeline": NonNullable<Json>,"updated_at": string,"updated_by": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "causes"?: NonNullable<Json>,"incident_id": string,"recommendations"?: NonNullable<Json>,"reconstruction"?: string | null,"timeline"?: NonNullable<Json>,"updated_at"?: string,"updated_by"?: string | null
+                    "basic_cause_summary"?: string | null,"causes"?: NonNullable<Json>,"facts"?: string | null,"incident_id": string,"recommendations"?: NonNullable<Json>,"reconstruction"?: string | null,"timeline"?: NonNullable<Json>,"updated_at"?: string,"updated_by"?: string | null
                   }
                   Update: {
-                    "causes"?: NonNullable<Json>,"incident_id"?: string,"recommendations"?: NonNullable<Json>,"reconstruction"?: string | null,"timeline"?: NonNullable<Json>,"updated_at"?: string,"updated_by"?: string | null
+                    "basic_cause_summary"?: string | null,"causes"?: NonNullable<Json>,"facts"?: string | null,"incident_id"?: string,"recommendations"?: NonNullable<Json>,"reconstruction"?: string | null,"timeline"?: NonNullable<Json>,"updated_at"?: string,"updated_by"?: string | null
                   }
                   Relationships: [
                     {
@@ -948,14 +1186,14 @@ isOneToOne: false
                   ]
                 },"incident_restricted": {
                   Row: {
-                    "body_parts": (string)[],"facility": string | null,"incident_id": string,"injury_type": string | null,"lost_days": number | null,"restricted_days": number | null,"treatment": string | null,"updated_at": string
+                    "body_parts": (string)[],"facility": string | null,"illnesses": (string)[],"incident_id": string,"injuries": (string)[],"injury_type": string | null,"lost_days": number | null,"restricted_days": number | null,"treatment": string | null,"treatment_items": (string)[],"updated_at": string,"victim_address": string | null,"victim_birth_date": string | null,"victim_phone": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "body_parts"?: (string)[],"facility"?: string | null,"incident_id": string,"injury_type"?: string | null,"lost_days"?: number | null,"restricted_days"?: number | null,"treatment"?: string | null,"updated_at"?: string
+                    "body_parts"?: (string)[],"facility"?: string | null,"illnesses"?: (string)[],"incident_id": string,"injuries"?: (string)[],"injury_type"?: string | null,"lost_days"?: number | null,"restricted_days"?: number | null,"treatment"?: string | null,"treatment_items"?: (string)[],"updated_at"?: string,"victim_address"?: string | null,"victim_birth_date"?: string | null,"victim_phone"?: string | null
                   }
                   Update: {
-                    "body_parts"?: (string)[],"facility"?: string | null,"incident_id"?: string,"injury_type"?: string | null,"lost_days"?: number | null,"restricted_days"?: number | null,"treatment"?: string | null,"updated_at"?: string
+                    "body_parts"?: (string)[],"facility"?: string | null,"illnesses"?: (string)[],"incident_id"?: string,"injuries"?: (string)[],"injury_type"?: string | null,"lost_days"?: number | null,"restricted_days"?: number | null,"treatment"?: string | null,"treatment_items"?: (string)[],"updated_at"?: string,"victim_address"?: string | null,"victim_birth_date"?: string | null,"victim_phone"?: string | null
                   }
                   Relationships: [
                     {
@@ -1008,14 +1246,14 @@ isOneToOne: false
                   ]
                 },"incidents": {
                   Row: {
-                    "area_id": string,"category": string | null,"classified_at": string | null,"classified_by": string | null,"close_note": string | null,"closed_at": string | null,"closed_exception": boolean,"code": string,"company_code": string,"created_at": string,"created_by": string | null,"damage_description": string | null,"description": string,"id": string,"injury_class": string | null,"is_emergency": boolean,"lead_investigator_id": string | null,"location_detail": string | null,"location_id": string,"occurred_at": string,"potential_severity": string | null,"ppe": NonNullable<Json>,"reported_at": string,"reported_category": string,"return_note": string | null,"returned_at": string | null,"search_text": string | null,"severity": string | null,"status": string,"supervisor_id": string | null,"unit_code": string | null,"unit_label": string | null,"updated_at": string
+                    "activity": string | null,"area_id": string,"category": string | null,"classified_at": string | null,"classified_by": string | null,"close_note": string | null,"closed_at": string | null,"closed_exception": boolean,"code": string,"company_code": string,"created_at": string,"created_by": string | null,"damage_description": string | null,"description": string,"id": string,"injury_class": string | null,"is_emergency": boolean,"lead_investigator_id": string | null,"location_detail": string | null,"location_id": string,"occupational": string | null,"occurred_at": string,"overtime": boolean | null,"potential_severity": string | null,"ppe": NonNullable<Json>,"reported_at": string,"reported_category": string,"return_note": string | null,"returned_at": string | null,"search_text": string | null,"severity": string | null,"shift": string | null,"status": string,"supervisor_id": string | null,"unit_code": string | null,"unit_label": string | null,"updated_at": string,"victim_employee_id": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "area_id": string,"category"?: string | null,"classified_at"?: string | null,"classified_by"?: string | null,"close_note"?: string | null,"closed_at"?: string | null,"closed_exception"?: boolean,"code": string,"company_code": string,"created_at"?: string,"created_by"?: string | null,"damage_description"?: string | null,"description": string,"id"?: string,"injury_class"?: string | null,"is_emergency"?: boolean,"lead_investigator_id"?: string | null,"location_detail"?: string | null,"location_id": string,"occurred_at": string,"potential_severity"?: string | null,"ppe"?: NonNullable<Json>,"reported_at"?: string,"reported_category": string,"return_note"?: string | null,"returned_at"?: string | null,"search_text"?: string | null,"severity"?: string | null,"status"?: string,"supervisor_id"?: string | null,"unit_code"?: string | null,"unit_label"?: string | null,"updated_at"?: string
+                    "activity"?: string | null,"area_id": string,"category"?: string | null,"classified_at"?: string | null,"classified_by"?: string | null,"close_note"?: string | null,"closed_at"?: string | null,"closed_exception"?: boolean,"code": string,"company_code": string,"created_at"?: string,"created_by"?: string | null,"damage_description"?: string | null,"description": string,"id"?: string,"injury_class"?: string | null,"is_emergency"?: boolean,"lead_investigator_id"?: string | null,"location_detail"?: string | null,"location_id": string,"occupational"?: string | null,"occurred_at": string,"overtime"?: boolean | null,"potential_severity"?: string | null,"ppe"?: NonNullable<Json>,"reported_at"?: string,"reported_category": string,"return_note"?: string | null,"returned_at"?: string | null,"search_text"?: string | null,"severity"?: string | null,"shift"?: string | null,"status"?: string,"supervisor_id"?: string | null,"unit_code"?: string | null,"unit_label"?: string | null,"updated_at"?: string,"victim_employee_id"?: string | null
                   }
                   Update: {
-                    "area_id"?: string,"category"?: string | null,"classified_at"?: string | null,"classified_by"?: string | null,"close_note"?: string | null,"closed_at"?: string | null,"closed_exception"?: boolean,"code"?: string,"company_code"?: string,"created_at"?: string,"created_by"?: string | null,"damage_description"?: string | null,"description"?: string,"id"?: string,"injury_class"?: string | null,"is_emergency"?: boolean,"lead_investigator_id"?: string | null,"location_detail"?: string | null,"location_id"?: string,"occurred_at"?: string,"potential_severity"?: string | null,"ppe"?: NonNullable<Json>,"reported_at"?: string,"reported_category"?: string,"return_note"?: string | null,"returned_at"?: string | null,"search_text"?: string | null,"severity"?: string | null,"status"?: string,"supervisor_id"?: string | null,"unit_code"?: string | null,"unit_label"?: string | null,"updated_at"?: string
+                    "activity"?: string | null,"area_id"?: string,"category"?: string | null,"classified_at"?: string | null,"classified_by"?: string | null,"close_note"?: string | null,"closed_at"?: string | null,"closed_exception"?: boolean,"code"?: string,"company_code"?: string,"created_at"?: string,"created_by"?: string | null,"damage_description"?: string | null,"description"?: string,"id"?: string,"injury_class"?: string | null,"is_emergency"?: boolean,"lead_investigator_id"?: string | null,"location_detail"?: string | null,"location_id"?: string,"occupational"?: string | null,"occurred_at"?: string,"overtime"?: boolean | null,"potential_severity"?: string | null,"ppe"?: NonNullable<Json>,"reported_at"?: string,"reported_category"?: string,"return_note"?: string | null,"returned_at"?: string | null,"search_text"?: string | null,"severity"?: string | null,"shift"?: string | null,"status"?: string,"supervisor_id"?: string | null,"unit_code"?: string | null,"unit_label"?: string | null,"updated_at"?: string,"victim_employee_id"?: string | null
                   }
                   Relationships: [
                     {
@@ -1023,6 +1261,12 @@ isOneToOne: false
       columns: ["area_id"]
 isOneToOne: false
       referencedRelation: "areas"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "incidents_victim_employee_id_fkey"
+      columns: ["victim_employee_id"]
+isOneToOne: false
+      referencedRelation: "employees"
       referencedColumns: ["id"]
     }
                   ]
@@ -2249,7 +2493,47 @@ isOneToOne: false
                 }
           }
           Views: {
-            "feedback_mine": {
+            "apd_request_line_progress": {
+                  Row: {
+                    "item_id": string | null,"last_supply_on": string | null,"line_id": string | null,"line_no": number | null,"outstanding": number | null,"qty": number | null,"request_id": string | null,"size": string | null,"supplied": number | null,"type_id": string | null
+                  }
+                  ComputedFields: never
+                  Relationships: [
+                    {
+      foreignKeyName: "apd_request_lines_item_id_fkey"
+      columns: ["item_id"]
+isOneToOne: false
+      referencedRelation: "apd_items"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "apd_request_lines_request_id_fkey"
+      columns: ["request_id"]
+isOneToOne: false
+      referencedRelation: "apd_request_progress"
+      referencedColumns: ["request_id"]
+    },{
+      foreignKeyName: "apd_request_lines_request_id_fkey"
+      columns: ["request_id"]
+isOneToOne: false
+      referencedRelation: "apd_requests"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "apd_request_lines_type_id_fkey"
+      columns: ["type_id"]
+isOneToOne: false
+      referencedRelation: "apd_types"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"apd_request_progress": {
+                  Row: {
+                    "fulfillment": string | null,"last_supply_on": string | null,"lead_days": number | null,"outstanding_total": number | null,"qty_total": number | null,"request_id": string | null,"supplied_total": number | null
+                  }
+                  ComputedFields: never
+                  Relationships: [
+                    
+                  ]
+                },"feedback_mine": {
                   Row: {
                     "attachments": (string)[] | null,"category": string | null,"category_other": string | null,"content": Json | null,"content_text": string | null,"created_at": string | null,"id": string | null,"status": string | null,"updated_at": string | null
                   }
@@ -2278,6 +2562,82 @@ isOneToOne: false
 { Args: { "p_before"?: string,"p_limit"?: number }; Returns: {
               "action": string,"actor_id": string,"at": string,"entity": string,"href": string,"id": number,"label": string,"note": string,"record_id": string
             }[]
+                           },
+"apd_holdings":
+{ Args: { "p_employee"?: string,"p_location"?: string }; Returns: {
+              "days_left": number,"employee_code": string,"employee_id": string,"employee_name": string,"job_title": string,"last_item": string,"last_on": string,"last_qty": number,"location_id": string,"next_due": string,"size": string,"state": string,"type_code": string,"type_id": string,"type_name": string
+            }[]
+                           },
+"apd_import_legacy":
+{ Args: { "p": Json,"p_company": string,"p_sites": Json }; Returns: Json
+                           },
+"apd_item_save":
+{ Args: { "p": Json,"p_id": string }; Returns: Json
+                           },
+"apd_line_supplied":
+{ Args: { "p_line": string }; Returns: number
+                           },
+"apd_manager":
+{ Args: Record<PropertyKey, never>; Returns: boolean
+                           },
+"apd_move_save":
+{ Args: { "p": Json }; Returns: Json
+                           },
+"apd_move_void":
+{ Args: { "p_id": string,"p_reason": string }; Returns: Json
+                           },
+"apd_my_employees":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "code": string,"company_code": string,"id": string,"job_title": string,"location_id": string,"name": string
+            }[]
+                           },
+"apd_my_holdings":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "days_left": number,"employee_code": string,"employee_id": string,"employee_name": string,"job_title": string,"last_item": string,"last_on": string,"last_qty": number,"location_id": string,"next_due": string,"size": string,"state": string,"type_code": string,"type_id": string,"type_name": string
+            }[]
+                           },
+"apd_policy_editor":
+{ Args: Record<PropertyKey, never>; Returns: boolean
+                           },
+"apd_request_cancel":
+{ Args: { "p_id": string,"p_note": string }; Returns: Json
+                           },
+"apd_request_context":
+{ Args: { "p_id": string }; Returns: Database["safehub"]['CompositeTypes']["approval_context"]
+                          SetofOptions: {
+        from: "*"
+        to: "approval_context"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
+"apd_request_on_approval":
+{ Args: { "p_id": string,"p_outcome": string }; Returns: undefined
+                           },
+"apd_request_save":
+{ Args: { "p": Json,"p_id": string }; Returns: Json
+                           },
+"apd_request_sync_evidence":
+{ Args: { "p_id": string }; Returns: Json
+                           },
+"apd_request_visible":
+{ Args: { "p_id": string }; Returns: boolean
+                           },
+"apd_size_set":
+{ Args: { "p_employee": string,"p_size": string,"p_type": string }; Returns: Json
+                           },
+"apd_stock_overview":
+{ Args: { "p_location"?: string }; Returns: {
+              "adjust_qty": number,"brand": string,"code": string,"in_qty": number,"is_active": boolean,"item_id": string,"last_move_on": string,"min_stock": number,"name": string,"opening": number,"out_qty": number,"outstanding": number,"return_qty": number,"size": string,"stock": number,"type_id": string,"type_name": string,"uom": string
+            }[]
+                           },
+"apd_stock_qty":
+{ Args: { "p_item": string,"p_location": string }; Returns: number
+                           },
+"apd_summary":
+{ Args: { "p_location"?: string }; Returns: Json
+                           },
+"apd_type_save":
+{ Args: { "p": Json,"p_id": string }; Returns: Json
                            },
 "app_admin_ids":
 { Args: Record<PropertyKey, never>; Returns: (string)[]
@@ -2618,6 +2978,9 @@ isOneToOne: false
 "k3_staff":
 { Args: Record<PropertyKey, never>; Returns: boolean
                            },
+"k3_text_list":
+{ Args: { "p": Json }; Returns: (string)[]
+                           },
 "k3_user_ok":
 { Args: { "p_user": string }; Returns: boolean
                            },
@@ -2668,6 +3031,9 @@ isOneToOne: false
 { Args: Record<PropertyKey, never>; Returns: boolean
                            },
 "my_company_scope":
+{ Args: Record<PropertyKey, never>; Returns: (string)[]
+                           },
+"my_employee_ids":
 { Args: Record<PropertyKey, never>; Returns: (string)[]
                            },
 "my_functions":
@@ -2813,6 +3179,9 @@ isOneToOne: false
                            },
 "request_followup":
 { Args: { "p_approval_id": string }; Returns: Json
+                           },
+"run_apd_reminders":
+{ Args: { "p_today"?: string }; Returns: Json
                            },
 "run_expiry_reminders":
 { Args: { "p_today"?: string }; Returns: Json

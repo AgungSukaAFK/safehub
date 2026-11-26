@@ -21,6 +21,11 @@ const DOC_SUMMARY: Record<string, (s: ServerClient, ids: string[]) => Promise<{ 
       return { id: r.id, code: d ? `${d.code} Rev ${r.rev_no}` : null, title: d?.title ?? "Revisi Dokumen", amount: null, companyCode: d?.company_code ?? "", requesterId: r.created_by };
     });
   },
+  apd_request: async (s, ids) => {
+    const { data } = await s.from("apd_requests").select("id, code, recipient_name, reason, company_code, created_by").in("id", ids);
+    const reason: Record<string, string> = { new_hire: "karyawan baru", periodic: "berkala", damaged: "rusak", lost: "hilang" };
+    return (data ?? []).map((d) => ({ id: d.id, code: d.code, title: `APD ${reason[d.reason] ?? d.reason}: ${d.recipient_name}`, amount: null, companyCode: d.company_code, requesterId: d.created_by }));
+  },
   // CONTOH boilerplate (hapus bersama /pengajuan)
   pengajuan: async (s, ids) => {
     const { data } = await s.from("pengajuan").select("id, code, title, total_amount, company_code, created_by").in("id", ids);

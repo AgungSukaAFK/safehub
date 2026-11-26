@@ -2,6 +2,7 @@
 // Tambah fitur = tambah SATU baris di NAV_ITEMS.
 import {
   BadgeCheck,
+  Shirt,
   BookOpen,
   Building2,
   ClipboardCheck,
@@ -184,6 +185,29 @@ export const NAV_ITEMS: NavItem[] = [
     group: "k3lh",
     keywords: ["tsp", "program", "sasaran", "aktivitas", "safety talk", "kampanye", "evaluasi", "akt", "capaian"],
     visible: k3Staff,
+  },
+  {
+    href: "/apd",
+    label: "Monitoring APD",
+    description: "Stok gudang APD, pengiriman, pengajuan, dan jatuh tempo penggantian per karyawan",
+    icon: Shirt,
+    min: "viewer",
+    group: "k3lh",
+    keywords: ["apd", "ppe", "alat pelindung diri", "sepatu", "helm", "seragam", "stok", "gudang", "berita acara", "mr", "periodik"],
+    visible: k3Staff,
+    createHref: "/apd/pengajuan/baru",
+    createLabel: "Pengajuan APD",
+    createVisible: notAuditor,
+  },
+  {
+    href: "/apd/saya",
+    label: "APD Saya",
+    description: "APD yang saya terima, jatuh tempo penggantian, dan pengajuan saya",
+    icon: Shirt,
+    min: "viewer",
+    group: "menu",
+    keywords: ["apd saya", "ganti apd", "minta apd", "sepatu", "helm", "seragam"],
+    visible: (a) => !k3Staff(a),
   },
   {
     href: "/laporan",

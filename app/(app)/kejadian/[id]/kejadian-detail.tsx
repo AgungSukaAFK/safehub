@@ -65,6 +65,8 @@ export type DetailMasters = {
   categories: { value: string; label: string; isActive: boolean }[];
   risks: { value: string; label: string; isActive: boolean }[];
   riskMap: Record<string, StatusDef>;
+  /** karyawan aktif company kejadian (pilihan korban; hanya dimuat untuk HSE) */
+  employees: { value: string; label: string; description?: string }[];
 };
 
 const TAB_LABEL: Record<IncidentTab, string> = {
@@ -86,6 +88,7 @@ export function KejadianDetailView({
   focusCode,
   masters,
   people,
+  printButton,
 }: {
   doc: KejadianDetail;
   steps: WorkflowStep[];
@@ -94,6 +97,8 @@ export function KejadianDetailView({
   focusCode: string | null;
   masters: DetailMasters;
   people: SelectOption[];
+  /** tombol Cetak Laporan Investigasi (dirender server page) */
+  printButton?: React.ReactNode;
 }) {
   const router = useRouter();
   const online = useOnline();
@@ -161,6 +166,7 @@ export function KejadianDetailView({
         }
         actions={
           <>
+            {printButton}
             <ActivityLogDialog entity="incidents" recordId={doc.id} fieldLabels={INCIDENT_FIELD_LABELS} />
             {perms.canAddAction && (
               <Link href={`/kejadian/${doc.id}?tab=tindakan`} className={buttonVariants({ variant: "outline", size: "sm" })}>

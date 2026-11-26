@@ -74,13 +74,13 @@ const SideLabel = ({ children }: { children: string }) => (
 const Restricted = () => <span className="italic">Terbatas</span>;
 const blank = (v: string | null | undefined) => (v && v.trim() ? v : "");
 
-function Sheet({ company, page, total, children, last }: { company: Company | null; page: number; total: number; children: ReactNode; last?: boolean }) {
+function Sheet({ company, page, total, children, last, printedBy }: { company: Company | null; page: number; total: number; children: ReactNode; last?: boolean; printedBy?: string }) {
   return (
     <section className={cn("flex min-h-[266mm] flex-col text-black", !last && "break-after-page")}>
       <header className="mb-[10px] grid grid-cols-[150px_1fr_110px] border border-black">
         <div className="flex flex-col items-center justify-center gap-[4px] border-r border-black p-[6px]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={company?.logoUrl ?? "/gmi-logo.webp"} alt="" className="h-[42px] w-auto object-contain" />
+          <img src={company?.logoUrl ?? "/gmi-logo.webp"} alt="" className="h-[52px] w-auto object-contain" />
           <p className="text-center text-[10px] font-bold">{company?.name ?? "PT. Garuda Mart Indonesia"}</p>
         </div>
         <div className="flex items-center justify-center text-[22px] font-bold tracking-wide">LAPORAN INVESTIGASI</div>
@@ -90,19 +90,22 @@ function Sheet({ company, page, total, children, last }: { company: Company | nu
         </div>
       </header>
       <div className="flex-1">{children}</div>
-      <footer className="mt-[10px] grid grid-cols-4 border border-black text-[10px]">
-        {[
-          ["No. Dokumen", INVESTIGATION_FORM.docNo],
-          ["Tgl Efektif", INVESTIGATION_FORM.effective],
-          ["Revisi", INVESTIGATION_FORM.revision],
-          ["Halaman", `${page} / ${total}`],
-        ].map(([k, v], i) => (
-          <div key={k} className={cn("grid grid-cols-2", i % 2 === 0 && "border-r border-black", i < 2 && "border-b border-black col-span-2")}>
-            <span className="border-r border-black px-[6px] py-[3px] text-center font-bold">{k}</span>
-            <span className="px-[6px] py-[3px] text-center">{v}</span>
-          </div>
-        ))}
-      </footer>
+      <table className="mt-[10px] w-full border-collapse text-[10px]">
+        <tbody>
+          {[
+            [["No. Dokumen", INVESTIGATION_FORM.docNo], ["Tgl Efektif", INVESTIGATION_FORM.effective]],
+            [["Revisi", INVESTIGATION_FORM.revision], ["Halaman", `${page} / ${total}`]],
+          ].map((row) => (
+            <tr key={row[0][0]}>
+              {row.flatMap(([k, v]) => [
+                <th key={k} className="w-1/5 border border-black px-[6px] py-[3px] text-center font-bold">{k}</th>,
+                <td key={`${k}-v`} className="w-[30%] border border-black px-[6px] py-[3px] text-center">{v}</td>,
+              ])}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {last && printedBy && <p className="mt-[2px] text-right text-[7px] text-neutral-500">Dicetak dari Safe Hub oleh {printedBy}</p>}
     </section>
   );
 }
@@ -311,11 +314,11 @@ export function InvestigationPrint({
       </Sheet>
 
       {/* ---------------- halaman 3 ---------------- */}
-      <Sheet company={company} page={3} total={total} last={!hasPhotos}>
+      <Sheet company={company} page={3} total={total} last={!hasPhotos} printedBy={printedBy}>
         <div className="border-t border-l border-black text-[9px]">
           <div className="flex">
-            <SideLabel>ANALISA KEJADIAN BERDASARKAN FAKTA</SideLabel>
-            <div className="min-h-[90px] flex-1 border-r border-b border-black p-[8px] text-[10px] whitespace-pre-wrap">{blank(doc.investigation.facts)}</div>
+            <SideLabel>ANALISA FAKTA</SideLabel>
+            <div className="min-h-[64px] flex-1 border-r border-b border-black p-[6px] text-[9.5px] whitespace-pre-wrap">{blank(doc.investigation.facts)}</div>
           </div>
           <div className="flex">
             <SideLabel>CAUSE ANALYSIS</SideLabel>
@@ -379,7 +382,7 @@ export function InvestigationPrint({
 
       {/* ---------------- halaman 4: lampiran ---------------- */}
       {hasPhotos && (
-        <Sheet company={company} page={4} total={total} last>
+        <Sheet company={company} page={4} total={total} last printedBy={printedBy}>
           <p className="mb-[8px] text-[12px] font-bold">LAMPIRAN</p>
           <div className="grid grid-cols-2 gap-[10px]">
             {photos.slice(0, 6).map((p) => (
@@ -392,7 +395,6 @@ export function InvestigationPrint({
           </div>
         </Sheet>
       )}
-      <p className="mt-[4px] text-right text-[7px] text-neutral-500">Dicetak dari Safe Hub oleh {printedBy}</p>
     </div>
   );
 }
@@ -431,7 +433,7 @@ function Review({ title, entry, nameLabel, sig }: { title: string; entry: Kejadi
     <>
       <div className="flex">
         <SideLabel>{title}</SideLabel>
-        <div className="min-h-[110px] flex-1 border-r border-b border-black p-[5px]">
+        <div className="min-h-[72px] flex-1 border-r border-b border-black p-[5px]">
           <p className="text-[8px]">
             APAKAH PENYEBAB DAN TINDAKAN PERBAIKAN DIATAS MENCUKUPI UNTUK MENCEGAH TERULANGNYA KEJADIAN YANG SAMA ?
             <Box on={yes} className="ml-[10px]">YA</Box>

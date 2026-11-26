@@ -517,3 +517,27 @@ export async function getMyApd(supabase: ServerClient, userId: string) {
   const requests = await listRequests(supabase, { status: "semua", q: "" }, null, 50, { userId, employeeIds: employees.map((e) => e.id) });
   return { holdings: (h ?? []).map(mapHolding), employees, requests };
 }
+
+// ---------------------------------------------------------------- tautan data lama (fase 6 bagian C)
+export type UnlinkedRow = { name: string; locationId: string; site: string; moves: number; requests: number; suggestId: string | null; suggestName: string | null };
+export async function listUnlinked(supabase: ServerClient): Promise<UnlinkedRow[]> {
+  const [{ data, error }, names] = await Promise.all([supabase.rpc("apd_unlinked"), getLocationNames(supabase)]);
+  if (error) throw error;
+  return (data ?? []).map((r) => ({
+    name: r.name,
+    locationId: r.location_id,
+    site: names.get(r.location_id) ?? "-",
+    moves: r.moves,
+    requests: r.requests,
+    suggestId: r.suggest_id,
+    suggestName: r.suggest_name,
+  }));
+}
+/** Karyawan aktif per site (pilihan tautan manual). */
+export async function listEmployeesBySite(supabase: ServerClient, siteIds: string[]): Promise<Record<string, { value: string; label: string }[]>> {
+  if (!siteIds.length) return {};
+  const { data } = await supabase.from("employees").select("id, code, name, location_id").eq("status", "active").in("location_id", siteIds).order("name").limit(5000);
+  const out: Record<string, { value: string; label: string }[]> = {};
+  (data ?? []).forEach((e) => (out[e.location_id] ??= []).push({ value: e.id, label: `${e.name} · ${e.code}` }));
+  return out;
+}

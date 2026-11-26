@@ -210,3 +210,105 @@ export async function parseApdWorkbook(buffer: ArrayBuffer): Promise<{ payload: 
     },
   };
 }
+
+// ---------------------------------------------------------------- sheet Populasi Manpower (fase 6 bagian C, P16-P19)
+export type ApdPopulationPayload = {
+  people: { name: string; site: string; job_title: string; sizes: Record<string, string>; issues: { type: string; date: string; qty: number | null; size: string | null }[] }[];
+};
+export type ApdPopulationSummary = { people: number; bySite: Record<string, number>; sizes: number; issues: number; sites: string[]; notes: string[] };
+
+/** Kolom sheet Populasi (baris header 5, data mulai baris 6): grup APD → jenis APD sistem (P17). */
+const POP_COLUMNS: { type: string; size?: number; qty?: number; supply: number; label: string }[] = [
+  { type: "uniform_shirt", size: 5, qty: 6, supply: 7, label: "Kemeja Safety" },
+  { type: "uniform_tshirt", size: 11, qty: 12, supply: 13, label: "Kaos Safety" },
+  { type: "safety_shoes", size: 17, supply: 18, label: "Sepatu" },
+  { type: "safety_helmet", size: 22, supply: 23, label: "Helm" },
+  { type: "uniform_pants", size: 27, qty: 28, supply: 29, label: "Jeans" },
+  { type: "safety_glass", supply: 33, label: "Kacamata" },
+  { type: "mask_carbon", supply: 34, label: "Safety Mask" },
+  { type: "earplug", supply: 35, label: "Earplug" },
+  { type: "earmuff", supply: 36, label: "Ear Muff" },
+  { type: "padlock", supply: 37, label: "Padlock" },
+  { type: "safety_glove", supply: 38, label: "Safety Gloves" },
+  { type: "safety_vest", size: 39, supply: 40, label: "Vest" },
+  { type: "face_shield", qty: 41, supply: 42, label: "Kedok Las" },
+  { type: "uniform_pants", size: 43, qty: 44, supply: 45, label: "Seragam Jeans" },
+  { type: "uniform_shirt", size: 46, qty: 47, supply: 48, label: "Seragam Two Tone" },
+  { type: "uniform_tshirt", size: 49, qty: 50, supply: 51, label: "Kaos Polo" },
+];
+/** "KUNING" → "Kuning", "PRODUKSI" → "Produksi"; teks campuran dibiarkan. */
+const tidyCase = (s: string) =>
+  s === s.toUpperCase() && /[A-Z]{4}/.test(s)
+    ? s.replace(/\p{L}+/gu, (w) => (w.length <= 3 ? w : w[0] + w.slice(1).toLowerCase())) // singkatan <= 3 huruf (PJO, GL, WHS) tetap
+    : s;
+const MONTHS: Record<string, number> = { jan: 0, feb: 1, mar: 2, apr: 3, may: 4, mei: 4, jun: 5, jul: 6, aug: 7, agu: 7, agt: 7, sep: 8, oct: 9, okt: 9, nov: 10, dec: 11, des: 11 };
+/** "23 December 2025" / "23 Desember 2025" → "2025-12-23" (tanggal yang diketik sebagai teks di Excel). */
+function textDate(v: unknown): string | null {
+  const m = typeof v === "string" ? v.trim().match(/^(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})$/) : null;
+  const mon = m ? MONTHS[m[2].slice(0, 3).toLowerCase()] : undefined;
+  return m && mon !== undefined ? new Date(Date.UTC(Number(m[3]), mon, Number(m[1]))).toISOString().slice(0, 10) : null;
+}
+/** "2+1" → 3, angka → angka, lainnya null. */
+const qtyOf = (c: Cell): number | null => {
+  const v = val(c);
+  if (typeof v === "number") return Number.isFinite(v) ? Math.round(v) : null;
+  if (typeof v === "string" && /^\s*\d+(\s*\+\s*\d+)*\s*$/.test(v)) return v.split("+").reduce((s, x) => s + Number(x), 0);
+  return null;
+};
+
+export async function parseApdPopulation(buffer: ArrayBuffer): Promise<{ payload: ApdPopulationPayload; summary: ApdPopulationSummary }> {
+  const wb = new ExcelJS.Workbook();
+  await wb.xlsx.load(buffer);
+  const ws = wb.worksheets.find((w) => w.name.trim().toLowerCase() === "populasi manpower");
+  if (!ws) throw new Error('Sheet "Populasi Manpower" tidak ditemukan di file ini.');
+  const notes: string[] = [];
+  const people: ApdPopulationPayload["people"] = [];
+  const seen = new Set<string>();
+  for (let r = 6; r <= ws.rowCount; r++) {
+    const row = ws.getRow(r);
+    const rawName = str(row.getCell(2));
+    if (!rawName) continue;
+    const site = siteKey(str(row.getCell(3)));
+    if (!site) {
+      notes.push(`Baris ${r} (${rawName}): site kosong, dilewati.`);
+      continue;
+    }
+    const name = tidyCase(cleanName(rawName));
+    const key = `${site}|${name.toLowerCase()}`;
+    if (seen.has(key)) {
+      notes.push(`Baris ${r}: ${name} (${site}) muncul dua kali, baris kedua dilewati.`);
+      continue;
+    }
+    seen.add(key);
+    const job = str(row.getCell(4));
+    if (!job) notes.push(`Baris ${r} (${name}): jabatan kosong → "Belum diisi".`);
+    const sizes: Record<string, string> = {};
+    const issues: ApdPopulationPayload["people"][number]["issues"] = [];
+    for (const col of POP_COLUMNS) {
+      const size = col.size ? str(row.getCell(col.size)) : null;
+      if (size && !sizes[col.type]) sizes[col.type] = tidyCase(size);
+      const sv = val(row.getCell(col.supply));
+      const date = sv instanceof Date ? sv.toISOString().slice(0, 10) : textDate(sv);
+      if (date) {
+        issues.push({ type: col.type, date, qty: col.qty ? qtyOf(row.getCell(col.qty)) : null, size: size ? tidyCase(size) : null });
+      } else if (sv != null && String(sv).trim() !== "") {
+        notes.push(`Baris ${r} (${name}) ${col.label}: tanggal supply "${String(sv).trim()}" bukan tanggal, dilewati.`);
+      }
+    }
+    people.push({ name, site, job_title: job ? tidyCase(job) : "", sizes, issues });
+  }
+  if (people.length === 0) throw new Error("Sheet Populasi Manpower tidak berisi karyawan.");
+  const bySite: Record<string, number> = {};
+  people.forEach((p) => (bySite[p.site] = (bySite[p.site] ?? 0) + 1));
+  return {
+    payload: { people },
+    summary: {
+      people: people.length,
+      bySite,
+      sizes: people.reduce((s, p) => s + Object.keys(p.sizes).length, 0),
+      issues: people.reduce((s, p) => s + p.issues.length, 0),
+      sites: Object.keys(bySite).sort(),
+      notes,
+    },
+  };
+}

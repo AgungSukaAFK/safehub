@@ -381,8 +381,12 @@ Sumber: folder `Monitoring APD/` (Excel + Form Berita Acara + Form Request). Spe
 - **Produksi**: `20261126120000_safehub_apd.sql` (= 15 audit_trail + 24) terpasang di lourdes-db `a152337`. `25_apd_impor` diserahkan
   sebagai `20261126150000_safehub_apd_impor.sql`. `public.locations` produksi saat itu hanya `HEAD OFFICE (J5|KM 8A|KM 8B)`; HO APD =
   `HEAD OFFICE (KM 8A)`. Template approval `apd_request` belum ada di produksi (diisi admin di `/approval/template`).
-- **Belum**: data per karyawan (ukuran + riwayat Populasi) setelah daftar NRP, tautan OUT/pengajuan lama ke karyawan, ekspor Excel stok/mutasi,
-  blok Beranda APD, harga barang, tugas "kirim APD" di Tugas Saya (sementara lewat filter Belum Terpenuhi).
+- **Karyawan APD** (`db/app/27_apd_karyawan.sql`, bagian 2 `/apd/impor`): `parseApdPopulation` (sheet Populasi Manpower) → RPC `apd_import_population`
+  (HR/HSE/admin, boleh diulang; karyawan baru = NIK sementara `APD-NNNN`, dicocokkan nama ternormalisasi `apd_norm_name` + site) + `apd_autolink`
+  (OUT & pengajuan data lama ditautkan bila nama + site cocok tepat satu). Sisa: `apd_unlinked` (usulan pg_trgm) + `apd_link_recipient` (bagian 3).
+  Data asli: 196 karyawan, 1.423 riwayat, 46 OUT + 21 pengajuan tertaut otomatis, 37 nama sisa. Lokasi yang perlu ada: 13 site + HO.
+- **Belum**: ekspor Excel stok/mutasi,
+  blok Beranda APD, harga barang, tugas "kirim APD" di Tugas Saya (sementara lewat filter Belum Terpenuhi), ganti NIK sementara APD-NNNN dengan NRP asli.
 
 ## Landing publik (`/selamat-datang`)
 

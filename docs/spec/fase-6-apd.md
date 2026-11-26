@@ -8,7 +8,7 @@ keputusan sendiri **[P#]**.
 |---|---|---|
 | A | Skema DB, RPC, uji, konversi data Excel (master, periodik, stok awal, IN, OUT, MR) | **selesai** |
 | B | UI: `/apd` (ringkasan, stok, mutasi, karyawan, periodik, barang), pengajuan + approval + cetak, `/apd/saya` | **selesai** |
-| C | Data per karyawan (ukuran + riwayat dari sheet Populasi Manpower) | **menunggu daftar NRP** |
+| C | Data per karyawan (ukuran + riwayat dari sheet Populasi Manpower) + tautan riwayat lama | **selesai** (NIK sementara, U2 diubah) |
 
 ## Isi sumber (ringkas)
 
@@ -27,7 +27,7 @@ keputusan sendiri **[P#]**.
 | # | Keputusan | Alasan |
 |---|---|---|
 | U1 | Nilai awal masa periodik = sheet **Matrix APD** (bukan rumus Populasi atau gambar di form). Admin bisa mengubahnya | Pilihan user; dokumen resmi bertanda tangan |
-| U2 | Data per karyawan (Populasi Manpower) dimuat setelah HR menyerahkan daftar NRP; tidak dicocokkan dari nama | Pilihan user; nama di Excel tidak konsisten |
+| U2 | (diubah 2026-11-26) Karyawan dari sheet Populasi Manpower diimpor lewat `/apd/impor` dengan **NIK sementara APD-NNNN**; HR mengganti dengan NRP asli di Manpower. Riwayat lama (OUT/MR) ditautkan otomatis bila nama + site cocok tepat satu, sisanya dipilih manual | Pilihan user: Excel diganti aplikasi tanpa menunggu NRP |
 | U3 | Cakupan lengkap: stok + MR + jatuh tempo + pengajuan digital dengan approval dan cetak Berita Acara | Pilihan user |
 | U4 | Data Excel dimuat lewat **halaman impor di app** (`/apd/impor` → RPC `apd_import_legacy`, sekali). Semula file SQL sekali jalan; diubah 2026-11-26 karena aturan lourdes-db melarang tulis data manual di produksi | Pilihan user (dua kali) |
 | P1 | Periodik disimpan sebagai `interval_days` (1x/th = 365, 2x/th = 182, 4x/th = 91, 1x/2 th = 730, 1x/3 th = 1095, 1x/minggu = 7) + label asli. `warn_days` per jenis (bawaan: ≤ 91 hr → 14, 182 → 30, 365 → 60, ≥ 730 → 90). Sarung tangan (mingguan) = habis pakai: tidak dilacak jatuh temponya | Excel memakai ambang "MR" 60/90/365 hari yang membuat helm berstatus MR 2 tahun; ambang dibuat proporsional dan bisa diubah admin |
@@ -65,3 +65,7 @@ tidak ikut dihitung di sheet stok Excel (stok akhir sama, 0). 95 baris OUT menja
 | P13 | Ringkasan stok selalu dari semua gudang yang terlihat; pemilih site hanya memfilter pengajuan, jatuh tempo, dan APD keluar | Gudang APD terpusat di HO; stok per site MIFA selalu 0 |
 | P14 | Ukuran per karyawan tidak dilog | Bukan data sensitif; riwayat penerimaan sudah tercatat di mutasi |
 | P15 | Pemetaan site saat impor dipilih admin dari nama lokasi persis (saran otomatis hanya bila tepat satu nama memuat kode site; HO disarankan `HEAD OFFICE (KM 8A)`, keputusan user). Semua site wajib dipetakan; tidak ada "lewati" | Generator yang menebak pola gagal di produksi (12/12 tidak cocok); data tanpa site tujuan merusak stok |
+| P16 | Impor Populasi (`apd_import_population`, `db/app/27_apd_karyawan.sql`) boleh diulang: karyawan dicocokkan nama ternormalisasi + site, ukuran diperbarui, riwayat (jenis + tanggal) tidak dobel. Hak: HR, HSE, admin | Excel bisa masih dipakai selama transisi |
+| P17 | Kolom Populasi → jenis APD: Kemeja/Seragam Two Tone → Kemeja Safety, Kaos/Kaos Polo → Kaos Safety, Jeans/Seragam Jeans → Celana, Kedok Las → Face Shield, Kacamata/Safety Mask/Earplug/Ear Muff/Padlock/Safety Gloves/Vest sesuai nama. Kolom Duedate/Days Left/Warn Days Excel diabaikan (dihitung ulang dari Matrix APD) | Satu sumber jatuh tempo |
+| P18 | Nama ALL CAPS dirapikan (kata <= 3 huruf seperti PJO/GL/WHS tetap); jabatan kosong = "Belum diisi"; tanggal supply berupa teks ("23 December 2025") dibaca | Data Excel tidak seragam |
+| P19 | Tautan manual (`apd_unlinked` + `apd_link_recipient`): usulan = karyawan site yang sama dengan kemiripan nama (pg_trgm) >= 0,3; nama bukan karyawan (vendor) boleh dibiarkan | Setengah nama di OUT/MR ditulis singkat |

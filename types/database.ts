@@ -2563,6 +2563,9 @@ isOneToOne: false
               "action": string,"actor_id": string,"at": string,"entity": string,"href": string,"id": number,"label": string,"note": string,"record_id": string
             }[]
                            },
+"apd_autolink":
+{ Args: { "p_company": string }; Returns: Json
+                           },
 "apd_holdings":
 { Args: { "p_employee"?: string,"p_location"?: string }; Returns: {
               "days_left": number,"employee_code": string,"employee_id": string,"employee_name": string,"job_title": string,"last_item": string,"last_on": string,"last_qty": number,"location_id": string,"next_due": string,"size": string,"state": string,"type_code": string,"type_id": string,"type_name": string
@@ -2571,11 +2574,17 @@ isOneToOne: false
 "apd_import_legacy":
 { Args: { "p": Json,"p_company": string,"p_sites": Json }; Returns: Json
                            },
+"apd_import_population":
+{ Args: { "p": Json,"p_company": string,"p_sites": Json }; Returns: Json
+                           },
 "apd_item_save":
 { Args: { "p": Json,"p_id": string }; Returns: Json
                            },
 "apd_line_supplied":
 { Args: { "p_line": string }; Returns: number
+                           },
+"apd_link_recipient":
+{ Args: { "p_employee": string,"p_location": string,"p_name": string }; Returns: Json
                            },
 "apd_manager":
 { Args: Record<PropertyKey, never>; Returns: boolean
@@ -2595,6 +2604,9 @@ isOneToOne: false
 { Args: Record<PropertyKey, never>; Returns: {
               "days_left": number,"employee_code": string,"employee_id": string,"employee_name": string,"job_title": string,"last_item": string,"last_on": string,"last_qty": number,"location_id": string,"next_due": string,"size": string,"state": string,"type_code": string,"type_id": string,"type_name": string
             }[]
+                           },
+"apd_norm_name":
+{ Args: { "p": string }; Returns: string
                            },
 "apd_policy_editor":
 { Args: Record<PropertyKey, never>; Returns: boolean
@@ -2638,6 +2650,11 @@ isOneToOne: false
                            },
 "apd_type_save":
 { Args: { "p": Json,"p_id": string }; Returns: Json
+                           },
+"apd_unlinked":
+{ Args: { "p_company"?: string }; Returns: {
+              "location_id": string,"moves": number,"name": string,"requests": number,"suggest_id": string,"suggest_name": string,"suggest_score": number
+            }[]
                            },
 "app_admin_ids":
 { Args: Record<PropertyKey, never>; Returns: (string)[]

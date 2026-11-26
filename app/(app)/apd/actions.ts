@@ -3,7 +3,7 @@
 // Server Action Monitoring APD. zod → RPC / approval engine (hak dicek di DB) → push untuk notifikasi yang dibuat RPC.
 import { revalidatePath } from "next/cache";
 import { fail, invalid, NOT_ALLOWED, ok, type FormState } from "@/lib/action-state";
-import { APD_IMPORT_MAX_BYTES, parseApdWorkbook, type ApdImportSummary } from "@/lib/apd-excel";
+import { APD_IMPORT_MAX_BYTES, parseApdPopulation, parseApdWorkbook, type ApdImportSummary, type ApdPopulationSummary } from "@/lib/apd-excel";
 import { itemSchema, moveSchema, requestSchema, typeSchema } from "@/lib/apd-rules";
 import { actionAccess } from "@/lib/auth";
 import { cctv } from "@/lib/cctv";
@@ -222,4 +222,69 @@ export async function commitApdImportAction(formData: FormData): Promise<FormSta
   });
   refresh();
   return ok(`Impor selesai: ${r.items} barang baru, ${r.opening} stok awal, ${r.in} masuk, ${r.out} keluar, ${r.requests} pengajuan data lama.`, r);
+}
+
+// ---------------------------------------------------------------- karyawan dari sheet Populasi Manpower (boleh diulang)
+export type ApdPopulationPreview = { status: "ok"; summary: ApdPopulationSummary } | { status: "error"; message: string };
+
+async function readPopulation(formData: FormData) {
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) throw new Error("Pilih file Excel Monitoring APD (.xlsx).");
+  if (file.size > APD_IMPORT_MAX_BYTES) throw new Error(`File terlalu besar (maks. ${APD_IMPORT_MAX_BYTES / 1024 / 1024} MB).`);
+  return { name: file.name, ...(await parseApdPopulation(await file.arrayBuffer())) };
+}
+
+export async function previewApdPopulationAction(formData: FormData): Promise<ApdPopulationPreview> {
+  if (!(await actionAccess("viewer"))) return { status: "error", message: NOT_ALLOWED.message ?? "Tidak diizinkan." };
+  try {
+    return { status: "ok", summary: (await readPopulation(formData)).summary };
+  } catch (e) {
+    return { status: "error", message: e instanceof Error ? e.message : "File tidak bisa dibaca." };
+  }
+}
+
+/** Baca ulang file di server (bukan data dari browser) → RPC apd_import_population (buat/cocokkan karyawan + tautan otomatis). */
+export async function commitApdPopulationAction(formData: FormData): Promise<FormState> {
+  if (!(await actionAccess("viewer"))) return NOT_ALLOWED;
+  let sites: Record<string, string>;
+  try {
+    sites = JSON.parse(String(formData.get("sites") ?? "{}"));
+  } catch {
+    return fail("Pemetaan site tidak valid.");
+  }
+  if (typeof sites !== "object" || !Object.values(sites).every((v) => typeof v === "string" && isUuid(v))) return fail("Pilih lokasi untuk setiap site.");
+  let wb: Awaited<ReturnType<typeof readPopulation>>;
+  try {
+    wb = await readPopulation(formData);
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : "File tidak bisa dibaca.");
+  }
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("apd_import_population", { p_company: String(formData.get("company") ?? "GMI"), p_sites: sites, p: wb.payload });
+  if (error) return k3DbError(error);
+  const r = data as { created: number; matched: number; sizes: number; issues: number; linked_moves: number; linked_requests: number; skipped: unknown[] };
+  await cctv({
+    category: "config",
+    action: "import.commit",
+    summary: `Impor karyawan APD (Populasi Manpower) dari ${wb.name}: ${r.created} baru, ${r.matched} dicocokkan, ${r.issues} riwayat, ${r.linked_moves + r.linked_requests} data lama tertaut`,
+    entity: "employees",
+    metadata: { filename: wb.name, ...r, skipped: r.skipped.length },
+  });
+  refresh();
+  revalidatePath("/manpower");
+  return ok(
+    `Selesai: ${r.created} karyawan baru (NIK sementara APD-…), ${r.matched} sudah ada, ${r.sizes} ukuran, ${r.issues} riwayat. Tertaut otomatis: ${r.linked_moves} pengiriman & ${r.linked_requests} pengajuan lama.${r.skipped.length ? ` ${r.skipped.length} dilewati (nama ganda).` : ""}`,
+    r,
+  );
+}
+
+/** Tautkan satu nama data lama (site tertentu) ke karyawan. */
+export async function linkRecipientAction(name: string, locationId: string, employeeId: string): Promise<FormState> {
+  if (!name.trim() || !isUuid(locationId) || !isUuid(employeeId) || !(await actionAccess("viewer"))) return NOT_ALLOWED;
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("apd_link_recipient", { p_name: name, p_location: locationId, p_employee: employeeId });
+  if (error) return k3DbError(error);
+  const r = data as { linked_moves: number; linked_requests: number };
+  refresh();
+  return ok(`${name} ditautkan: ${r.linked_moves} pengiriman, ${r.linked_requests} pengajuan.`);
 }

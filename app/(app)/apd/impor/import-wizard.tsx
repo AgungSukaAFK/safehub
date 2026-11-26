@@ -17,7 +17,7 @@ const LOCATION_HINT: Record<string, string> = { HO: "Gudang APD pusat + karyawan
 const SUGGEST_HO = "HEAD OFFICE (KM 8A)";
 
 /** Saran awal: nama lokasi persis (HO) atau satu-satunya lokasi yang memuat kode site sebagai kata. Admin tetap memeriksa. */
-function suggest(code: string, locations: { id: string; name: string }[]): string {
+export function suggestLocation(code: string, locations: { id: string; name: string }[]): string {
   if (code === "HO") return locations.find((l) => l.name === SUGGEST_HO)?.id ?? "";
   const hits = locations.filter((l) => new RegExp(`\\b${code}\\b`, "i").test(l.name));
   return hits.length === 1 ? hits[0].id : "";
@@ -45,7 +45,7 @@ export function ApdImportWizard({ locations }: { locations: { id: string; name: 
     }
     setFile(f);
     setSummary(res.summary);
-    setSites(Object.fromEntries(res.summary.sites.map((s) => [s, suggest(s, locations)])));
+    setSites(Object.fromEntries(res.summary.sites.map((s) => [s, suggestLocation(s, locations)])));
   };
 
   const commit = async () => {

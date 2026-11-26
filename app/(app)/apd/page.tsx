@@ -52,7 +52,7 @@ export default async function ApdPage({ searchParams }: PageProps<"/apd">) {
         actions={
           <>
             <Link href="/apd/pengajuan" className={buttonVariants({ variant: "outline" })}><ClipboardList /> Pengajuan APD</Link>
-            {canManage && <Link href="/apd/impor" className={buttonVariants({ variant: "outline" })}><Upload /> Impor Data Lama</Link>}
+            {(canManage || (writer && access.functions.includes("hr"))) && <Link href="/apd/impor" className={buttonVariants({ variant: "outline" })}><Upload /> Impor Data</Link>}
             {canManage && <MoveSheet trigger={<Button><ArrowDownUp /> Catat Mutasi</Button>} warehouses={whOptions} items={itemOptions} employees={empOptions} sites={siteOptions} defaultWarehouse={warehouses[0]?.id} />}
           </>
         }

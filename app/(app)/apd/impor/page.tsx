@@ -3,7 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Content } from "@/components/list/content";
 import { PageHeader } from "@/components/page-header";
-import { getLocationNames, listEmployeesBySite, listUnlinked } from "@/lib/apd";
+import { getLocationNames, listEmployeesBySite, listUnlinked, listWarehouses } from "@/lib/apd";
 import { requireAccess } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { ApdImportWizard } from "./import-wizard";
@@ -22,10 +22,11 @@ export default async function ApdImportPage() {
   const canPeople = isAdmin || (writer && access.functions.some((f) => f === "hr" || f === "hse"));
   if (!canStock && !canPeople) redirect("/apd");
   const supabase = await createClient();
-  const [names, { count }, unlinked] = await Promise.all([
+  const [names, { count }, unlinked, warehouses] = await Promise.all([
     getLocationNames(supabase),
     supabase.from("apd_stock_moves").select("id", { count: "exact", head: true }).eq("source", "import"),
     listUnlinked(supabase),
+    listWarehouses(supabase),
   ]);
   const locations = [...names.entries()].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name, "id"));
   const employees = await listEmployeesBySite(supabase, [...new Set(unlinked.map((u) => u.locationId))]);
@@ -40,7 +41,7 @@ export default async function ApdImportPage() {
             <p className="text-sm">Lihat hasilnya di <Link href="/apd?tab=stok" className="underline underline-offset-2">Stok</Link> dan <Link href="/apd/pengajuan" className="underline underline-offset-2">Pengajuan APD</Link>. Transaksi berikutnya dicatat langsung di aplikasi.</p>
           </Content>
         ) : (
-          <ApdImportWizard locations={locations} />
+          <ApdImportWizard locations={locations} warehouses={warehouses.filter((w) => w.companyCode === "GMI").map((w) => ({ id: w.id, name: w.name }))} />
         ))}
       {canPeople ? (
         <ApdPopulationWizard locations={locations} />

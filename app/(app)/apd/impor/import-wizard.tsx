@@ -13,7 +13,7 @@ import { formatNumber } from "@/lib/format";
 import { toast } from "@/lib/toast";
 import { commitApdImportAction, previewApdImportAction } from "../actions";
 
-const LOCATION_HINT: Record<string, string> = { HO: "Gudang APD pusat + karyawan Head Office" };
+const LOCATION_HINT: Record<string, string> = { HO: "Site karyawan Head Office" };
 const SUGGEST_HO = "HEAD OFFICE (KM 8A)";
 
 /** Saran awal: nama lokasi persis (HO) atau satu-satunya lokasi yang memuat kode site sebagai kata. Admin tetap memeriksa. */
@@ -23,12 +23,13 @@ export function suggestLocation(code: string, locations: { id: string; name: str
   return hits.length === 1 ? hits[0].id : "";
 }
 
-export function ApdImportWizard({ locations }: { locations: { id: string; name: string }[] }) {
+export function ApdImportWizard({ locations, warehouses }: { locations: { id: string; name: string }[]; warehouses: { id: string; name: string }[] }) {
   const router = useRouter();
   const [file, setFile] = useState<File | null>(null);
   const [summary, setSummary] = useState<ApdImportSummary | null>(null);
   const [sites, setSites] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
+  const [wh, setWh] = useState(warehouses.length === 1 ? warehouses[0].id : "");
   const missing = summary ? summary.sites.filter((s) => !sites[s]) : [];
 
   const pick = async (files: File[]) => {
@@ -54,6 +55,7 @@ export function ApdImportWizard({ locations }: { locations: { id: string; name: 
     fd.set("file", file);
     fd.set("sites", JSON.stringify(sites));
     fd.set("company", "GMI");
+    fd.set("warehouse", wh);
     const res = await commitApdImportAction(fd);
     if (res.status !== "ok") {
       toast.error(res.message ?? "Impor gagal.");
@@ -94,8 +96,15 @@ export function ApdImportWizard({ locations }: { locations: { id: string; name: 
             <p className="mt-3 text-xs text-muted-foreground">Stok awal bertanggal 1 Oktober 2026. Barang yang kodenya sudah ada tidak ditimpa. Karyawan belum ditautkan ke Manpower (menunggu daftar NRP).</p>
           </Content>
 
+          <Content title="3. Gudang tujuan stok" description="Stok awal (SO), barang masuk (IN), dan pengiriman (OUT) dari Excel dicatat di gudang ini (gudang APD pusat).">
+            <select aria-label="Gudang tujuan stok" value={wh} onChange={(e) => setWh(e.target.value)} className="h-9 w-80 max-w-full rounded-md border bg-background px-2 text-sm">
+              <option value="">{warehouses.length ? "Pilih gudang" : "Belum ada gudang: tambah di Master Data → Gudang APD"}</option>
+              {warehouses.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}
+            </select>
+          </Content>
+
           <Content
-            title="3. Petakan site ke lokasi"
+            title="4. Petakan site ke lokasi"
             description="Pilih lokasi yang sesuai untuk tiap kode site di Excel. Lokasi yang belum ada dibuat dulu di konsol platform (Pengguna & lokasi), lalu muat ulang halaman ini."
           >
             <ul className="divide-y rounded-lg border">
@@ -120,9 +129,9 @@ export function ApdImportWizard({ locations }: { locations: { id: string; name: 
               title="Impor data lama APD?"
               description="Semua data ditulis dalam satu transaksi dan hanya bisa dilakukan sekali. Pastikan pemetaan site sudah benar."
               confirmText="Impor"
-              confirmDisabled={missing.length > 0}
+              confirmDisabled={missing.length > 0 || !wh}
               onConfirm={commit}
-              trigger={<Button disabled={missing.length > 0}>{busy ? <Loader2 className="animate-spin" /> : <Upload />} Impor Sekarang</Button>}
+              trigger={<Button disabled={missing.length > 0 || !wh}>{busy ? <Loader2 className="animate-spin" /> : <Upload />} Impor Sekarang</Button>}
             />
           </div>
         </>

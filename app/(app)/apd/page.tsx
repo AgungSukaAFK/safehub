@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowDownUp, ClipboardList, Pencil, Plus, Upload } from "lucide-react";
+import { ArrowDownToLine, ArrowDownUp, ArrowUpFromLine, FilePlus2, MoreHorizontal, Pencil, Plus, Truck, Upload } from "lucide-react";
 import { StatusBadge } from "@/components/detail/status-badge";
 import { Content } from "@/components/list/content";
 import { PageHeader } from "@/components/page-header";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { getApdSummary, listApdItems, listApdTypes, listHoldings, listMoves, listStock, listWarehouses, parseHoldingParams, parseMoveParams } from "@/lib/apd";
-import { APD_TAB_LABELS, APD_TABS, HOLDING_FILTERS, HOLDING_STATE, intervalText, MOVE_FILTERS, MOVE_KIND, SIZE_KIND_LABELS } from "@/lib/apd-rules";
+import { getApdSummary, getStockByWarehouse, listApdItems, listApdTypes, listHoldings, listMoves, listOpsRequests, listRequests, listStock, listWarehouses, parseHoldingParams, parseMoveParams, parseRequestParams, type OpsRequest, type Warehouse } from "@/lib/apd";
+import { APD_TAB_LABELS, APD_TABS, FULFILLMENT, HOLDING_FILTERS, HOLDING_STATE, intervalText, MOVE_FILTERS, MOVE_KIND, MR_STATE, mrState, REASON_LABELS, REQUEST_FILTER_LABELS, REQUEST_STATUS, REQUEST_STATUS_FILTERS, SIZE_KIND_LABELS, type Reason } from "@/lib/apd-rules";
 import { requireAccess } from "@/lib/auth";
 import { formatDate, formatNumber } from "@/lib/format";
 import { enumParam, hrefWith, type SearchParams } from "@/lib/search-params";
@@ -15,6 +15,7 @@ import { parseSiteParam } from "@/lib/sites";
 import { createClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
 import { ApdItemSheet, ApdTypeSheet, MoveSheet, VoidMoveButton } from "./apd-sheets";
+import { MrButton, RequestMovesSheet, type OpsItem, type OpsWarehouse } from "./ops-sheets";
 
 export const metadata: Metadata = { title: "Monitoring APD" };
 
@@ -36,11 +37,21 @@ export default async function ApdPage({ searchParams }: PageProps<"/apd">) {
   const canManage = isAdmin || (writer && access.functions.some((f) => f === "hse" || f === "hse_senior" || f === "scm"));
   const canPolicy = isAdmin || (writer && access.functions.some((f) => f === "hse" || f === "hse_senior"));
   const href = (c: Record<string, string | null>) => hrefWith("/apd", sp, c);
-  const [items, types, warehouses] = await Promise.all([listApdItems(supabase), listApdTypes(supabase), canManage ? listWarehouses(supabase) : Promise.resolve([])]);
+  const [items, types, warehouses, allWarehouses, ops, stockBy] = await Promise.all([
+    listApdItems(supabase),
+    listApdTypes(supabase),
+    listWarehouses(supabase),
+    listWarehouses(supabase, true),
+    canManage ? listOpsRequests(supabase) : Promise.resolve([] as OpsRequest[]),
+    canManage ? getStockByWarehouse(supabase) : Promise.resolve({} as Record<string, number>),
+  ]);
   const typeOptions = types.filter((t) => t.isActive).map((t) => ({ value: t.id, label: t.name }));
   const itemOptions = items.filter((i) => i.isActive).map((i) => ({ value: i.id, label: `${i.code} · ${i.name}` }));
   const siteOptions = sites.map((s) => ({ value: s.id, label: s.name }));
-  const whOptions = [...new Map([...warehouses.map((w) => [w.id, w.name] as const), ...sites.map((s) => [s.id, s.name] as const)]).entries()].map(([value, l]) => ({ value, label: l }));
+  const whOptions = warehouses.map((w) => ({ value: w.id, label: w.name, description: w.locationName ?? undefined }));
+  const opsItems: OpsItem[] = items.filter((i) => i.isActive).map((i) => ({ id: i.id, code: i.code, name: i.name, typeId: i.typeId, size: i.size, uom: i.uom }));
+  const opsWh: OpsWarehouse[] = warehouses.map((w) => ({ id: w.id, name: w.name, locationName: w.locationName }));
+  const ops$ = { requests: ops, items: opsItems, warehouses: opsWh, stock: stockBy };
   const { data: emps } = canManage ? await supabase.from("employees").select("id, code, name").eq("status", "active").order("name").limit(2000) : { data: [] };
   const empOptions = (emps ?? []).map((e) => ({ value: e.id, label: `${e.name} · ${e.code}` }));
 
@@ -51,9 +62,11 @@ export default async function ApdPage({ searchParams }: PageProps<"/apd">) {
         description={`Stok gudang, pengiriman, dan jatuh tempo penggantian APD · ${label}`}
         actions={
           <>
-            <Link href="/apd/pengajuan" className={buttonVariants({ variant: "outline" })}><ClipboardList /> Pengajuan APD</Link>
-            {(canManage || (writer && access.functions.includes("hr"))) && <Link href="/apd/impor" className={buttonVariants({ variant: "outline" })}><Upload /> Impor Data</Link>}
-            {canManage && <MoveSheet trigger={<Button><ArrowDownUp /> Catat Mutasi</Button>} warehouses={whOptions} items={itemOptions} employees={empOptions} sites={siteOptions} defaultWarehouse={warehouses[0]?.id} />}
+            {canManage && <RequestMovesSheet kind="in" trigger={<Button variant="outline"><ArrowDownToLine /> IN Barang</Button>} {...ops$} />}
+            {canManage && <RequestMovesSheet kind="out" trigger={<Button variant="outline"><ArrowUpFromLine /> OUT Barang</Button>} {...ops$} />}
+            {writer && <Link href="/apd/pengajuan/baru" className={buttonVariants()}><FilePlus2 /> Ajukan APD</Link>}
+            {canManage && <MoveSheet trigger={<Button variant="ghost" size="sm"><ArrowDownUp /> Mutasi lain</Button>} warehouses={whOptions} items={itemOptions} employees={empOptions} sites={siteOptions} />}
+            {(canManage || (writer && access.functions.includes("hr"))) && <Link href="/apd/impor" className={buttonVariants({ variant: "ghost", size: "sm" })}><Upload /> Impor Data</Link>}
           </>
         }
       />
@@ -64,8 +77,14 @@ export default async function ApdPage({ searchParams }: PageProps<"/apd">) {
           </Link>
         ))}
       </nav>
+      {canManage && warehouses.length === 0 && (
+        <p role="note" className="col-span-12 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+          Belum ada gudang APD. {isAdmin ? <Link href="/master?jenis=gudang-apd" className="font-medium underline underline-offset-2">Tambah gudang di Master Data</Link> : "Minta admin menambah gudang di Master Data"} sebelum mencatat IN/OUT.
+        </p>
+      )}
       {tab === "ringkasan" && <SummaryTab supabase={supabase} site={siteId} siteLabel={label} />}
-      {tab === "stok" && <StockTab supabase={supabase} sp={sp} warehouses={warehouses} />}
+      {tab === "pengajuan" && <RequestsTab supabase={supabase} sp={sp} site={siteId} siteLabel={label} canManage={canManage} ops={ops$} />}
+      {tab === "stok" && <StockTab supabase={supabase} sp={sp} warehouses={allWarehouses} />}
       {tab === "mutasi" && <MovesTab supabase={supabase} sp={sp} site={siteId} canManage={canManage} href={href} />}
       {tab === "karyawan" && <HoldingsTab supabase={supabase} sp={sp} site={siteId} href={href} />}
       {tab === "periodik" && (
@@ -144,9 +163,9 @@ async function SummaryTab({ supabase, site, siteLabel }: { supabase: Supa; site:
     { title: "Stok tersedia", value: formatNumber(s.stockTotal), hint: `${s.itemsActive} kode barang aktif · semua gudang`, href: "/apd?tab=stok" },
     { title: "Barang kosong", value: formatNumber(s.itemsEmpty), hint: s.itemsNegative ? `${s.itemsNegative} minus: perlu stock opname` : "Stok 0 atau kurang", href: "/apd?tab=stok&status=kosong", warn: s.itemsNegative > 0 },
     { title: "Di bawah minimum", value: formatNumber(s.itemsBelowMin), hint: "Stok < stok minimum barang", href: "/apd?tab=stok&status=minimum", warn: s.itemsBelowMin > 0 },
-    { title: "Menunggu approval", value: formatNumber(s.requestsPending), hint: `Pengajuan · ${siteLabel}`, href: "/apd/pengajuan?status=pending_approval" },
-    { title: "Belum terpenuhi", value: formatNumber(s.requestsOpen), hint: `${formatNumber(s.outstandingQty)} unit outstanding (OS)`, href: "/apd/pengajuan?status=terbuka", warn: s.requestsOpen > 0 },
-    { title: "Rata-rata lead time", value: s.leadDaysAvg === null ? "Belum tersedia" : `${formatNumber(s.leadDaysAvg)} hari`, hint: "Disetujui s.d. terkirim penuh, 90 hari terakhir", href: "/apd/pengajuan?status=approved" },
+    { title: "Menunggu approval", value: formatNumber(s.requestsPending), hint: `Pengajuan · ${siteLabel}`, href: "/apd?tab=pengajuan&status=pending_approval" },
+    { title: "Belum terpenuhi", value: formatNumber(s.requestsOpen), hint: `${formatNumber(s.outstandingQty)} unit outstanding (OS)`, href: "/apd?tab=pengajuan&status=terbuka", warn: s.requestsOpen > 0 },
+    { title: "Rata-rata lead time", value: s.leadDaysAvg === null ? "Belum tersedia" : `${formatNumber(s.leadDaysAvg)} hari`, hint: "Disetujui s.d. terkirim penuh, 90 hari terakhir", href: "/apd?tab=pengajuan&status=approved" },
     { title: "Lewat jatuh tempo", value: formatNumber(s.holdingsExpired), hint: "APD karyawan melewati masa periodik", href: "/apd?tab=karyawan&status=expired", warn: s.holdingsExpired > 0 },
     { title: "Segera ganti", value: formatNumber(s.holdingsDueSoon), hint: "Masuk masa peringatan", href: "/apd?tab=karyawan&status=due_soon" },
     { title: "APD keluar 30 hari", value: formatNumber(s.out30d), hint: `Unit dikirim ke ${siteLabel}`, href: "/apd?tab=mutasi&jenis=out" },
@@ -164,10 +183,89 @@ async function SummaryTab({ supabase, site, siteLabel }: { supabase: Supa; site:
   );
 }
 
+async function RequestsTab({
+  supabase,
+  sp,
+  site,
+  siteLabel,
+  canManage,
+  ops,
+}: {
+  supabase: Supa;
+  sp: SearchParams;
+  site: string | null;
+  siteLabel: string;
+  canManage: boolean;
+  ops: { requests: OpsRequest[]; items: OpsItem[]; warehouses: OpsWarehouse[]; stock: Record<string, number> };
+}) {
+  const p = parseRequestParams(sp);
+  const rows = await listRequests(supabase, p, site);
+  const href = (c: Record<string, string | null>) => hrefWith("/apd", sp, c);
+  const open = rows.filter((r) => r.status === "approved" && r.outstanding > 0).length;
+  return (
+    <Content title="Pengajuan APD" description={`${rows.length} pengajuan · ${open} belum terpenuhi · ${siteLabel}`}>
+      <div className="mb-3 flex flex-wrap items-center gap-1.5">
+        {REQUEST_STATUS_FILTERS.map((s) => (
+          <Link key={s} href={href({ status: s === "semua" ? null : s })} aria-pressed={p.status === s} className={cn("rounded-full border px-2.5 py-0.5 text-xs", p.status === s ? "border-primary bg-primary/5 font-medium text-primary" : "hover:bg-accent")}>
+            {REQUEST_FILTER_LABELS[s]}
+          </Link>
+        ))}
+        <form method="get" className="ml-auto flex gap-2">
+          <input type="hidden" name="tab" value="pengajuan" />
+          {p.status !== "semua" && <input type="hidden" name="status" value={p.status} />}
+          <input name="q" defaultValue={p.q} placeholder="Cari nomor / nama / no MR" aria-label="Cari pengajuan" className="h-8 w-56 rounded-md border bg-background px-2 text-sm" />
+        </form>
+      </div>
+      {rows.length === 0 ? (
+        <Empty>Belum ada pengajuan untuk filter ini.</Empty>
+      ) : (
+        <div className="overflow-x-auto rounded-lg border">
+          <table className="w-full min-w-[1080px] text-sm">
+            <thead className="bg-muted/40 text-xs text-muted-foreground">
+              <tr><Th>Nomor</Th><Th>Karyawan</Th><Th>Site</Th><Th>Alasan</Th><Th>Tanggal</Th><Th>Status</Th><Th>MR</Th><Th right>OS</Th><Th>{"Aksi"}</Th></tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => {
+                const editable = r.source === "app" && ["draft", "rejected"].includes(r.status);
+                const approved = r.status === "approved";
+                const ms = mrState(r.mrNo, r.received, r.qtyTotal);
+                return (
+                  <tr key={r.id} className="border-t align-top hover:bg-accent/30">
+                    <td className="px-3 py-2 whitespace-nowrap"><Link href={`/apd/pengajuan/${r.id}`} className="font-medium tabular-nums underline underline-offset-2">{r.code}</Link></td>
+                    <td className="px-3 py-2">{r.employeeId ? <Link href={`/manpower/${r.employeeId}`} className="underline underline-offset-2">{r.recipient}</Link> : r.recipient}<small className="block text-xs text-muted-foreground">{r.jobTitle ?? (r.source === "import" ? "Data lama Excel" : "-")} · {r.lines} jenis</small></td>
+                    <td className="px-3 py-2">{r.site}</td>
+                    <td className="px-3 py-2">{REASON_LABELS[r.reason as Reason] ?? r.reason}</td>
+                    <td className="px-3 py-2 whitespace-nowrap tabular-nums">{r.requestedOn ? formatDate(r.requestedOn) : <span className="text-muted-foreground">{r.source === "import" ? "Tidak tercatat" : `Draf ${formatDate(r.createdAt)}`}</span>}</td>
+                    <td className="px-3 py-2"><StatusBadge value={r.status} map={REQUEST_STATUS} />{approved && <StatusBadge value={r.fulfillment} map={FULFILLMENT} className="mt-1" />}</td>
+                    <td className="px-3 py-2 text-xs">{approved ? <>{r.mrNo && <span className="block font-mono">{r.mrNo}</span>}<StatusBadge value={ms} map={MR_STATE} /></> : "-"}</td>
+                    <td className={cn("px-3 py-2 text-right tabular-nums", approved && r.outstanding > 0 && "font-semibold text-amber-700 dark:text-amber-400")}>{approved ? `${formatNumber(r.outstanding)}/${formatNumber(r.qtyTotal)}` : "-"}</td>
+                    <td className="px-3 py-2">
+                      <span className="flex flex-wrap gap-1">
+                        {editable && <Link href={`/apd/pengajuan/${r.id}/ubah`} className={buttonVariants({ variant: "outline", size: "xs" })}><Pencil /> Edit</Link>}
+                        {canManage && approved && <MrButton requestId={r.id} code={r.code} current={r.mrNo} trigger={<Button size="xs" variant="outline"><MoreHorizontal /> {r.mrNo ? "Ubah MR" : "Lengkapi MR"}</Button>} />}
+                        {canManage && approved && r.mrNo && ms !== "full" && (
+                          <RequestMovesSheet kind="in" trigger={<Button size="xs" variant="outline"><ArrowDownToLine /> Terima MR</Button>} defaultRequestId={r.id} {...ops} />
+                        )}
+                        {canManage && approved && r.outstanding > 0 && (
+                          <RequestMovesSheet kind="out" trigger={<Button size="xs"><Truck /> Kirim</Button>} defaultRequestId={r.id} {...ops} />
+                        )}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </Content>
+  );
+}
+
 const STOCK_FILTERS = ["semua", "kosong", "minimum", "os"] as const;
 const STOCK_FILTER_LABELS: Record<(typeof STOCK_FILTERS)[number], string> = { semua: "Semua", kosong: "Kosong / minus", minimum: "Di bawah minimum", os: "Ada outstanding" };
 
-async function StockTab({ supabase, sp, warehouses }: { supabase: Supa; sp: SearchParams; warehouses: { id: string; name: string }[] }) {
+async function StockTab({ supabase, sp, warehouses }: { supabase: Supa; sp: SearchParams; warehouses: Warehouse[] }) {
   const wh = typeof sp.gudang === "string" && warehouses.some((w) => w.id === sp.gudang) ? sp.gudang : null;
   const filter = enumParam(sp, "status", STOCK_FILTERS, "semua");
   const all = await listStock(supabase, wh);
@@ -180,7 +278,7 @@ async function StockTab({ supabase, sp, warehouses }: { supabase: Supa; sp: Sear
       cardAction={
         warehouses.length > 1 ? (
           <span className="flex flex-wrap gap-1">
-            {[{ id: null, name: "Semua gudang" }, ...warehouses].map((w) => (
+            {[{ id: null as string | null, name: "Semua gudang" }, ...warehouses.map((w) => ({ id: w.id as string | null, name: w.isActive ? w.name : `${w.name} (nonaktif)` }))].map((w) => (
               <Link key={w.id ?? "all"} href={href({ gudang: w.id })} aria-pressed={wh === w.id} className={cn("rounded-full border px-2.5 py-0.5 text-xs", wh === w.id ? "border-primary bg-primary/5 font-medium text-primary" : "hover:bg-accent")}>{w.name}</Link>
             ))}
           </span>

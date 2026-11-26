@@ -369,7 +369,7 @@ Sumber: folder `Monitoring APD/` (Excel + Form Berita Acara + Form Request). Spe
   rusak karena kelalaian wajib `deduction_ack`; approved: notifikasi HSE/SCM site + karyawan). Template demo: HSE → HR → HSE Senior. Data lama
   (`source = 'import'`) tidak lewat approval dan boleh tanpa `employee_id` (snapshot `recipient_name`).
 - **Pengingat** `apd_due` (`run_apd_reminders`, offset 14/0 hari; `run_reminders` dibungkus lagi di 24). Kategori notifikasi `apd`.
-- **UI**: `/apd` (tab `ringkasan/stok/mutasi/karyawan/periodik/barang`, staf K3; Karyawan dialihkan ke `/apd/saya`), `/apd/pengajuan` (+ `baru`,
+- **UI**: `/apd` (tab `ringkasan/pengajuan/stok/mutasi/karyawan/periodik/barang`, staf K3; Karyawan dialihkan ke `/apd/saya`), `/apd/pengajuan` (redirect; + `baru`,
   `[id]`, `[id]/ubah`), `/apd/saya`. Lib: `lib/apd-rules.ts` (label, zod; aman client), `lib/apd.ts` (loader). Pengiriman untuk pengajuan =
   tombol Kirim per baris (`MoveSheet` dengan `lineId`). Cetak Berita Acara = `PrintableDocument` + CCTV `export.print`.
 - **Data Excel** (U4, diubah 2026-11-26): lewat app, BUKAN psql (lourdes-db melarang tulis data manual di produksi). `/apd/impor`
@@ -385,6 +385,11 @@ Sumber: folder `Monitoring APD/` (Excel + Form Berita Acara + Form Request). Spe
   (HR/HSE/admin, boleh diulang; karyawan baru = NIK sementara `APD-NNNN`, dicocokkan nama ternormalisasi `apd_norm_name` + site) + `apd_autolink`
   (OUT & pengajuan data lama ditautkan bila nama + site cocok tepat satu). Sisa: `apd_unlinked` (usulan pg_trgm) + `apd_link_recipient` (bagian 3).
   Data asli: 196 karyawan, 1.423 riwayat, 46 OUT + 21 pengajuan tertaut otomatis, 37 nama sisa. Lokasi yang perlu ada: 13 site + HO.
+- **Gudang & MR** (`db/app/28_apd_gudang.sql`, P20-P26): `apd_warehouses` (Master Data → Gudang APD, admin; terpisah dari site, lokasi opsional),
+  stok per `warehouse_id` (`apd_stock_qty(gudang, barang)`, `apd_stock_overview(gudang?)`, `apd_stock_by_warehouse()`). Pengajuan disetujui →
+  `apd_request_set_mr` → `apd_request_moves('in'|'out', p)` (banyak baris; IN tertaut baris = penerimaan MR, boleh sebagian; OUT = pemenuhan +
+  jatuh tempo). `apd_move_save` = "Mutasi lain" (p.warehouse_id). UI: quick action di header `/apd` (`ops-sheets.tsx`: `RequestMovesSheet`,
+  `MrButton`), tab `pengajuan` (daftar lama `/apd/pengajuan` = redirect). Impor lama: pilih gudang (`p_warehouse`).
 - **Belum**: ekspor Excel stok/mutasi,
   blok Beranda APD, harga barang, tugas "kirim APD" di Tugas Saya (sementara lewat filter Belum Terpenuhi), ganti NIK sementara APD-NNNN dengan NRP asli.
 

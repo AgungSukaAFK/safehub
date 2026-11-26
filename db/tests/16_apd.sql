@@ -5,6 +5,7 @@
 set client_min_messages = notice;
 
 select id as ho from public.locations where name = 'Kantor Pusat Bekasi' \gset
+select id as wh from __APP__.apd_warehouses where name = 'Gudang HO' \gset
 select id as site from public.locations where name = 'Site MIFA' \gset
 select id as e_rudi from __APP__.employees where code = 'GMI-0017' \gset
 select id as e_agus from __APP__.employees where code = 'GMI-0024' \gset
@@ -20,7 +21,8 @@ select id as req_draft from __APP__.apd_requests where status = 'draft' and reas
 
 select zz_test.check('P1a tabel APD tanpa hak tulis untuk authenticated; RPC bisa dipanggil; helper internal tertutup',
   not exists (select 1 from information_schema.role_table_grants where grantee = 'authenticated' and table_schema = '__APP__'
-               and table_name like 'apd\_%' and privilege_type in ('INSERT', 'UPDATE', 'DELETE'))
+               and table_name like 'apd\_%' and table_name <> 'apd_warehouses' and privilege_type in ('INSERT', 'UPDATE', 'DELETE'))
+  and not has_table_privilege('authenticated', '__APP__.apd_warehouses', 'DELETE')
   and has_function_privilege('authenticated', '__APP__.apd_move_save(jsonb)', 'execute')
   and not has_function_privilege('anon', '__APP__.apd_request_save(uuid, jsonb)', 'execute')
   and not has_function_privilege('authenticated', '__APP__.apd_stock_qty(uuid, uuid)', 'execute')
@@ -44,7 +46,7 @@ select zz_test.check('P2b APD saya: sepatu 330 hari lalu = segera ganti, kaos te
   and (select state from __APP__.apd_my_holdings() where type_code = 'uniform_tshirt') = 'ok'
   and (select last_on from __APP__.apd_my_holdings() where type_code = 'uniform_tshirt') = (now() at time zone 'Asia/Jakarta')::date - 2);
 select zz_test.expect_error('P2c karyawan tidak bisa mencatat mutasi',
-  format($q$select __APP__.apd_move_save(jsonb_build_object('location_id', %L, 'kind', 'in', 'item_id', %L, 'qty', 1, 'moved_on', current_date::text))$q$, :'ho', :'i_ss40'), '42501');
+  format($q$select __APP__.apd_move_save(jsonb_build_object('warehouse_id', %L, 'kind', 'in', 'item_id', %L, 'qty', 1, 'moved_on', current_date::text))$q$, :'wh', :'i_ss40'), '42501');
 select zz_test.expect_error('P2d karyawan tidak bisa mengajukan untuk orang lain',
   format($q$select __APP__.apd_request_save(null, jsonb_build_object('employee_id', %L, 'reason', 'periodic', 'lines', jsonb_build_array(jsonb_build_object('type_id', %L, 'qty', 1))))$q$, :'e_agus', :'t_shoes'), '42501');
 reset role;
@@ -56,39 +58,39 @@ select zz_test.check('P2e staf K3 melihat stok: KS-01-03 = 10 SO + 76 IN - 2 - 1
 select zz_test.check('P2f ringkasan: 1 pengajuan terbuka, sisa 1, ada jatuh tempo',
   (select (s ->> 'requests_open')::int = 1 and (s ->> 'outstanding_qty')::int = 1 and (s ->> 'holdings_due_soon')::int >= 1 from __APP__.apd_summary(null) s));
 select zz_test.expect_error('P2g pengawas bukan pengelola stok',
-  format($q$select __APP__.apd_move_save(jsonb_build_object('location_id', %L, 'kind', 'in', 'item_id', %L, 'qty', 1, 'moved_on', current_date::text))$q$, :'ho', :'i_ss40'), '42501');
+  format($q$select __APP__.apd_move_save(jsonb_build_object('warehouse_id', %L, 'kind', 'in', 'item_id', %L, 'qty', 1, 'moved_on', current_date::text))$q$, :'wh', :'i_ss40'), '42501');
 reset role;
 
 -- ---------------------------------------------------------------- stok (SCM/Gudang)
 select zz_test.login('scm@demo.lourdes.test');
 set role authenticated;
 select zz_test.expect_error('P3a OUT melebihi stok ditolak (SS-01-40 tersedia 2)',
-  format($q$select __APP__.apd_move_save(jsonb_build_object('location_id', %L, 'kind', 'out', 'item_id', %L, 'qty', 3, 'moved_on', current_date::text, 'employee_id', %L))$q$, :'ho', :'i_ss40', :'e_agus'), 'P0001', '%tidak cukup%');
-select (__APP__.apd_move_save(jsonb_build_object('location_id', :'ho', 'kind', 'out', 'item_id', :'i_ss40', 'qty', 1, 'moved_on', current_date::text,
+  format($q$select __APP__.apd_move_save(jsonb_build_object('warehouse_id', %L, 'kind', 'out', 'item_id', %L, 'qty', 3, 'moved_on', current_date::text, 'employee_id', %L))$q$, :'wh', :'i_ss40', :'e_agus'), 'P0001', '%tidak cukup%');
+select (__APP__.apd_move_save(jsonb_build_object('warehouse_id', :'wh', 'kind', 'out', 'item_id', :'i_ss40', 'qty', 1, 'moved_on', current_date::text,
   'employee_id', :'e_agus', 'ref_no', 'BAST-UJI-01')) ->> 'id') as mv_out \gset
 select zz_test.check('P3b OUT tercatat: penerima & site dari karyawan, stok jadi 1, log stock_out',
   (select recipient_name = 'Agus Setiawan' and dest_location_id = :'site' from __APP__.apd_stock_moves where id = :'mv_out')
-  and (select stock from __APP__.apd_stock_overview(:'ho') where code = 'SS-01-40') = 1
+  and (select stock from __APP__.apd_stock_overview(:'wh') where code = 'SS-01-40') = 1
   and exists (select 1 from __APP__.apd_stock_moves_logs where record_id = :'mv_out' and action = 'stock_out'));
 select zz_test.expect_error('P3c stok awal kedua ditolak',
-  format($q$select __APP__.apd_move_save(jsonb_build_object('location_id', %L, 'kind', 'opening', 'item_id', %L, 'qty', 5, 'moved_on', current_date::text))$q$, :'ho', :'i_ss40'), 'P0001', '%sudah dicatat%');
+  format($q$select __APP__.apd_move_save(jsonb_build_object('warehouse_id', %L, 'kind', 'opening', 'item_id', %L, 'qty', 5, 'moved_on', current_date::text))$q$, :'wh', :'i_ss40'), 'P0001', '%sudah dicatat%');
 select zz_test.expect_error('P3d penyesuaian tanpa alasan ditolak',
-  format($q$select __APP__.apd_move_save(jsonb_build_object('location_id', %L, 'kind', 'adjust', 'item_id', %L, 'qty', -1, 'moved_on', current_date::text))$q$, :'ho', :'i_ss40'), 'P0001', '%beralasan%');
+  format($q$select __APP__.apd_move_save(jsonb_build_object('warehouse_id', %L, 'kind', 'adjust', 'item_id', %L, 'qty', -1, 'moved_on', current_date::text))$q$, :'wh', :'i_ss40'), 'P0001', '%beralasan%');
 select zz_test.expect_error('P3e OUT ke pengajuan melebihi sisa ditolak',
-  format($q$select __APP__.apd_move_save(jsonb_build_object('location_id', %L, 'kind', 'out', 'item_id', %L, 'qty', 2, 'moved_on', current_date::text, 'request_line_id', %L))$q$, :'ho', :'i_ks03', :'line_ok'), 'P0001', '%sisa pengajuan%');
+  format($q$select __APP__.apd_move_save(jsonb_build_object('warehouse_id', %L, 'kind', 'out', 'item_id', %L, 'qty', 2, 'moved_on', current_date::text, 'request_line_id', %L))$q$, :'wh', :'i_ks03', :'line_ok'), 'P0001', '%sisa pengajuan%');
 select zz_test.expect_error('P3f OUT ke pengajuan dengan barang beda jenis ditolak',
-  format($q$select __APP__.apd_move_save(jsonb_build_object('location_id', %L, 'kind', 'out', 'item_id', %L, 'qty', 1, 'moved_on', current_date::text, 'request_line_id', %L))$q$, :'ho', :'i_ss41', :'line_ok'), 'P0001', '%tidak sesuai jenis%');
-select (__APP__.apd_move_save(jsonb_build_object('location_id', :'ho', 'kind', 'out', 'item_id', :'i_ks03', 'qty', 1, 'moved_on', current_date::text,
+  format($q$select __APP__.apd_move_save(jsonb_build_object('warehouse_id', %L, 'kind', 'out', 'item_id', %L, 'qty', 1, 'moved_on', current_date::text, 'request_line_id', %L))$q$, :'wh', :'i_ss41', :'line_ok'), 'P0001', '%tidak sesuai jenis%');
+select (__APP__.apd_move_save(jsonb_build_object('warehouse_id', :'wh', 'kind', 'out', 'item_id', :'i_ks03', 'qty', 1, 'moved_on', current_date::text,
   'request_line_id', :'line_ok')) ->> 'id') as mv_line \gset
 select zz_test.check('P3g OUT ke pengajuan: penerima dari pengajuan, pengajuan terpenuhi, lead time terhitung',
   (select employee_id = :'e_rudi' from __APP__.apd_stock_moves where id = :'mv_line')
   and (select fulfillment = 'full' and outstanding_total = 0 and lead_days = 4 from __APP__.apd_request_progress where request_id = :'req_ok'));
 select __APP__.apd_move_void(:'mv_out', 'Salah catat, sepatu belum dikirim');
 select zz_test.check('P3h batal OUT: stok kembali 2, mutasi tetap ada dengan alasan + log void',
-  (select stock from __APP__.apd_stock_overview(:'ho') where code = 'SS-01-40') = 2
+  (select stock from __APP__.apd_stock_overview(:'wh') where code = 'SS-01-40') = 2
   and (select voided_at is not null from __APP__.apd_stock_moves where id = :'mv_out')
   and exists (select 1 from __APP__.apd_stock_moves_logs where record_id = :'mv_out' and action = 'void'));
-select (__APP__.apd_move_save(jsonb_build_object('location_id', :'ho', 'kind', 'out', 'item_id', :'i_pdl', 'qty', 8, 'moved_on', current_date::text,
+select (__APP__.apd_move_save(jsonb_build_object('warehouse_id', :'wh', 'kind', 'out', 'item_id', :'i_pdl', 'qty', 8, 'moved_on', current_date::text,
   'recipient_name', 'Tim OJT Kalimantan', 'dest_location_id', :'site')) ->> 'id') as mv_pdl \gset
 select id as mv_pdl_in from __APP__.apd_stock_moves where item_id = :'i_pdl' and kind = 'in' \gset
 select zz_test.expect_error('P3i membatalkan IN yang sudah terpakai (stok jadi minus) ditolak',
@@ -181,22 +183,22 @@ reset role;
 select zz_test.login('pengawas@demo.lourdes.test');
 set role authenticated;
 select zz_test.expect_error('P7a pengawas tidak bisa mengimpor',
-  format($q$select __APP__.apd_import_legacy('GMI', jsonb_build_object('HO', %L, 'MIFA', %L), %L::jsonb)$q$, :'ho', :'site', :'apd_payload'), '42501');
+  format($q$select __APP__.apd_import_legacy('GMI', jsonb_build_object('MIFA', %L), %L::jsonb, %L)$q$, :'site', :'apd_payload', :'wh'), '42501');
 reset role;
 select zz_test.login('scm@demo.lourdes.test');
 set role authenticated;
 select zz_test.expect_error('P7b site tanpa lokasi ditolak (sebut kodenya)',
-  format($q$select __APP__.apd_import_legacy('GMI', jsonb_build_object('HO', %L), %L::jsonb)$q$, :'ho', :'apd_payload'), 'P0001', '%MIFA%');
-select __APP__.apd_import_legacy('GMI', jsonb_build_object('HO', :'ho', 'MIFA', :'site'), :'apd_payload'::jsonb) as imp \gset
+  format($q$select __APP__.apd_import_legacy('GMI', '{}'::jsonb, %L::jsonb, %L)$q$, :'apd_payload', :'wh'), 'P0001', '%MIFA%');
+select __APP__.apd_import_legacy('GMI', jsonb_build_object('MIFA', :'site'), :'apd_payload'::jsonb, :'wh') as imp \gset
 reset role;
 select zz_test.check('P7c impor: barang baru saja (kode lama dipertahankan), SO/IN/OUT di gudang HO, pengajuan disetujui dengan OS dari qty supply',
   (:'imp'::jsonb ->> 'items')::int = 1 and (:'imp'::jsonb ->> 'out')::int = 1 and (:'imp'::jsonb ->> 'requests')::int = 1
-  and (select stock = 13 from __APP__.apd_stock_overview(:'ho') where code = 'TST-01')
+  and (select stock = 13 from __APP__.apd_stock_overview(:'wh') where code = 'TST-01')
   and (select dest_location_id = :'site' and recipient_name = 'Pekerja Uji' from __APP__.apd_stock_moves where source = 'import' and kind = 'out')
   and (select r.status = 'approved' and p.outstanding_total = 1 from __APP__.apd_requests r join __APP__.apd_request_progress p on p.request_id = r.id where r.source = 'import')
   and not exists (select 1 from __APP__.apd_stock_moves_logs l join __APP__.apd_stock_moves m on m.id = l.record_id where m.source = 'import'));
 select zz_test.login('scm@demo.lourdes.test');
 set role authenticated;
 select zz_test.expect_error('P7d impor kedua ditolak',
-  format($q$select __APP__.apd_import_legacy('GMI', jsonb_build_object('HO', %L, 'MIFA', %L), %L::jsonb)$q$, :'ho', :'site', :'apd_payload'), 'P0001', '%sudah pernah%');
+  format($q$select __APP__.apd_import_legacy('GMI', jsonb_build_object('MIFA', %L), %L::jsonb, %L)$q$, :'site', :'apd_payload', :'wh'), 'P0001', '%sudah pernah%');
 reset role;

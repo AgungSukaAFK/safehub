@@ -1,24 +1,23 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { AlertTriangle, Pencil, Truck } from "lucide-react";
+import { AlertTriangle, ArrowDownToLine, FileText, Pencil, Truck } from "lucide-react";
 import { ActivityLogDialog } from "@/components/detail/activity-log-dialog";
 import { ApprovalPath } from "@/components/detail/approval-path";
 import { StatusBadge } from "@/components/detail/status-badge";
 import { Content } from "@/components/list/content";
 import { PageHeader } from "@/components/page-header";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { getRequestDetail, listApdItems, listWarehouses } from "@/lib/apd";
-import { APD_REQUEST_FIELD_LABELS, FULFILLMENT, needsDeduction, REASON_LABELS, REQUEST_STATUS, type Reason } from "@/lib/apd-rules";
+import { getRequestDetail, getStockByWarehouse, listApdItems, listOpsRequests, listWarehouses, type OpsRequest } from "@/lib/apd";
+import { APD_REQUEST_FIELD_LABELS, FULFILLMENT, MR_STATE, mrState, needsDeduction, REASON_LABELS, REQUEST_STATUS, type Reason } from "@/lib/apd-rules";
 import { currentTurn } from "@/lib/approval-types";
 import { requireAccess } from "@/lib/auth";
 import { getCompanies } from "@/lib/companies";
 import { formatDate, formatNumber } from "@/lib/format";
-import { getMySites } from "@/lib/sites";
 import { createClient } from "@/lib/supabase/server";
 import { cn, isUuid } from "@/lib/utils";
 import { ObservasiFiles } from "../../../observasi/[id]/observasi-files";
-import { MoveSheet } from "../../apd-sheets";
+import { MrButton, RequestMovesSheet } from "../../ops-sheets";
 import { CancelButton, DecideButtons, EvidenceUpload, PrintBeritaAcara, SubmitButton, WithdrawButton } from "./request-controls";
 
 export async function generateMetadata({ params }: PageProps<"/apd/pengajuan/[id]">): Promise<Metadata> {
@@ -44,14 +43,27 @@ export default async function ApdRequestDetailPage({ params }: PageProps<"/apd/p
   const editable = r.source === "app" && ["draft", "rejected"].includes(r.status) && (isOwner || canManage) && writer;
   const turn = r.status === "pending_approval" ? currentTurn(r.steps) : null;
   const myTurn = turn && turn.approver.id === access.userId ? turn : null;
-  const canFulfill = canManage && r.status === "approved" && r.lines.some((l) => l.outstanding > 0);
-  const [company, items, warehouses, sites] = await Promise.all([
+  const approved = r.status === "approved";
+  const canFulfill = canManage && approved && r.lines.some((l) => l.outstanding > 0);
+  const qtyTotal = r.lines.reduce((s, l) => s + l.qty, 0);
+  const received = r.lines.reduce((s, l) => s + l.received, 0);
+  const ms = mrState(r.mrNo, received, qtyTotal);
+  const canReceive = canManage && approved && !!r.mrNo && ms !== "full";
+  const ops = canFulfill || canReceive;
+  const [company, items, warehouses, opsReqs, stock] = await Promise.all([
     getCompanies().then((cs) => cs.find((c) => c.code === r.companyCode) ?? null),
-    canFulfill ? listApdItems(supabase) : Promise.resolve([]),
-    canFulfill ? listWarehouses(supabase) : Promise.resolve([]),
-    canFulfill ? getMySites() : Promise.resolve([]),
+    ops ? listApdItems(supabase) : Promise.resolve([]),
+    ops ? listWarehouses(supabase) : Promise.resolve([]),
+    ops ? listOpsRequests(supabase) : Promise.resolve([] as OpsRequest[]),
+    ops ? getStockByWarehouse(supabase) : Promise.resolve({} as Record<string, number>),
   ]);
-  const whOptions = [...new Map([...warehouses.map((w) => [w.id, w.name] as const), ...sites.map((s) => [s.id, s.name] as const)]).entries()].map(([value, label]) => ({ value, label }));
+  const opsProps = {
+    requests: opsReqs.filter((x) => x.id === r.id),
+    items: items.filter((i) => i.isActive).map((i) => ({ id: i.id, code: i.code, name: i.name, typeId: i.typeId, size: i.size, uom: i.uom })),
+    warehouses: warehouses.filter((w) => w.companyCode === r.companyCode).map((w) => ({ id: w.id, name: w.name, locationName: w.locationName })),
+    stock,
+    defaultRequestId: r.id,
+  };
   const lastReject = r.status === "rejected" ? r.steps.find((s) => s.status === "rejected") : undefined;
   const deduction = needsDeduction(r.reason, r.negligence);
   const totalOs = r.lines.reduce((s, l) => s + l.outstanding, 0);
@@ -71,6 +83,9 @@ export default async function ApdRequestDetailPage({ params }: PageProps<"/apd/p
           <>
             {editable && <Link href={`/apd/pengajuan/${r.id}/ubah`} className={buttonVariants({ variant: "outline" })}><Pencil /> Ubah</Link>}
             {editable && <SubmitButton id={r.id} code={r.code} resubmit={r.status === "rejected"} />}
+            {canManage && approved && <MrButton requestId={r.id} code={r.code} current={r.mrNo} trigger={<Button variant="outline"><FileText /> {r.mrNo ? "Ubah MR" : "Lengkapi MR"}</Button>} />}
+            {canReceive && <RequestMovesSheet kind="in" trigger={<Button variant="outline"><ArrowDownToLine /> Terima MR</Button>} {...opsProps} />}
+            {canFulfill && <RequestMovesSheet kind="out" trigger={<Button><Truck /> Kirim</Button>} {...opsProps} />}
             {r.status === "pending_approval" && (isOwner || isAdmin) && <WithdrawButton id={r.id} />}
             {((editable) || (r.status === "approved" && canManage && r.lines.every((l) => l.supplied === 0))) && <CancelButton id={r.id} code={r.code} />}
             {r.source === "app" && <PrintBeritaAcara r={r} company={company} printedBy={access.profile.fullName} />}
@@ -80,7 +95,7 @@ export default async function ApdRequestDetailPage({ params }: PageProps<"/apd/p
       />
       {r.source === "import" && (
         <p role="note" className="col-span-12 rounded-lg border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
-          Data lama dari sheet MTR MR (Excel Monitoring APD 2026). Tidak melalui approval; karyawan belum ditautkan ke Manpower (menunggu daftar NRP).
+          Data lama dari sheet MTR MR (Excel Monitoring APD 2026). Tidak melalui approval{r.employeeId ? "." : "; nama belum ditautkan ke karyawan Manpower (tautkan di Impor Data APD)."}
         </p>
       )}
       {lastReject && (
@@ -101,7 +116,7 @@ export default async function ApdRequestDetailPage({ params }: PageProps<"/apd/p
                 ["Alasan", `${REASON_LABELS[r.reason as Reason] ?? r.reason}${r.negligence ? " (kelalaian)" : ""}`],
                 ["Terakhir dapat APD", r.lastReceivedOn ? formatDate(r.lastReceivedOn) : "-"],
                 ["Tgl kehilangan / kerusakan", r.incidentOn ? formatDate(r.incidentOn) : "-"],
-                ["No MR", r.mrNo ?? "-"],
+                ["No MR", r.mrNo ? <span key="mr">{r.mrNo} <StatusBadge value={ms} map={MR_STATE} className="ml-1" /></span> : approved ? "Belum dilengkapi" : "-"],
                 ["Diajukan", r.requestedOn ? formatDate(r.requestedOn) : "-"],
                 ["Disetujui", r.approvedOn ? formatDate(r.approvedOn) : "-"],
                 ["Dibuat oleh", r.creatorName ?? (r.source === "import" ? "Impor Excel" : "-")],
@@ -124,7 +139,7 @@ export default async function ApdRequestDetailPage({ params }: PageProps<"/apd/p
             <div className="overflow-x-auto rounded-lg border">
               <table className="w-full min-w-[640px] text-sm">
                 <thead className="bg-muted/40 text-xs text-muted-foreground">
-                  <tr>{["Jenis APD", "Ukuran", "Qty", "Terkirim", "OS", ""].map((h, i) => <th key={i} scope="col" className={cn("px-3 py-2 font-medium", i >= 2 && i <= 4 ? "text-right" : "text-left")}>{h}</th>)}</tr>
+                  <tr>{["Jenis APD", "Ukuran", "Qty", "Diterima MR", "Terkirim", "OS"].map((h, i) => <th key={i} scope="col" className={cn("px-3 py-2 font-medium", i >= 2 ? "text-right" : "text-left")}>{h}</th>)}</tr>
                 </thead>
                 <tbody>
                   {r.lines.map((l) => (
@@ -132,20 +147,9 @@ export default async function ApdRequestDetailPage({ params }: PageProps<"/apd/p
                       <td className="px-3 py-2 font-medium">{l.typeName}{l.itemLabel && <small className="block text-xs font-normal text-muted-foreground">{l.itemLabel}</small>}{l.note && <small className="block text-xs font-normal text-muted-foreground">{l.note}</small>}</td>
                       <td className="px-3 py-2">{l.size ?? "-"}</td>
                       <td className="px-3 py-2 text-right tabular-nums">{l.qty}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{r.mrNo ? l.received : "-"}</td>
                       <td className="px-3 py-2 text-right tabular-nums">{l.supplied}{l.lastSupplyOn && <small className="block text-xs text-muted-foreground">{formatDate(l.lastSupplyOn)}</small>}</td>
-                      <td className={cn("px-3 py-2 text-right tabular-nums", r.status === "approved" && l.outstanding > 0 && "font-semibold text-amber-700 dark:text-amber-400")}>{r.status === "approved" ? l.outstanding : "-"}</td>
-                      <td className="px-3 py-2 text-right">
-                        {canFulfill && l.outstanding > 0 && (
-                          <MoveSheet
-                            trigger={<Button size="sm" variant="outline"><Truck /> Kirim</Button>}
-                            title={`Kirim ${l.typeName} untuk ${r.recipient}`}
-                            lineId={l.id}
-                            warehouses={whOptions}
-                            defaultWarehouse={warehouses[0]?.id}
-                            items={items.filter((i) => i.isActive && i.typeId === l.typeId).map((i) => ({ value: i.id, label: `${i.code} · ${i.name}`, description: i.size ?? undefined }))}
-                          />
-                        )}
-                      </td>
+                      <td className={cn("px-3 py-2 text-right tabular-nums", approved && l.outstanding > 0 && "font-semibold text-amber-700 dark:text-amber-400")}>{approved ? l.outstanding : "-"}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -155,8 +159,8 @@ export default async function ApdRequestDetailPage({ params }: PageProps<"/apd/p
               <ul className="mt-3 divide-y rounded-lg border text-sm">
                 {r.moves.map((m) => (
                   <li key={m.id} className={cn("flex flex-wrap items-center justify-between gap-2 px-3 py-2", m.voidedAt && "text-muted-foreground line-through")}>
-                    <span>{formatDate(m.movedOn)} · <span className="font-mono text-xs">{m.itemCode}</span> {m.itemName} × {m.qty}</span>
-                    <small className="text-xs text-muted-foreground">{[m.refNo && `BAST ${m.refNo}`, m.pic, m.warehouse].filter(Boolean).join(" · ")}</small>
+                    <span>{formatDate(m.movedOn)} · <strong className="text-xs font-semibold">{m.kind === "in" ? "Diterima (MR)" : "Dikirim"}</strong> · <span className="font-mono text-xs">{m.itemCode}</span> {m.itemName} × {m.qty}</span>
+                    <small className="text-xs text-muted-foreground">{[m.refNo && `${m.kind === "in" ? "Ref" : "BAST"} ${m.refNo}`, m.pic, m.warehouse].filter(Boolean).join(" · ")}</small>
                   </li>
                 ))}
               </ul>

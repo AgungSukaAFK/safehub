@@ -37,6 +37,16 @@ export async function listMaster(supabase: ServerClient, kind: MasterKind): Prom
     if (error) throw error;
     return (data ?? []).map((r) => ({ id: r.id, name: r.name, isActive: r.is_active, values: { location_id: r.location_id, name: r.name, sort_order: r.sort_order } }));
   }
+  if (t.table === "apd_warehouses") {
+    const { data, error } = await supabase.from("apd_warehouses").select("id, name, company_code, location_id, description, sort_order, is_active").order("sort_order").order("name");
+    if (error) throw error;
+    return (data ?? []).map((r) => ({
+      id: r.id,
+      name: r.name,
+      isActive: r.is_active,
+      values: { company_code: r.company_code, name: r.name, location_id: r.location_id, description: r.description, sort_order: r.sort_order },
+    }));
+  }
   if (t.table === "contractors") {
     const { data, error } = await supabase.from("contractors").select("id, name, company_code, kind, is_active").order("name");
     if (error) throw error;
@@ -60,13 +70,14 @@ export async function listMaster(supabase: ServerClient, kind: MasterKind): Prom
 /** Jumlah baris per jenis (untuk tab). */
 export async function countMasters(supabase: ServerClient): Promise<Record<MasterKind, number>> {
   const head = { count: "exact" as const, head: true };
-  const [area, cat, fcat, itype, risk, mitra, site, jabatan] = await Promise.all([
+  const [area, cat, fcat, itype, risk, mitra, gudang, site, jabatan] = await Promise.all([
     supabase.from("areas").select("id", head),
     supabase.from("master_items").select("id", head).eq("kind", "incident_category"),
     supabase.from("master_items").select("id", head).eq("kind", "finding_category"),
     supabase.from("master_items").select("id", head).eq("kind", "inspection_type"),
     supabase.from("master_items").select("id", head).eq("kind", "risk_level"),
     supabase.from("contractors").select("id", head),
+    supabase.from("apd_warehouses").select("id", head),
     supabase.schema("public").from("locations").select("id", head),
     supabase.schema("public").from("job_titles").select("id", head),
   ]);
@@ -77,6 +88,7 @@ export async function countMasters(supabase: ServerClient): Promise<Record<Maste
     "jenis-inspeksi": itype.count ?? 0,
     "tingkat-risiko": risk.count ?? 0,
     mitra: mitra.count ?? 0,
+    "gudang-apd": gudang.count ?? 0,
     site: site.count ?? 0,
     jabatan: jabatan.count ?? 0,
   };

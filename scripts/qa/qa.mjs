@@ -428,7 +428,12 @@ try {
     await loginPage(page, BASE, USER("scm"));
     await visit(page, "/apd?tab=stok", 2500);
     const as = await page.text();
-    check("apd: stok per barang (KS-01-03) + tombol catat mutasi", as.includes("Stok per Barang") && as.includes("KS-01-03") && as.includes("Catat Mutasi"), as.slice(0, 160));
+    check("apd: stok per barang (KS-01-03) + quick action IN/OUT/Ajukan + mutasi lain", as.includes("Stok per Barang") && as.includes("KS-01-03") && as.includes("IN Barang") && as.includes("OUT Barang") && as.includes("Ajukan APD") && as.includes("Mutasi lain"), as.slice(0, 160));
+    await visit(page, "/apd?tab=pengajuan", 2500);
+    const ap = await page.text();
+    check("apd: tab Pengajuan di monitoring + aksi Lengkapi MR / Kirim", ap.includes("Pengajuan APD") && /Lengkapi MR|Ubah MR/.test(ap) && ap.includes("Kirim"), ap.slice(0, 160));
+    await visit(page, "/apd/pengajuan", 2500);
+    check("apd: /apd/pengajuan dialihkan ke tab Pengajuan (staf)", (await page.eval("location.search")).includes("tab=pengajuan"), await page.eval("location.href"));
     await visit(page, "/apd?tab=karyawan", 2500);
     const ah = await page.text();
     check("apd: jatuh tempo karyawan memuat Rudi (sepatu segera ganti)", ah.includes("Rudi Hartono") && ah.includes("Segera Ganti"), ah.slice(0, 160));
@@ -439,6 +444,10 @@ try {
     await visit(page, `/apd/pengajuan/${apdReq?.id}`, 2500);
     const ad = await page.text();
     check("apd: detail pengajuan disetujui menampilkan OS + tombol Kirim (gudang)", ad.includes(apdReq?.code ?? "?") && ad.includes("APD Diminta & Pemenuhan") && ad.includes("Kirim"), ad.slice(0, 160));
+    await loginPage(page, BASE, USER("admin"));
+    await visit(page, "/master?jenis=gudang-apd", 2500);
+    check("master: Gudang APD (terpisah dari site) tampil", (await page.text()).includes("Gudang HO"));
+    await loginPage(page, BASE, USER("scm"));
     // impor data lama: unggah workbook asli → ringkasan + pemetaan site (tanpa menekan Impor: sekali saja per DB)
     const apdXlsx = path.resolve("Monitoring APD/Monitoring APD GMI 2026.xlsx");
     if (fs.existsSync(apdXlsx)) {

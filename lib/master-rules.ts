@@ -4,7 +4,7 @@
 import { z } from "zod";
 import type { StatusColor } from "@/lib/status";
 
-export const MASTER_KINDS = ["area", "kategori-kejadian", "kategori-temuan", "jenis-inspeksi", "tingkat-risiko", "mitra", "site", "jabatan"] as const;
+export const MASTER_KINDS = ["area", "kategori-kejadian", "kategori-temuan", "jenis-inspeksi", "tingkat-risiko", "mitra", "gudang-apd", "site", "jabatan"] as const;
 export type MasterKind = (typeof MASTER_KINDS)[number];
 export type EditableKind = Exclude<MasterKind, "site" | "jabatan">;
 
@@ -170,6 +170,23 @@ export const MASTER_CONFIG: Record<MasterKind, MasterKindConfig> = {
       { name: "kind", label: "Jenis", type: "select", required: true, options: CONTRACTOR_KINDS },
     ],
   },
+  "gudang-apd": {
+    label: "Gudang APD",
+    description: "Gudang tempat stok APD disimpan. Terpisah dari site: satu site bisa tanpa gudang, dan gudang bisa berada di lokasi lain. Stok, barang masuk (MR), dan pengiriman APD dicatat per gudang.",
+    editable: true,
+    columns: [
+      { key: "company_code", label: "Perusahaan", optionsFrom: "companies" },
+      { key: "location_id", label: "Lokasi fisik", optionsFrom: "sites" },
+      { key: "sort_order", label: "Urutan" },
+    ],
+    fields: [
+      { name: "company_code", label: "Perusahaan", type: "select", required: true, optionsFrom: "companies" },
+      { name: "name", label: "Nama gudang", type: "text", required: true, maxLength: 100, hint: "Mis. Gudang HO, Gudang Site MIFA." },
+      { name: "location_id", label: "Lokasi fisik (opsional)", type: "select", optionsFrom: "sites", hint: "Untuk batas akses site. Kosongkan bila gudang tidak terkait site tertentu." },
+      { name: "description", label: "Alamat / keterangan", type: "textarea", maxLength: 500 },
+      SORT_FIELD,
+    ],
+  },
   site: {
     label: "Site",
     description: "Site operasional. Daftar ini milik master DB Lourdes (public.locations).",
@@ -231,16 +248,25 @@ export const MASTER_SCHEMAS = {
     kind: z.enum(["subkontraktor", "vendor"], { errorMap: () => ({ message: "Pilih jenis" }) }),
     is_active: isActive,
   }),
+  "gudang-apd": z.object({
+    company_code: z.string().regex(/^[A-Z][A-Z0-9_]{1,15}$/, "Pilih perusahaan"),
+    name: name(100),
+    location_id: z.string().uuid().or(z.literal("")).nullable().optional().transform((v) => v || null),
+    description,
+    sort_order: sortOrder,
+    is_active: isActive,
+  }),
 } satisfies Record<EditableKind, z.ZodTypeAny>;
 
 /** Tabel + nilai kind master_items per jenis. */
-export const MASTER_TABLES: Record<EditableKind, { table: "areas" | "master_items" | "contractors"; itemKind?: "incident_category" | "finding_category" | "risk_level" | "inspection_type" }> = {
+export const MASTER_TABLES: Record<EditableKind, { table: "areas" | "master_items" | "contractors" | "apd_warehouses"; itemKind?: "incident_category" | "finding_category" | "risk_level" | "inspection_type" }> = {
   area: { table: "areas" },
   "kategori-kejadian": { table: "master_items", itemKind: "incident_category" },
   "kategori-temuan": { table: "master_items", itemKind: "finding_category" },
   "jenis-inspeksi": { table: "master_items", itemKind: "inspection_type" },
   "tingkat-risiko": { table: "master_items", itemKind: "risk_level" },
   mitra: { table: "contractors" },
+  "gudang-apd": { table: "apd_warehouses" },
 };
 
 /** Label kolom di Riwayat Aktivitas master. */

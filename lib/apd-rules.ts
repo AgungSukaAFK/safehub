@@ -3,10 +3,11 @@ import { z } from "zod";
 import type { FieldLabel } from "@/lib/person-types";
 import type { StatusDef } from "@/lib/status";
 
-export const APD_TABS = ["ringkasan", "stok", "mutasi", "karyawan", "periodik", "barang"] as const;
+export const APD_TABS = ["ringkasan", "pengajuan", "stok", "mutasi", "karyawan", "periodik", "barang"] as const;
 export type ApdTab = (typeof APD_TABS)[number];
 export const APD_TAB_LABELS: Record<ApdTab, string> = {
   ringkasan: "Ringkasan",
+  pengajuan: "Pengajuan",
   stok: "Stok",
   mutasi: "Mutasi",
   karyawan: "Jatuh Tempo Karyawan",
@@ -136,8 +137,7 @@ const optText = (max: number) => z.string().trim().max(max).optional().nullable(
 
 export const moveSchema = z
   .object({
-    location_id: uuid,
-    company_code: z.string().max(16).optional().nullable(),
+    warehouse_id: z.string().uuid("Pilih gudang"),
     kind: z.enum(MOVE_KINDS),
     item_id: uuid,
     qty: z.coerce.number().int().refine((n) => n !== 0, "Tidak boleh 0").refine((n) => Math.abs(n) <= 100000, "Terlalu besar"),
@@ -206,3 +206,30 @@ export const requestSchema = z
   })
   .refine((v) => !["damaged", "lost"].includes(v.reason) || !!v.incident_on, { path: ["incident_on"], message: "Tanggal kerusakan/kehilangan wajib diisi" });
 export type RequestInput = z.infer<typeof requestSchema>;
+
+/** IN (terima MR) / OUT (kirim) banyak baris satu pengajuan sekaligus (28). Baris qty 0 dilewati. */
+export const requestMovesSchema = z.object({
+  request_id: uuid,
+  warehouse_id: z.string().uuid("Pilih gudang"),
+  moved_on: reqDate,
+  ref_no: optText(60),
+  pic: optText(120),
+  note: optText(500),
+  lines: z
+    .array(z.object({ line_id: uuid, item_id: z.string().uuid("Pilih barang"), qty: z.coerce.number().int().min(0).max(500) }))
+    .max(50)
+    .refine((ls) => ls.some((l) => l.qty > 0), "Isi jumlah minimal satu barang"),
+});
+export type RequestMovesInput = z.input<typeof requestMovesSchema>;
+
+/** Status MR pengajuan (P23): tanpa MR / menunggu barang / sebagian / lengkap. */
+export const MR_STATE: Record<string, StatusDef> = {
+  none: { label: "Belum ada MR", color: "gray" },
+  waiting: { label: "MR: menunggu barang", color: "amber" },
+  partial: { label: "MR: diterima sebagian", color: "sky" },
+  full: { label: "MR: diterima lengkap", color: "green" },
+};
+export function mrState(mrNo: string | null, received: number, qty: number): keyof typeof MR_STATE {
+  if (!mrNo) return "none";
+  return received <= 0 ? "waiting" : received < qty ? "partial" : "full";
+}

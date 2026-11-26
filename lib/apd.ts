@@ -113,7 +113,7 @@ export type StockRow = {
   lastMoveOn: string | null;
 };
 export async function listStock(supabase: ServerClient, warehouse: string | null): Promise<StockRow[]> {
-  const { data, error } = await supabase.rpc("apd_stock_overview", { p_location: warehouse ?? undefined });
+  const { data, error } = await supabase.rpc("apd_stock_overview", { p_warehouse: warehouse ?? undefined });
   if (error) throw error;
   return (data ?? []).map((r) => ({
     itemId: r.item_id,
@@ -136,17 +136,38 @@ export async function listStock(supabase: ServerClient, warehouse: string | null
   }));
 }
 
-/** Gudang = lokasi yang punya mutasi (tidak ada master gudang terpisah, P3). */
-export async function listWarehouses(supabase: ServerClient): Promise<{ id: string; name: string }[]> {
-  const [{ data }, names] = await Promise.all([supabase.from("apd_stock_moves").select("location_id").limit(5000), getLocationNames(supabase)]);
-  return [...new Set((data ?? []).map((m) => m.location_id))].map((id) => ({ id, name: names.get(id) ?? "-" })).sort((a, b) => a.name.localeCompare(b.name, "id"));
+export type Warehouse = { id: string; name: string; companyCode: string; locationId: string | null; locationName: string | null; isActive: boolean };
+/** Gudang APD dari Master Data (terpisah dari site, 28). `all` = termasuk nonaktif (label mutasi lama). */
+export async function listWarehouses(supabase: ServerClient, all = false): Promise<Warehouse[]> {
+  let q = supabase.from("apd_warehouses").select("id, name, company_code, location_id, is_active").order("sort_order").order("name");
+  if (!all) q = q.eq("is_active", true);
+  const [{ data, error }, names] = await Promise.all([q, getLocationNames(supabase)]);
+  if (error) throw error;
+  return (data ?? []).map((w) => ({
+    id: w.id,
+    name: w.name,
+    companyCode: w.company_code,
+    locationId: w.location_id,
+    locationName: w.location_id ? (names.get(w.location_id) ?? null) : null,
+    isActive: w.is_active,
+  }));
+}
+
+/** Stok per gudang per barang (ketersediaan di form IN/OUT): kunci `${gudang}|${barang}`. */
+export async function getStockByWarehouse(supabase: ServerClient): Promise<Record<string, number>> {
+  const { data, error } = await supabase.rpc("apd_stock_by_warehouse");
+  if (error) throw error;
+  return Object.fromEntries((data ?? []).map((r) => [`${r.warehouse_id}|${r.item_id}`, r.stock]));
 }
 
 // ---------------------------------------------------------------- mutasi
-export type MoveParams = { kind: (typeof MOVE_FILTERS)[number]; q: string; item: string | null };
+export type MoveParams = { kind: (typeof MOVE_FILTERS)[number]; q: string; item: string | null; warehouse: string | null };
 export function parseMoveParams(sp: SearchParams): MoveParams {
-  const item = textParam(sp, "barang");
-  return { kind: enumParam(sp, "jenis", MOVE_FILTERS, "semua"), q: textParam(sp, "q"), item: /^[0-9a-f-]{36}$/.test(item) ? item : null };
+  const uuidOr = (k: string) => {
+    const v = textParam(sp, k);
+    return /^[0-9a-f-]{36}$/.test(v) ? v : null;
+  };
+  return { kind: enumParam(sp, "jenis", MOVE_FILTERS, "semua"), q: textParam(sp, "q"), item: uuidOr("barang"), warehouse: uuidOr("gudang") };
 }
 export type MoveRow = {
   id: string;
@@ -173,9 +194,10 @@ export type MoveRow = {
 export async function listMoves(supabase: ServerClient, p: MoveParams, site: SiteChoice, limit = 500): Promise<MoveRow[]> {
   let q = supabase
     .from("apd_stock_moves")
-    .select("id, kind, moved_on, item_id, qty, ref_no, pic, location_id, dest_location_id, recipient_name, employee_id, request_line_id, note, source, voided_at, void_reason, item:apd_items!inner(code, name, uom)");
+    .select("id, kind, moved_on, item_id, qty, ref_no, pic, location_id, warehouse_id, dest_location_id, recipient_name, employee_id, request_line_id, note, source, voided_at, void_reason, item:apd_items!inner(code, name, uom), warehouse:apd_warehouses!inner(name)");
   if (p.kind !== "semua") q = q.eq("kind", p.kind);
   if (p.item) q = q.eq("item_id", p.item);
+  if (p.warehouse) q = q.eq("warehouse_id", p.warehouse);
   if (site) q = q.or(`location_id.eq.${site},dest_location_id.eq.${site}`);
   if (p.q) q = q.or(`recipient_name.ilike.${like(p.q)},ref_no.ilike.${like(p.q)},pic.ilike.${like(p.q)}`);
   const [{ data, error }, names] = await Promise.all([q.order("moved_on", { ascending: false }).order("created_at", { ascending: false }).limit(limit), getLocationNames(supabase)]);
@@ -199,7 +221,7 @@ export async function listMoves(supabase: ServerClient, p: MoveParams, site: Sit
       qty: m.qty,
       refNo: m.ref_no,
       pic: m.pic,
-      warehouse: names.get(m.location_id) ?? "-",
+      warehouse: (m.warehouse as { name: string }).name,
       destSite: m.dest_location_id ? (names.get(m.dest_location_id) ?? "-") : null,
       recipient: m.recipient_name,
       employeeId: m.employee_id,
@@ -298,10 +320,13 @@ export type RequestRow = {
   outstanding: number;
   fulfillment: string;
   leadDays: number | null;
+  /** unit MR yang sudah diterima gudang (IN tertaut) */
+  received: number;
+  employeeId: string | null;
 };
 /** `mine`: hanya pengajuan buatan user atau untuk karyawan miliknya (APD saya). */
 export async function listRequests(supabase: ServerClient, p: RequestParams, site: SiteChoice, limit = 300, mine?: { userId: string; employeeIds: string[] }): Promise<RequestRow[]> {
-  let q = supabase.from("apd_requests").select("id, code, recipient_name, job_title, location_id, reason, status, source, mr_no, requested_on, approved_on, created_at");
+  let q = supabase.from("apd_requests").select("id, code, recipient_name, job_title, location_id, reason, status, source, mr_no, requested_on, approved_on, created_at, employee_id");
   if (site) q = q.eq("location_id", site);
   if (mine) q = q.or([`created_by.eq.${mine.userId}`, ...(mine.employeeIds.length ? [`employee_id.in.(${mine.employeeIds.join(",")})`] : [])].join(","));
   if (p.status === "terbuka") q = q.eq("status", "approved");
@@ -312,11 +337,15 @@ export async function listRequests(supabase: ServerClient, p: RequestParams, sit
   const ids = (data ?? []).map((r) => r.id);
   const [{ data: prog }, { data: lineCounts }] = await Promise.all([
     ids.length ? supabase.from("apd_request_progress").select("*").in("request_id", ids) : Promise.resolve({ data: [] }),
-    ids.length ? supabase.from("apd_request_lines").select("request_id").in("request_id", ids) : Promise.resolve({ data: [] as { request_id: string }[] }),
+    ids.length ? supabase.from("apd_request_line_progress").select("request_id, received").in("request_id", ids) : Promise.resolve({ data: [] as { request_id: string; received: number }[] }),
   ]);
   const pm = new Map((prog ?? []).map((x) => [x.request_id, x]));
   const lc = new Map<string, number>();
-  (lineCounts ?? []).forEach((l) => lc.set(l.request_id, (lc.get(l.request_id) ?? 0) + 1));
+  const rc = new Map<string, number>();
+  (lineCounts ?? []).forEach((l) => {
+    lc.set(l.request_id!, (lc.get(l.request_id!) ?? 0) + 1);
+    rc.set(l.request_id!, (rc.get(l.request_id!) ?? 0) + (l.received ?? 0));
+  });
   const rows = (data ?? []).map((r) => {
     const g = pm.get(r.id);
     return {
@@ -338,6 +367,8 @@ export async function listRequests(supabase: ServerClient, p: RequestParams, sit
       outstanding: g?.outstanding_total ?? 0,
       fulfillment: g?.fulfillment ?? "none",
       leadDays: g?.lead_days ?? null,
+      received: rc.get(r.id) ?? 0,
+      employeeId: r.employee_id,
     };
   });
   return p.status === "terbuka" ? rows.filter((r) => r.outstanding > 0) : rows;
@@ -355,6 +386,8 @@ export type RequestLineView = {
   supplied: number;
   outstanding: number;
   lastSupplyOn: string | null;
+  /** diterima gudang lewat MR (IN tertaut) */
+  received: number;
   note: string | null;
 };
 export type RequestDetail = {
@@ -415,7 +448,7 @@ export async function getRequestDetail(supabase: ServerClient, id: string, userI
   const lineIds = (lines ?? []).map((l) => l.id);
   const { data: mv } = lineIds.length ? await supabase.from("apd_stock_moves").select("id").in("request_line_id", lineIds) : { data: [] as { id: string }[] };
   const mvIds = new Set((mv ?? []).map((m) => m.id));
-  const moves = mvIds.size ? (await listMoves(supabase, { kind: "out", q: "", item: null }, null, 1000)).filter((m) => mvIds.has(m.id)) : [];
+  const moves = mvIds.size ? (await listMoves(supabase, { kind: "semua", q: "", item: null, warehouse: null }, null, 1000)).filter((m) => mvIds.has(m.id)) : [];
   const rows = approvals.data ?? [];
   const people = await getPeople(supabase, [r.created_by, ...rows.map((a) => a.approver_id)]);
   const steps: ApprovalStepView[] = rows.map((a) => {
@@ -476,6 +509,7 @@ export async function getRequestDetail(supabase: ServerClient, id: string, userI
         supplied: g?.supplied ?? 0,
         outstanding: g?.outstanding ?? l.qty,
         lastSupplyOn: g?.last_supply_on ?? null,
+        received: g?.received ?? 0,
         note: l.note,
       };
     }),
@@ -540,4 +574,30 @@ export async function listEmployeesBySite(supabase: ServerClient, siteIds: strin
   const out: Record<string, { value: string; label: string }[]> = {};
   (data ?? []).forEach((e) => (out[e.location_id] ??= []).push({ value: e.id, label: `${e.name} · ${e.code}` }));
   return out;
+}
+
+// ---------------------------------------------------------------- form IN (terima MR) / OUT (kirim) per pengajuan (28)
+export type OpsLine = { id: string; typeId: string; typeName: string; itemId: string | null; size: string | null; qty: number; supplied: number; outstanding: number; received: number };
+export type OpsRequest = { id: string; code: string; recipient: string; site: string; mrNo: string | null; lines: OpsLine[] };
+/** Pengajuan disetujui yang masih punya sisa kirim (OUT) atau sisa terima MR (IN). Satu sumber untuk kedua form. */
+export async function listOpsRequests(supabase: ServerClient, limit = 300): Promise<OpsRequest[]> {
+  const [{ data: reqs, error }, types, names] = await Promise.all([
+    supabase.from("apd_requests").select("id, code, recipient_name, location_id, mr_no").eq("status", "approved").order("approved_on", { ascending: false, nullsFirst: false }).limit(limit),
+    listApdTypes(supabase),
+    getLocationNames(supabase),
+  ]);
+  if (error) throw error;
+  const ids = (reqs ?? []).map((r) => r.id);
+  const { data: prog } = ids.length ? await supabase.from("apd_request_line_progress").select("*").in("request_id", ids).order("line_no") : { data: [] };
+  const tn = new Map(types.map((t) => [t.id, t.name]));
+  const byReq = new Map<string, OpsLine[]>();
+  (prog ?? []).forEach((l) =>
+    byReq.set(l.request_id!, [
+      ...(byReq.get(l.request_id!) ?? []),
+      { id: l.line_id!, typeId: l.type_id!, typeName: tn.get(l.type_id!) ?? "-", itemId: l.item_id, size: l.size, qty: l.qty ?? 0, supplied: l.supplied ?? 0, outstanding: l.outstanding ?? 0, received: l.received ?? 0 },
+    ]),
+  );
+  return (reqs ?? [])
+    .map((r) => ({ id: r.id, code: r.code, recipient: r.recipient_name, site: names.get(r.location_id) ?? "-", mrNo: r.mr_no, lines: byReq.get(r.id) ?? [] }))
+    .filter((r) => r.lines.some((l) => l.outstanding > 0 || (r.mrNo && l.received < l.qty)));
 }

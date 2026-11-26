@@ -9,6 +9,7 @@ keputusan sendiri **[P#]**.
 | A | Skema DB, RPC, uji, konversi data Excel (master, periodik, stok awal, IN, OUT, MR) | **selesai** |
 | B | UI: `/apd` (ringkasan, stok, mutasi, karyawan, periodik, barang), pengajuan + approval + cetak, `/apd/saya` | **selesai** |
 | C | Data per karyawan (ukuran + riwayat dari sheet Populasi Manpower) + tautan riwayat lama | **selesai** (NIK sementara, U2 diubah) |
+| D | Gudang di Master Data + alur MR: Lengkapi MR → Terima MR (IN) → Kirim (OUT) per pengajuan; quick action & tab Pengajuan di monitoring | **selesai** |
 
 ## Isi sumber (ringkas)
 
@@ -69,3 +70,10 @@ tidak ikut dihitung di sheet stok Excel (stok akhir sama, 0). 95 baris OUT menja
 | P17 | Kolom Populasi → jenis APD: Kemeja/Seragam Two Tone → Kemeja Safety, Kaos/Kaos Polo → Kaos Safety, Jeans/Seragam Jeans → Celana, Kedok Las → Face Shield, Kacamata/Safety Mask/Earplug/Ear Muff/Padlock/Safety Gloves/Vest sesuai nama. Kolom Duedate/Days Left/Warn Days Excel diabaikan (dihitung ulang dari Matrix APD) | Satu sumber jatuh tempo |
 | P18 | Nama ALL CAPS dirapikan (kata <= 3 huruf seperti PJO/GL/WHS tetap); jabatan kosong = "Belum diisi"; tanggal supply berupa teks ("23 December 2025") dibaca | Data Excel tidak seragam |
 | P19 | Tautan manual (`apd_unlinked` + `apd_link_recipient`): usulan = karyawan site yang sama dengan kemiripan nama (pg_trgm) >= 0,3; nama bukan karyawan (vendor) boleh dibiarkan | Setengah nama di OUT/MR ditulis singkat |
+| P20 | (user) Gudang = data sendiri `apd_warehouses`, TERPISAH dari site (lokasi fisik opsional, untuk batas akses site). Dikelola admin di Master Data → Gudang APD. Stok dihitung per gudang (`apd_stock_moves.warehouse_id`); data lama dipindah otomatis ke "Gudang <nama lokasi>" | Site tidak selalu punya gudang; gudang bisa di lokasi lain |
+| P21 | (user) OUT utama berbasis pengajuan (`apd_request_moves('out')`: pilih gudang asal, banyak baris sekaligus, satu notifikasi gabungan). OUT non-karyawan, IN tanpa MR, retur, penyesuaian tetap lewat "Mutasi lain" | Excel punya pengeluaran ke vendor/tim |
+| P22 | (user) Penerimaan MR boleh sebagian: IN menunjuk baris pengajuan (`request_line_id`), sisa terima = qty − diterima; tidak boleh melebihi qty MR | Barang vendor bisa datang bertahap |
+| P23 | "Lengkapi MR" = nomor MR sistem perusahaan pada pengajuan DISETUJUI (`apd_request_set_mr`); syarat Terima MR. Status MR turunan: Belum ada MR / menunggu barang / sebagian / lengkap. MR yang sudah ada penerimaan tidak bisa dikosongkan | MR dibuat setelah pengajuan disetujui |
+| P24 | Barang per baris dipilih saat IN/OUT (default: barang di pengajuan, atau satu-satunya barang jenis itu dengan ukuran sama). Form OUT menampilkan stok gudang terpilih dan menolak bila kurang | Pengajuan dari karyawan menyebut jenis + ukuran, bukan kode |
+| P25 | Daftar Pengajuan pindah ke tab `/apd?tab=pengajuan` (aksi: Edit, Lengkapi/Ubah MR, Terima MR, Kirim); `/apd/pengajuan` dialihkan (Karyawan → APD Saya). Quick action di header monitoring: IN Barang, OUT Barang, Ajukan APD (langsung ke form), Mutasi lain, Impor Data | Permintaan user |
+| P26 | Impor data lama memilih gudang tujuan stok (`apd_import_legacy(..., p_warehouse)`); kode site HO tetap dipetakan sebagai site karyawan Head Office | Gudang ≠ site |

@@ -360,14 +360,14 @@ isOneToOne: false
                   ]
                 },"apd_requests": {
                   Row: {
-                    "approved_on": string | null,"cancel_note": string | null,"code": string,"company_code": string,"created_at": string,"created_by": string | null,"deduction_ack": boolean,"employee_id": string | null,"evidence_count": number,"explanation": string | null,"id": string,"incident_on": string | null,"job_title": string | null,"last_received_on": string | null,"location_id": string,"mr_no": string | null,"negligence": boolean,"reason": string,"recipient_name": string,"requested_on": string | null,"search_text": string | null,"source": string,"status": string,"updated_at": string
+                    "approved_on": string | null,"cancel_note": string | null,"code": string,"company_code": string,"created_at": string,"created_by": string | null,"deduction_ack": boolean,"employee_id": string | null,"evidence_count": number,"explanation": string | null,"id": string,"incident_on": string | null,"job_title": string | null,"last_received_on": string | null,"location_id": string,"mr_no": string | null,"mr_set_at": string | null,"negligence": boolean,"reason": string,"recipient_name": string,"requested_on": string | null,"search_text": string | null,"source": string,"status": string,"updated_at": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "approved_on"?: string | null,"cancel_note"?: string | null,"code": string,"company_code": string,"created_at"?: string,"created_by"?: string | null,"deduction_ack"?: boolean,"employee_id"?: string | null,"evidence_count"?: number,"explanation"?: string | null,"id"?: string,"incident_on"?: string | null,"job_title"?: string | null,"last_received_on"?: string | null,"location_id": string,"mr_no"?: string | null,"negligence"?: boolean,"reason": string,"recipient_name": string,"requested_on"?: string | null,"search_text"?: string | null,"source"?: string,"status"?: string,"updated_at"?: string
+                    "approved_on"?: string | null,"cancel_note"?: string | null,"code": string,"company_code": string,"created_at"?: string,"created_by"?: string | null,"deduction_ack"?: boolean,"employee_id"?: string | null,"evidence_count"?: number,"explanation"?: string | null,"id"?: string,"incident_on"?: string | null,"job_title"?: string | null,"last_received_on"?: string | null,"location_id": string,"mr_no"?: string | null,"mr_set_at"?: string | null,"negligence"?: boolean,"reason": string,"recipient_name": string,"requested_on"?: string | null,"search_text"?: string | null,"source"?: string,"status"?: string,"updated_at"?: string
                   }
                   Update: {
-                    "approved_on"?: string | null,"cancel_note"?: string | null,"code"?: string,"company_code"?: string,"created_at"?: string,"created_by"?: string | null,"deduction_ack"?: boolean,"employee_id"?: string | null,"evidence_count"?: number,"explanation"?: string | null,"id"?: string,"incident_on"?: string | null,"job_title"?: string | null,"last_received_on"?: string | null,"location_id"?: string,"mr_no"?: string | null,"negligence"?: boolean,"reason"?: string,"recipient_name"?: string,"requested_on"?: string | null,"search_text"?: string | null,"source"?: string,"status"?: string,"updated_at"?: string
+                    "approved_on"?: string | null,"cancel_note"?: string | null,"code"?: string,"company_code"?: string,"created_at"?: string,"created_by"?: string | null,"deduction_ack"?: boolean,"employee_id"?: string | null,"evidence_count"?: number,"explanation"?: string | null,"id"?: string,"incident_on"?: string | null,"job_title"?: string | null,"last_received_on"?: string | null,"location_id"?: string,"mr_no"?: string | null,"mr_set_at"?: string | null,"negligence"?: boolean,"reason"?: string,"recipient_name"?: string,"requested_on"?: string | null,"search_text"?: string | null,"source"?: string,"status"?: string,"updated_at"?: string
                   }
                   Relationships: [
                     {
@@ -394,14 +394,14 @@ isOneToOne: false
                   ]
                 },"apd_stock_moves": {
                   Row: {
-                    "company_code": string,"created_at": string,"created_by": string | null,"dest_location_id": string | null,"employee_id": string | null,"id": string,"item_id": string,"kind": string,"location_id": string,"moved_on": string,"note": string | null,"pic": string | null,"qty": number,"recipient_name": string | null,"ref_no": string | null,"request_line_id": string | null,"source": string,"updated_at": string,"void_reason": string | null,"voided_at": string | null
+                    "company_code": string,"created_at": string,"created_by": string | null,"dest_location_id": string | null,"employee_id": string | null,"id": string,"item_id": string,"kind": string,"location_id": string | null,"moved_on": string,"note": string | null,"pic": string | null,"qty": number,"recipient_name": string | null,"ref_no": string | null,"request_line_id": string | null,"source": string,"updated_at": string,"void_reason": string | null,"voided_at": string | null,"warehouse_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "company_code": string,"created_at"?: string,"created_by"?: string | null,"dest_location_id"?: string | null,"employee_id"?: string | null,"id"?: string,"item_id": string,"kind": string,"location_id": string,"moved_on": string,"note"?: string | null,"pic"?: string | null,"qty": number,"recipient_name"?: string | null,"ref_no"?: string | null,"request_line_id"?: string | null,"source"?: string,"updated_at"?: string,"void_reason"?: string | null,"voided_at"?: string | null
+                    "company_code": string,"created_at"?: string,"created_by"?: string | null,"dest_location_id"?: string | null,"employee_id"?: string | null,"id"?: string,"item_id": string,"kind": string,"location_id"?: string | null,"moved_on": string,"note"?: string | null,"pic"?: string | null,"qty": number,"recipient_name"?: string | null,"ref_no"?: string | null,"request_line_id"?: string | null,"source"?: string,"updated_at"?: string,"void_reason"?: string | null,"voided_at"?: string | null,"warehouse_id": string
                   }
                   Update: {
-                    "company_code"?: string,"created_at"?: string,"created_by"?: string | null,"dest_location_id"?: string | null,"employee_id"?: string | null,"id"?: string,"item_id"?: string,"kind"?: string,"location_id"?: string,"moved_on"?: string,"note"?: string | null,"pic"?: string | null,"qty"?: number,"recipient_name"?: string | null,"ref_no"?: string | null,"request_line_id"?: string | null,"source"?: string,"updated_at"?: string,"void_reason"?: string | null,"voided_at"?: string | null
+                    "company_code"?: string,"created_at"?: string,"created_by"?: string | null,"dest_location_id"?: string | null,"employee_id"?: string | null,"id"?: string,"item_id"?: string,"kind"?: string,"location_id"?: string | null,"moved_on"?: string,"note"?: string | null,"pic"?: string | null,"qty"?: number,"recipient_name"?: string | null,"ref_no"?: string | null,"request_line_id"?: string | null,"source"?: string,"updated_at"?: string,"void_reason"?: string | null,"voided_at"?: string | null,"warehouse_id"?: string
                   }
                   Relationships: [
                     {
@@ -427,6 +427,12 @@ isOneToOne: false
       columns: ["request_line_id"]
 isOneToOne: false
       referencedRelation: "apd_request_lines"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "apd_stock_moves_warehouse_id_fkey"
+      columns: ["warehouse_id"]
+isOneToOne: false
+      referencedRelation: "apd_warehouses"
       referencedColumns: ["id"]
     }
                   ]
@@ -459,6 +465,34 @@ isOneToOne: false
                     
                   ]
                 },"apd_types_logs": {
+                  Row: {
+                    "action": string,"actor_id": string | null,"at": string,"changes": Json | null,"id": number,"note": string | null,"record_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "action": string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id": string
+                  }
+                  Update: {
+                    "action"?: string,"actor_id"?: string | null,"at"?: string,"changes"?: Json | null,"id"?: never,"note"?: string | null,"record_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"apd_warehouses": {
+                  Row: {
+                    "company_code": string,"created_at": string,"description": string | null,"id": string,"is_active": boolean,"location_id": string | null,"name": string,"sort_order": number,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "company_code": string,"created_at"?: string,"description"?: string | null,"id"?: string,"is_active"?: boolean,"location_id"?: string | null,"name": string,"sort_order"?: number,"updated_at"?: string
+                  }
+                  Update: {
+                    "company_code"?: string,"created_at"?: string,"description"?: string | null,"id"?: string,"is_active"?: boolean,"location_id"?: string | null,"name"?: string,"sort_order"?: number,"updated_at"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"apd_warehouses_logs": {
                   Row: {
                     "action": string,"actor_id": string | null,"at": string,"changes": Json | null,"id": number,"note": string | null,"record_id": string
                   }
@@ -2495,7 +2529,7 @@ isOneToOne: false
           Views: {
             "apd_request_line_progress": {
                   Row: {
-                    "item_id": string | null,"last_supply_on": string | null,"line_id": string | null,"line_no": number | null,"outstanding": number | null,"qty": number | null,"request_id": string | null,"size": string | null,"supplied": number | null,"type_id": string | null
+                    "item_id": string | null,"last_supply_on": string | null,"line_id": string | null,"line_no": number | null,"outstanding": number | null,"qty": number | null,"received": number | null,"request_id": string | null,"size": string | null,"supplied": number | null,"type_id": string | null
                   }
                   ComputedFields: never
                   Relationships: [
@@ -2572,13 +2606,16 @@ isOneToOne: false
             }[]
                            },
 "apd_import_legacy":
-{ Args: { "p": Json,"p_company": string,"p_sites": Json }; Returns: Json
+{ Args: { "p": Json,"p_company": string,"p_sites": Json,"p_warehouse": string }; Returns: Json
                            },
 "apd_import_population":
 { Args: { "p": Json,"p_company": string,"p_sites": Json }; Returns: Json
                            },
 "apd_item_save":
 { Args: { "p": Json,"p_id": string }; Returns: Json
+                           },
+"apd_line_received":
+{ Args: { "p_line": string }; Returns: number
                            },
 "apd_line_supplied":
 { Args: { "p_line": string }; Returns: number
@@ -2622,11 +2659,17 @@ isOneToOne: false
         isOneToOne: true
         isSetofReturn: false
       } },
+"apd_request_moves":
+{ Args: { "p": Json,"p_kind": string }; Returns: Json
+                           },
 "apd_request_on_approval":
 { Args: { "p_id": string,"p_outcome": string }; Returns: undefined
                            },
 "apd_request_save":
 { Args: { "p": Json,"p_id": string }; Returns: Json
+                           },
+"apd_request_set_mr":
+{ Args: { "p_id": string,"p_mr_no": string }; Returns: Json
                            },
 "apd_request_sync_evidence":
 { Args: { "p_id": string }; Returns: Json
@@ -2637,13 +2680,18 @@ isOneToOne: false
 "apd_size_set":
 { Args: { "p_employee": string,"p_size": string,"p_type": string }; Returns: Json
                            },
+"apd_stock_by_warehouse":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "item_id": string,"stock": number,"warehouse_id": string
+            }[]
+                           },
 "apd_stock_overview":
-{ Args: { "p_location"?: string }; Returns: {
+{ Args: { "p_warehouse"?: string }; Returns: {
               "adjust_qty": number,"brand": string,"code": string,"in_qty": number,"is_active": boolean,"item_id": string,"last_move_on": string,"min_stock": number,"name": string,"opening": number,"out_qty": number,"outstanding": number,"return_qty": number,"size": string,"stock": number,"type_id": string,"type_name": string,"uom": string
             }[]
                            },
 "apd_stock_qty":
-{ Args: { "p_item": string,"p_location": string }; Returns: number
+{ Args: { "p_item": string,"p_warehouse": string }; Returns: number
                            },
 "apd_summary":
 { Args: { "p_location"?: string }; Returns: Json
@@ -2656,6 +2704,24 @@ isOneToOne: false
               "location_id": string,"moves": number,"name": string,"requests": number,"suggest_id": string,"suggest_name": string,"suggest_score": number
             }[]
                            },
+"apd_warehouse_ok":
+{ Args: { "p_warehouse": string }; Returns: {
+              "company_code": string,
+"created_at": string,
+"description": string | null,
+"id": string,
+"is_active": boolean,
+"location_id": string | null,
+"name": string,
+"sort_order": number,
+"updated_at": string
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "apd_warehouses"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
 "app_admin_ids":
 { Args: Record<PropertyKey, never>; Returns: (string)[]
                            },

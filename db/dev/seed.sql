@@ -1101,12 +1101,14 @@ declare
   v_kar uuid := (select id from public.profiles where email = 'karyawan@demo.lourdes.test');
   v_rudi uuid := (select id from __APP__.employees where code = 'GMI-0017');
   v_agus uuid := (select id from __APP__.employees where code = 'GMI-0024');
-  v_req uuid; v_line uuid; v_tpl uuid;
+  v_req uuid; v_line uuid; v_tpl uuid; v_wh uuid;
 begin
   if v_ho is null or v_site is null or v_rudi is null or exists (select 1 from __APP__.apd_items) then return; end if;
   alter table __APP__.apd_items disable trigger apd_items_log;
   alter table __APP__.apd_stock_moves disable trigger apd_stock_moves_log;
   alter table __APP__.apd_requests disable trigger apd_requests_log;
+  insert into __APP__.apd_warehouses (company_code, name, location_id, description)
+  values ('GMI', 'Gudang HO', v_ho, 'Gudang APD pusat (DEMO)') returning id into v_wh;
 
   insert into __APP__.apd_items (code, name, type_id, brand, size, uom, min_stock)
   select x.code, x.name, t.id, x.brand, x.size, x.uom, x.min_stock
@@ -1128,18 +1130,18 @@ begin
     ) as x(code, name, type, brand, size, uom, min_stock) join __APP__.apd_types t on t.code = x.type;
 
   -- stok awal (SO) di gudang HO + barang masuk
-  insert into __APP__.apd_stock_moves (company_code, location_id, kind, item_id, qty, moved_on, ref_no, pic, created_by)
-  select 'GMI', v_ho, 'opening', i.id, x.qty, current_date - 60, 'SO-2026', 'Gudang HO', v_hse
+  insert into __APP__.apd_stock_moves (company_code, warehouse_id, location_id, kind, item_id, qty, moved_on, ref_no, pic, created_by)
+  select 'GMI', v_wh, v_ho, 'opening', i.id, x.qty, current_date - 60, 'SO-2026', 'Gudang HO', v_hse
     from (values ('SS-01-40', 2), ('SS-01-41', 1), ('SS-01-42', 1), ('KM-01-03', 5), ('KM-01-04', 4), ('KS-01-03', 10), ('KS-01-04', 4),
                  ('SG-01', 5), ('HLM-01', 11), ('HLM-04', 4), ('MSK-01', 17), ('SRT-02', 75)) x(code, qty)
     join __APP__.apd_items i on i.code = x.code;
-  insert into __APP__.apd_stock_moves (company_code, location_id, kind, item_id, qty, moved_on, ref_no, pic, created_by)
-  select 'GMI', v_ho, 'in', i.id, x.qty, current_date - 20, 'GMI/MR/X/26/HSE/707', 'Gudang HO', v_hse
+  insert into __APP__.apd_stock_moves (company_code, warehouse_id, location_id, kind, item_id, qty, moved_on, ref_no, pic, created_by)
+  select 'GMI', v_wh, v_ho, 'in', i.id, x.qty, current_date - 20, 'GMI/MR/X/26/HSE/707', 'Gudang HO', v_hse
     from (values ('KM-01-03', 42), ('KS-01-03', 76), ('PDL-01', 8)) x(code, qty) join __APP__.apd_items i on i.code = x.code;
 
   -- riwayat penerimaan karyawan demo (OUT tanpa pengajuan, sebelum sistem)
-  insert into __APP__.apd_stock_moves (company_code, location_id, kind, item_id, qty, moved_on, pic, dest_location_id, employee_id, recipient_name, created_by)
-  select 'GMI', v_ho, 'out', i.id, x.qty, current_date - x.ago, 'Gudang HO', v_site, x.emp, e.name, v_hse
+  insert into __APP__.apd_stock_moves (company_code, warehouse_id, location_id, kind, item_id, qty, moved_on, pic, dest_location_id, employee_id, recipient_name, created_by)
+  select 'GMI', v_wh, v_ho, 'out', i.id, x.qty, current_date - x.ago, 'Gudang HO', v_site, x.emp, e.name, v_hse
     from (values ('SS-01-41', 1, 330, v_rudi), ('HLM-01', 1, 200, v_rudi), ('KS-01-03', 2, 190, v_rudi), ('SG-01', 1, 60, v_rudi),
                  ('SS-01-42', 1, 30, v_agus), ('KM-01-04', 2, 100, v_agus)) x(code, qty, ago, emp)
     join __APP__.apd_items i on i.code = x.code join __APP__.employees e on e.id = x.emp;
@@ -1157,9 +1159,9 @@ begin
   insert into __APP__.apd_request_lines (request_id, line_no, type_id, item_id, size, qty)
   select v_req, 1, t.id, i.id, 'L', 2 from __APP__.apd_types t join __APP__.apd_items i on i.code = 'KS-01-03' where t.code = 'uniform_tshirt'
   returning id into v_line;
-  insert into __APP__.apd_stock_moves (company_code, location_id, kind, item_id, qty, moved_on, ref_no, pic, dest_location_id, employee_id,
+  insert into __APP__.apd_stock_moves (company_code, warehouse_id, location_id, kind, item_id, qty, moved_on, ref_no, pic, dest_location_id, employee_id,
                                        recipient_name, request_line_id, created_by)
-  select 'GMI', v_ho, 'out', i.id, 1, current_date - 2, 'BAST-DEMO-01', 'Gudang HO', v_site, v_rudi, 'Rudi Hartono', v_line, v_hse
+  select 'GMI', v_wh, v_ho, 'out', i.id, 1, current_date - 2, 'BAST-DEMO-01', 'Gudang HO', v_site, v_rudi, 'Rudi Hartono', v_line, v_hse
     from __APP__.apd_items i where i.code = 'KS-01-03';
 
   -- draf (rusak, Rudi): belum ada foto bukti

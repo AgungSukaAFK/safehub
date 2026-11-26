@@ -4,7 +4,7 @@
 import { revalidatePath } from "next/cache";
 import { fail, invalid, NOT_ALLOWED, ok, type FormState } from "@/lib/action-state";
 import { APD_IMPORT_MAX_BYTES, parseApdPopulation, parseApdWorkbook, type ApdImportSummary, type ApdPopulationSummary } from "@/lib/apd-excel";
-import { itemSchema, moveSchema, requestSchema, typeSchema } from "@/lib/apd-rules";
+import { itemSchema, moveSchema, requestMovesSchema, requestSchema, typeSchema } from "@/lib/apd-rules";
 import { actionAccess } from "@/lib/auth";
 import { cctv } from "@/lib/cctv";
 import { k3DbError } from "@/lib/k3-actions";
@@ -203,6 +203,8 @@ export async function commitApdImportAction(formData: FormData): Promise<FormSta
   }
   if (typeof sites !== "object" || !Object.values(sites).every((v) => typeof v === "string" && isUuid(v))) return fail("Pilih lokasi untuk setiap site.");
   const company = String(formData.get("company") ?? "GMI");
+  const warehouse = String(formData.get("warehouse") ?? "");
+  if (!isUuid(warehouse)) return fail("Pilih gudang tujuan stok.");
   let wb: Awaited<ReturnType<typeof readWorkbook>>;
   try {
     wb = await readWorkbook(formData);
@@ -210,7 +212,7 @@ export async function commitApdImportAction(formData: FormData): Promise<FormSta
     return fail(e instanceof Error ? e.message : "File tidak bisa dibaca.");
   }
   const supabase = await createClient();
-  const { data, error } = await supabase.rpc("apd_import_legacy", { p_company: company, p_sites: sites, p: wb.payload });
+  const { data, error } = await supabase.rpc("apd_import_legacy", { p_company: company, p_sites: sites, p: wb.payload, p_warehouse: warehouse });
   if (error) return k3DbError(error);
   const r = data as Record<string, number>;
   await cctv({
@@ -287,4 +289,33 @@ export async function linkRecipientAction(name: string, locationId: string, empl
   const r = data as { linked_moves: number; linked_requests: number };
   refresh();
   return ok(`${name} ditautkan: ${r.linked_moves} pengiriman, ${r.linked_requests} pengajuan.`);
+}
+
+// ---------------------------------------------------------------- MR & IN/OUT per pengajuan (28)
+export async function setMrAction(id: string, mrNo: string): Promise<FormState> {
+  if (!isUuid(id) || !(await actionAccess("viewer"))) return NOT_ALLOWED;
+  const v = mrNo.trim().slice(0, 60);
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("apd_request_set_mr", { p_id: id, p_mr_no: v });
+  if (error) return k3DbError(error);
+  refresh(id);
+  return ok(v ? `Nomor MR ${v} disimpan.` : "Nomor MR dihapus.");
+}
+
+/** kind in = terima barang MR ke gudang; out = kirim ke karyawan dari gudang. Semua baris satu transaksi. */
+export async function requestMovesAction(kind: "in" | "out", values: unknown): Promise<FormState> {
+  if (!["in", "out"].includes(kind) || !(await actionAccess("viewer"))) return NOT_ALLOWED;
+  const parsed = requestMovesSchema.safeParse(values);
+  if (!parsed.success) return invalid(parsed.error);
+  const v = parsed.data;
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("apd_request_moves", {
+    p_kind: kind,
+    p: { ...v, ref_no: blank(v.ref_no), pic: blank(v.pic), note: blank(v.note), lines: v.lines.filter((l) => l.qty > 0) },
+  });
+  if (error) return k3DbError(error);
+  await sendPushForNotifications(notificationIds(data));
+  const r = data as { count: number; units: number };
+  refresh(v.request_id);
+  return ok(kind === "in" ? `Barang MR diterima: ${r.units} unit (${r.count} baris). Stok gudang bertambah.` : `APD dikirim: ${r.units} unit (${r.count} baris). Stok berkurang, pengajuan & jatuh tempo karyawan diperbarui.`, r);
 }

@@ -117,11 +117,11 @@ export function MoveSheet({
     <QuickSheet
       trigger={trigger}
       eyebrow="Mutasi stok APD"
-      title={title ?? "Catat Mutasi Stok"}
-      description={forLine ? "Pengiriman untuk pengajuan: penerima dan site tujuan diambil dari pengajuan. Stok gudang tidak boleh minus." : "Stok dihitung dari semua mutasi. Pengeluaran ditolak bila stok gudang tidak cukup."}
+      title={title ?? "Mutasi Lain"}
+      description={forLine ? "Pengiriman untuk pengajuan: penerima dan site tujuan diambil dari pengajuan. Stok gudang tidak boleh minus." : "Untuk stok awal, IN tanpa MR, OUT bukan untuk pengajuan (vendor/tim), retur, dan penyesuaian. Pengeluaran ditolak bila stok gudang tidak cukup."}
       fields={[
         ...(forLine ? [] : [{ name: "kind", label: "Jenis mutasi", type: "select" as const, required: true, options: MOVE_KINDS.map((k) => ({ value: k, label: MOVE_KIND[k].label, description: MOVE_KIND[k].hint })) }]),
-        { name: "location_id", label: "Gudang", type: "select", options: warehouses, required: true },
+        { name: "warehouse_id", label: "Gudang", type: "select", options: warehouses, required: true },
         { name: "item_id", label: "Barang", type: "select", options: items, required: true },
         { name: "qty", label: "Jumlah", type: "number", required: true, hint: forLine ? undefined : "Penyesuaian: angka negatif untuk mengurangi stok." },
         { name: "moved_on", label: "Tanggal", type: "date", required: true },
@@ -136,7 +136,7 @@ export function MoveSheet({
             ]),
         { name: "note", label: "Catatan", type: "textarea", maxLength: 500, hint: "Wajib (min. 10 karakter) untuk penyesuaian." },
       ]}
-      initial={{ kind: forLine ? "out" : defaultKind, location_id: defaultWarehouse ?? warehouses[0]?.value ?? "", moved_on: todayWib() }}
+      initial={{ kind: forLine ? "out" : defaultKind, warehouse_id: defaultWarehouse ?? (warehouses.length === 1 ? warehouses[0].value : ""), moved_on: todayWib() }}
       onSubmit={(v) => saveMoveAction({ ...v, kind: forLine ? "out" : v.kind, request_line_id: lineId ?? null })}
     />
   );

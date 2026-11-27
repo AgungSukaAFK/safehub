@@ -9,9 +9,9 @@ export const APD_TAB_LABELS: Record<ApdTab, string> = {
   ringkasan: "Ringkasan",
   pengajuan: "Pengajuan",
   stok: "Stok",
-  mutasi: "Mutasi",
-  karyawan: "Jatuh Tempo Karyawan",
-  periodik: "Masa Periodik",
+  mutasi: "In / Out",
+  karyawan: "APD Karyawan",
+  periodik: "Matrix APD",
   barang: "Barang",
 };
 
@@ -74,7 +74,7 @@ export const MOVE_FILTERS = ["semua", ...MOVE_KINDS] as const;
 // ---------------------------------------------------------------- jatuh tempo (P9)
 export const HOLDING_STATE: Record<string, StatusDef> = {
   expired: { label: "Lewat Jatuh Tempo", color: "red" },
-  due_soon: { label: "Segera Ganti", color: "amber" },
+  due_soon: { label: "Segera MR", color: "amber" },
   ok: { label: "Aman", color: "green" },
 };
 export const HOLDING_FILTERS = ["semua", "expired", "due_soon", "ok"] as const;

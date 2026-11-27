@@ -28,7 +28,7 @@ export const AUDIT_ENTITIES: Record<string, { label: string; href?: (id: string)
   ko_register: { label: "Register KO", href: () => "/ko" },
   trainings: { label: "Pelatihan", href: (id) => `/pelatihan/${id}` },
   apd_requests: { label: "Pengajuan APD", href: (id) => `/apd/pengajuan/${id}` },
-  apd_stock_moves: { label: "Mutasi APD", href: (id) => `/apd?tab=mutasi#mutasi-${id}` },
+  apd_stock_moves: { label: "In / Out APD", href: (id) => `/apd?tab=mutasi#mutasi-${id}` },
   apd_items: { label: "Barang APD", href: () => "/apd?tab=barang" },
   apd_types: { label: "Jenis APD (periodik)", href: () => "/apd?tab=periodik" },
   site_permits: { label: "Permit site", href: () => "/manpower" },

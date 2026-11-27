@@ -35,15 +35,15 @@ export function ApdTypeSheet({ trigger, type }: { trigger: ReactElement; type?: 
   return (
     <QuickSheet
       trigger={trigger}
-      eyebrow="Masa periodik APD"
+      eyebrow="Matrix APD"
       title={type ? `Ubah ${type.name}` : "Tambah Jenis APD"}
-      description="Jatuh tempo karyawan = tanggal terakhir menerima + masa periodik. Status 'Segera Ganti' mulai sejumlah hari peringatan sebelum jatuh tempo."
+      description="Jatuh tempo karyawan = tanggal terakhir menerima + periodik Matrix APD. Status 'Segera MR' mulai sejumlah hari peringatan sebelum jatuh tempo."
       fields={[
         ...(type ? [] : [{ name: "code", label: "Kode", required: true, hint: "Huruf kecil, angka, garis bawah. Tidak bisa diubah.", maxLength: 41 }]),
         { name: "name", label: "Nama jenis", required: true, maxLength: 80 },
         { name: "spec", label: "Standar / spesifikasi", placeholder: "mis. ANSI Z41", maxLength: 200 },
         { name: "tracked", label: "Lacak jatuh tempo per karyawan", type: "select", options: YES_NO, required: true },
-        { name: "interval_days", label: "Masa periodik (hari)", type: "number", hint: "1x/tahun = 365 · 2x/tahun = 182 · 4x/tahun = 91 · 3 tahun = 1095" },
+        { name: "interval_days", label: "Periodik penggantian (hari)", type: "number", hint: "1x/tahun = 365 · 2x/tahun = 182 · 4x/tahun = 91 · 3 tahun = 1095" },
         { name: "interval_label", label: "Label periodik (Matrix APD)", placeholder: "mis. 2x setahun", maxLength: 60 },
         { name: "warn_days", label: "Peringatan sebelum jatuh tempo (hari)", type: "number", required: true },
         { name: "size_kind", label: "Jenis ukuran", type: "select", options: SIZE_KINDS.map((k) => ({ value: k, label: SIZE_KIND_LABELS[k] })), required: true },
@@ -116,11 +116,11 @@ export function MoveSheet({
   return (
     <QuickSheet
       trigger={trigger}
-      eyebrow="Mutasi stok APD"
-      title={title ?? "Mutasi Lain"}
+      eyebrow="In / Out stok APD"
+      title={title ?? "In / Out Lain"}
       description={forLine ? "Pengiriman untuk pengajuan: penerima dan site tujuan diambil dari pengajuan. Stok gudang tidak boleh minus." : "Untuk stok awal, IN tanpa MR, OUT bukan untuk pengajuan (vendor/tim), retur, dan penyesuaian. Pengeluaran ditolak bila stok gudang tidak cukup."}
       fields={[
-        ...(forLine ? [] : [{ name: "kind", label: "Jenis mutasi", type: "select" as const, required: true, options: MOVE_KINDS.map((k) => ({ value: k, label: MOVE_KIND[k].label, description: MOVE_KIND[k].hint })) }]),
+        ...(forLine ? [] : [{ name: "kind", label: "Jenis transaksi", type: "select" as const, required: true, options: MOVE_KINDS.map((k) => ({ value: k, label: MOVE_KIND[k].label, description: MOVE_KIND[k].hint })) }]),
         { name: "warehouse_id", label: "Gudang", type: "select", options: warehouses, required: true },
         { name: "item_id", label: "Barang", type: "select", options: items, required: true },
         { name: "qty", label: "Jumlah", type: "number", required: true, hint: forLine ? undefined : "Penyesuaian: angka negatif untuk mengurangi stok." },
@@ -148,8 +148,8 @@ export function VoidMoveButton({ id, label }: { id: string; label: string }) {
   return (
     <ConfirmDialog
       trigger={<button type="button" className="text-xs text-red-700 underline underline-offset-2 dark:text-red-400">Batalkan</button>}
-      title={`Batalkan mutasi ${label}?`}
-      description="Mutasi tidak dihapus: tetap tercatat dengan alasan, tetapi tidak dihitung dalam stok. Tulis alasan (minimal 10 karakter)."
+      title={`Batalkan transaksi ${label}?`}
+      description="Transaksi tidak dihapus: tetap tercatat dengan alasan, tetapi tidak dihitung dalam stok. Tulis alasan (minimal 10 karakter)."
       confirmText="Ya, batalkan"
       destructive
       confirmDisabled={reason.trim().length < 10}

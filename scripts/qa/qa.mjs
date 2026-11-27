@@ -428,17 +428,20 @@ try {
     await loginPage(page, BASE, USER("scm"));
     await visit(page, "/apd?tab=stok", 2500);
     const as = await page.text();
-    check("apd: stok per barang (KS-01-03) + quick action IN/OUT/Ajukan + mutasi lain", as.includes("Stok per Barang") && as.includes("KS-01-03") && as.includes("IN Barang") && as.includes("OUT Barang") && as.includes("Ajukan APD") && as.includes("Mutasi lain"), as.slice(0, 160));
+    check("apd: stok per barang (KS-01-03) + quick action IN/OUT/Ajukan + in/out lain", as.includes("Stok per Barang") && as.includes("KS-01-03") && as.includes("IN Barang") && as.includes("OUT Barang") && as.includes("Ajukan APD") && as.includes("In / Out lain"), as.slice(0, 160));
     await visit(page, "/apd?tab=pengajuan", 2500);
     const ap = await page.text();
     check("apd: tab Pengajuan di monitoring + aksi Lengkapi MR / Kirim", ap.includes("Pengajuan APD") && /Lengkapi MR|Ubah MR/.test(ap) && ap.includes("Kirim"), ap.slice(0, 160));
     await visit(page, "/apd/pengajuan", 2500);
     check("apd: /apd/pengajuan dialihkan ke tab Pengajuan (staf)", (await page.eval("location.search")).includes("tab=pengajuan"), await page.eval("location.href"));
+    await visit(page, "/apd", 2500);
+    const ar = await page.text();
+    check("apd: ringkasan mendahulukan daftar lewat / segera jatuh tempo (Rudi)", ar.includes("Sudah Lewat Jatuh Tempo") && ar.includes("Segera Jatuh Tempo (Segera MR)") && ar.includes("Rudi Hartono") && ar.indexOf("Segera Jatuh Tempo") < ar.indexOf("Stok tersedia"), ar.slice(0, 160));
     await visit(page, "/apd?tab=karyawan", 2500);
     const ah = await page.text();
-    check("apd: jatuh tempo karyawan memuat Rudi (sepatu segera ganti)", ah.includes("Rudi Hartono") && ah.includes("Segera Ganti"), ah.slice(0, 160));
+    check("apd: APD Karyawan memuat Rudi (sepatu segera MR)", ah.includes("Rudi Hartono") && ah.includes("Segera MR"), ah.slice(0, 160));
     await visit(page, "/apd?tab=periodik", 2500);
-    check("apd: masa periodik dari Matrix APD", (await page.text()).includes("1x per 3 tahun"));
+    check("apd: tab Matrix APD (periodik)", (await page.text()).includes("1x per 3 tahun"));
     const apdDb = await asUser(USER("scm"), APP_ID);
     const { data: apdReq } = await apdDb.from("apd_requests").select("id, code").eq("status", "approved").limit(1).maybeSingle();
     await visit(page, `/apd/pengajuan/${apdReq?.id}`, 2500);
@@ -458,7 +461,7 @@ try {
         await page.send("DOM.setFileInputFiles", { nodeId, files: [apdXlsx] });
         const shown = await page.waitText("2. Ringkasan isi file", 15000);
         const it = await page.text();
-        check("apd impor: workbook terbaca (98 pengiriman, 42 pengajuan, 12 site untuk dipetakan)", shown && it.includes("98 baris") && it.includes("42 dari 60 baris MR") && it.includes("3. Petakan site ke lokasi"), it.slice(0, 200));
+        check("apd impor: workbook terbaca (98 pengiriman, 42 pengajuan, 12 site untuk dipetakan)", shown && it.includes("98 baris") && it.includes("42 dari 60 baris MR") && it.includes("Petakan site ke lokasi") && it.includes("Gudang tujuan stok"), it.slice(0, 200));
       } else check("apd impor: halaman impor tersedia (atau sudah diimpor)", (await page.text()).includes("Sudah diimpor"));
     }
     await loginPage(page, BASE, USER("karyawan"));

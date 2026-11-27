@@ -66,7 +66,7 @@ export async function saveMoveAction(values: unknown): Promise<FormState> {
     requestId = l?.request_id;
   }
   refresh(requestId);
-  return ok(`Mutasi dicatat. Stok sekarang ${r.stock}.`, { id: r.id, stock: r.stock });
+  return ok(`Transaksi In / Out dicatat. Stok sekarang ${r.stock}.`, { id: r.id, stock: r.stock });
 }
 
 export async function voidMoveAction(id: string, reason: string): Promise<FormState> {
@@ -77,7 +77,7 @@ export async function voidMoveAction(id: string, reason: string): Promise<FormSt
   const { error } = await supabase.rpc("apd_move_void", { p_id: id, p_reason: trimmed });
   if (error) return k3DbError(error);
   refresh();
-  return ok("Mutasi dibatalkan; stok dihitung ulang.");
+  return ok("Transaksi In / Out dibatalkan; stok dihitung ulang.");
 }
 
 // ---------------------------------------------------------------- pengajuan

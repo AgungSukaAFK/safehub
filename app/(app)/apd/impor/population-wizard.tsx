@@ -83,7 +83,7 @@ export function ApdPopulationWizard({ locations }: { locations: { id: string; na
             )}
             <p className="text-xs text-muted-foreground">
               Karyawan yang belum ada dibuat dengan <strong>NIK sementara APD-NNNN</strong> (ganti dengan NRP asli di Manpower kapan saja). Kolom Duedate/Warn Days Excel tidak dibaca:
-              jatuh tempo dihitung ulang dari masa periodik Matrix APD.
+              jatuh tempo dihitung ulang dari periodik Matrix APD.
             </p>
             <ul className="divide-y rounded-lg border">
               {summary.sites.map((s) => (

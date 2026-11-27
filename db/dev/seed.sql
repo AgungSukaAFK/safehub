@@ -1142,7 +1142,7 @@ begin
   -- riwayat penerimaan karyawan demo (OUT tanpa pengajuan, sebelum sistem)
   insert into __APP__.apd_stock_moves (company_code, warehouse_id, location_id, kind, item_id, qty, moved_on, pic, dest_location_id, employee_id, recipient_name, created_by)
   select 'GMI', v_wh, v_ho, 'out', i.id, x.qty, current_date - x.ago, 'Gudang HO', v_site, x.emp, e.name, v_hse
-    from (values ('SS-01-41', 1, 330, v_rudi), ('HLM-01', 1, 200, v_rudi), ('KS-01-03', 2, 190, v_rudi), ('SG-01', 1, 60, v_rudi),
+    from (values ('SS-01-41', 1, 470, v_rudi), ('HLM-01', 1, 200, v_rudi), ('KS-01-03', 2, 190, v_rudi), ('SG-01', 1, 60, v_rudi),
                  ('SS-01-42', 1, 30, v_agus), ('KM-01-04', 2, 100, v_agus)) x(code, qty, ago, emp)
     join __APP__.apd_items i on i.code = x.code join __APP__.employees e on e.id = x.emp;
   insert into __APP__.apd_employee_sizes (employee_id, type_id, size, updated_by)

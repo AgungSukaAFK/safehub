@@ -27,8 +27,10 @@ select zz_test.check('P1a tabel APD tanpa hak tulis untuk authenticated; RPC bis
   and not has_function_privilege('anon', '__APP__.apd_request_save(uuid, jsonb)', 'execute')
   and not has_function_privilege('authenticated', '__APP__.apd_stock_qty(uuid, uuid)', 'execute')
   and not has_function_privilege('authenticated', '__APP__.apd_request_on_approval(uuid, text)', 'execute'));
-select zz_test.check('P1b jenis APD dari Matrix APD: sepatu 365 hr, helm 1095 hr, earplug 91 hr, sarung tangan tidak dilacak',
-  (select interval_days from __APP__.apd_types where code = 'safety_shoes') = 365
+select zz_test.check('P1b jenis APD (rumus Excel, 29): sepatu 545 hr MR 90, helm 1095 hr MR 365, jeans 730 hr, earplug 91 hr, sarung tangan tidak dilacak',
+  (select interval_days = 545 and warn_days = 90 from __APP__.apd_types where code = 'safety_shoes')
+  and (select warn_days from __APP__.apd_types where code = 'safety_helmet') = 365
+  and (select interval_days from __APP__.apd_types where code = 'uniform_pants') = 730
   and (select interval_days from __APP__.apd_types where code = 'safety_helmet') = 1095
   and (select interval_days from __APP__.apd_types where code = 'earplug') = 91
   and (select not tracked from __APP__.apd_types where code = 'safety_glove')
@@ -41,7 +43,7 @@ select zz_test.check('P2a karyawan: hanya mutasi & pengajuan miliknya, master te
   (select count(*) from __APP__.apd_stock_moves) = (select count(*) from __APP__.apd_stock_moves where employee_id = :'e_rudi')
   and (select count(*) from __APP__.apd_stock_moves) >= 5
   and (select count(*) from __APP__.apd_requests) = 2 and (select count(*) from __APP__.apd_items) >= 14);
-select zz_test.check('P2b APD saya: sepatu 330 hari lalu = segera ganti, kaos terakhir 2 hari lalu = aman',
+select zz_test.check('P2b APD saya: sepatu 470 hari lalu = segera MR, kaos terakhir 2 hari lalu = aman',
   (select state from __APP__.apd_my_holdings() where type_code = 'safety_shoes') = 'due_soon'
   and (select state from __APP__.apd_my_holdings() where type_code = 'uniform_tshirt') = 'ok'
   and (select last_on from __APP__.apd_my_holdings() where type_code = 'uniform_tshirt') = (now() at time zone 'Asia/Jakarta')::date - 2);
@@ -159,9 +161,9 @@ reset role;
 -- ---------------------------------------------------------------- pengingat jatuh tempo (P9)
 -- sesi terakhir = karyawan; notify() tidak menotifikasi pemanggil sendiri → jalankan sebagai admin (di produksi: tanpa user)
 select zz_test.login('admin@demo.lourdes.test');
--- seed: sepatu Rudi dikirim current_date - 330, masa 365 hari → jatuh tempo current_date + 35; dijalankan 14 hari sebelumnya
-select (__APP__.run_apd_reminders(current_date + 21) ->> 'apd_due')::int as rem1 \gset
-select (__APP__.run_apd_reminders(current_date + 21) ->> 'apd_due')::int as rem2 \gset
+-- seed: sepatu Rudi dikirim current_date - 470, masa 545 hari (29) → jatuh tempo current_date + 75; dijalankan 14 hari sebelumnya
+select (__APP__.run_apd_reminders(current_date + 61) ->> 'apd_due')::int as rem1 \gset
+select (__APP__.run_apd_reminders(current_date + 61) ->> 'apd_due')::int as rem2 \gset
 select zz_test.check('P5a pengingat apd_due: sepatu Rudi jatuh tempo 14 hari lagi diberi tahu ke karyawan + HSE, idempoten',
   :rem1 >= 1 and :rem2 = 0
   and exists (select 1 from __APP__.notifications n join public.profiles p on p.id = n.user_id

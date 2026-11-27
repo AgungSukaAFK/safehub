@@ -39,7 +39,7 @@ export default async function MyApdPage() {
           {canCreate && <Link href="/apd/pengajuan/baru?alasan=periodic" className="font-medium underline underline-offset-2">Ajukan penggantian berkala</Link>}
         </p>
       )}
-      <Content title="APD yang Saya Terima" description="Jatuh tempo = tanggal terakhir menerima + masa periodik (Matrix APD).">
+      <Content title="APD yang Saya Terima" description="Jatuh tempo = tanggal terakhir menerima + periodik di Matrix APD.">
         {holdings.length === 0 ? (
           <p className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">Belum ada riwayat penerimaan APD.</p>
         ) : (

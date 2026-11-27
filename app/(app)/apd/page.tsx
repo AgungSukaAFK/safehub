@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Fragment } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ArrowDownToLine, ArrowDownUp, ArrowUpFromLine, FilePlus2, MoreHorizontal, Pencil, Plus, Truck, Upload } from "lucide-react";
@@ -6,7 +7,7 @@ import { StatusBadge } from "@/components/detail/status-badge";
 import { Content } from "@/components/list/content";
 import { PageHeader } from "@/components/page-header";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { getApdSummary, getStockByWarehouse, listApdItems, listApdTypes, listHoldings, listMoves, listOpsRequests, listRequests, listStock, listWarehouses, parseHoldingParams, parseMoveParams, parseRequestParams, type OpsRequest, type Warehouse } from "@/lib/apd";
+import { getApdSummary, getStockByWarehouse, listApdItems, listApdTypes, listHoldings, listMoves, listOpsRequests, listRequests, listStock, listWarehouses, parseHoldingParams, parseMoveParams, parseRequestParams, type ApdType, type HoldingRow, type OpsRequest, type Warehouse } from "@/lib/apd";
 import { APD_TAB_LABELS, APD_TABS, FULFILLMENT, HOLDING_FILTERS, HOLDING_STATE, intervalText, MOVE_FILTERS, MOVE_KIND, MR_STATE, mrState, REASON_LABELS, REQUEST_FILTER_LABELS, REQUEST_STATUS, REQUEST_STATUS_FILTERS, SIZE_KIND_LABELS, type Reason } from "@/lib/apd-rules";
 import { requireAccess } from "@/lib/auth";
 import { formatDate, formatNumber } from "@/lib/format";
@@ -65,7 +66,7 @@ export default async function ApdPage({ searchParams }: PageProps<"/apd">) {
             {canManage && <RequestMovesSheet kind="in" trigger={<Button variant="outline"><ArrowDownToLine /> IN Barang</Button>} {...ops$} />}
             {canManage && <RequestMovesSheet kind="out" trigger={<Button variant="outline"><ArrowUpFromLine /> OUT Barang</Button>} {...ops$} />}
             {writer && <Link href="/apd/pengajuan/baru" className={buttonVariants()}><FilePlus2 /> Ajukan APD</Link>}
-            {canManage && <MoveSheet trigger={<Button variant="ghost" size="sm"><ArrowDownUp /> Mutasi lain</Button>} warehouses={whOptions} items={itemOptions} employees={empOptions} sites={siteOptions} />}
+            {canManage && <MoveSheet trigger={<Button variant="ghost" size="sm"><ArrowDownUp /> In / Out lain</Button>} warehouses={whOptions} items={itemOptions} employees={empOptions} sites={siteOptions} />}
             {(canManage || (writer && access.functions.includes("hr"))) && <Link href="/apd/impor" className={buttonVariants({ variant: "ghost", size: "sm" })}><Upload /> Impor Data</Link>}
           </>
         }
@@ -86,17 +87,17 @@ export default async function ApdPage({ searchParams }: PageProps<"/apd">) {
       {tab === "pengajuan" && <RequestsTab supabase={supabase} sp={sp} site={siteId} siteLabel={label} canManage={canManage} ops={ops$} />}
       {tab === "stok" && <StockTab supabase={supabase} sp={sp} warehouses={allWarehouses} />}
       {tab === "mutasi" && <MovesTab supabase={supabase} sp={sp} site={siteId} canManage={canManage} href={href} />}
-      {tab === "karyawan" && <HoldingsTab supabase={supabase} sp={sp} site={siteId} href={href} />}
+      {tab === "karyawan" && <HoldingsTab supabase={supabase} sp={sp} site={siteId} href={href} types={types} siteNames={Object.fromEntries(sites.map((s) => [s.id, s.name]))} />}
       {tab === "periodik" && (
         <Content
-          title="Masa Periodik APD"
+          title="Matrix APD"
           description="Nilai awal dari Matrix APD PT. Garuda Mart Indonesia (Head of Dept HSE, 24 Februari 2026). Berlaku untuk HO, Branch & Site."
           cardAction={canPolicy ? <ApdTypeSheet trigger={<Button size="sm" variant="outline"><Plus /> Tambah Jenis</Button>} /> : undefined}
         >
           <div className="overflow-x-auto rounded-lg border">
             <table className="w-full min-w-[820px] text-sm">
               <thead className="bg-muted/40 text-xs text-muted-foreground">
-                <tr><Th>Jenis APD</Th><Th>Masa periodik</Th><Th>Peringatan</Th><Th>Ukuran</Th><Th>Keterangan</Th><Th>{""}</Th></tr>
+                <tr><Th>Jenis APD</Th><Th>Periodik penggantian</Th><Th>Peringatan</Th><Th>Ukuran</Th><Th>Keterangan</Th><Th>{""}</Th></tr>
               </thead>
               <tbody>
                 {types.map((t) => (
@@ -158,7 +159,7 @@ export default async function ApdPage({ searchParams }: PageProps<"/apd">) {
 }
 
 async function SummaryTab({ supabase, site, siteLabel }: { supabase: Supa; site: string | null; siteLabel: string }) {
-  const s = await getApdSummary(supabase, site);
+  const [s, holdings] = await Promise.all([getApdSummary(supabase, site), listHoldings(supabase, site, { state: "semua", q: "" })]);
   const tiles: { title: string; value: string; hint: string; href: string; warn?: boolean }[] = [
     { title: "Stok tersedia", value: formatNumber(s.stockTotal), hint: `${s.itemsActive} kode barang aktif · semua gudang`, href: "/apd?tab=stok" },
     { title: "Barang kosong", value: formatNumber(s.itemsEmpty), hint: s.itemsNegative ? `${s.itemsNegative} minus: perlu stock opname` : "Stok 0 atau kurang", href: "/apd?tab=stok&status=kosong", warn: s.itemsNegative > 0 },
@@ -166,20 +167,89 @@ async function SummaryTab({ supabase, site, siteLabel }: { supabase: Supa; site:
     { title: "Menunggu approval", value: formatNumber(s.requestsPending), hint: `Pengajuan · ${siteLabel}`, href: "/apd?tab=pengajuan&status=pending_approval" },
     { title: "Belum terpenuhi", value: formatNumber(s.requestsOpen), hint: `${formatNumber(s.outstandingQty)} unit outstanding (OS)`, href: "/apd?tab=pengajuan&status=terbuka", warn: s.requestsOpen > 0 },
     { title: "Rata-rata lead time", value: s.leadDaysAvg === null ? "Belum tersedia" : `${formatNumber(s.leadDaysAvg)} hari`, hint: "Disetujui s.d. terkirim penuh, 90 hari terakhir", href: "/apd?tab=pengajuan&status=approved" },
-    { title: "Lewat jatuh tempo", value: formatNumber(s.holdingsExpired), hint: "APD karyawan melewati masa periodik", href: "/apd?tab=karyawan&status=expired", warn: s.holdingsExpired > 0 },
-    { title: "Segera ganti", value: formatNumber(s.holdingsDueSoon), hint: "Masuk masa peringatan", href: "/apd?tab=karyawan&status=due_soon" },
     { title: "APD keluar 30 hari", value: formatNumber(s.out30d), hint: `Unit dikirim ke ${siteLabel}`, href: "/apd?tab=mutasi&jenis=out" },
   ];
   return (
-    <div className="col-span-12 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-      {tiles.map((t) => (
-        <Link key={t.title} href={t.href} className={cn("rounded-xl border bg-card p-4 hover:bg-accent/40", t.warn && "border-amber-300 dark:border-amber-900")}>
-          <span className="text-xs text-muted-foreground">{t.title}</span>
-          <strong className={cn("block text-2xl tabular-nums", t.value === "Belum tersedia" && "text-base font-medium text-muted-foreground")}>{t.value}</strong>
-          <small className="text-xs text-muted-foreground">{t.hint}</small>
-        </Link>
-      ))}
-    </div>
+    <>
+      <DueList
+        rows={holdings.filter((h) => h.state === "expired")}
+        title="Sudah Lewat Jatuh Tempo"
+        description={`${formatNumber(s.holdingsExpired)} APD melewati periodik Matrix APD · ${siteLabel}`}
+        empty="Tidak ada APD karyawan yang lewat jatuh tempo."
+        status="expired"
+      />
+      <DueList
+        rows={holdings.filter((h) => h.state === "due_soon")}
+        title="Segera Jatuh Tempo (Segera MR)"
+        description={`${formatNumber(s.holdingsDueSoon)} APD masuk masa peringatan · ${siteLabel}`}
+        empty="Tidak ada APD karyawan yang segera jatuh tempo."
+        status="due_soon"
+      />
+      <div className="col-span-12 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {tiles.map((t) => (
+          <Link key={t.title} href={t.href} className={cn("rounded-xl border bg-card p-4 hover:bg-accent/40", t.warn && "border-amber-300 dark:border-amber-900")}>
+            <span className="text-xs text-muted-foreground">{t.title}</span>
+            <strong className={cn("block text-2xl tabular-nums", t.value === "Belum tersedia" && "text-base font-medium text-muted-foreground")}>{t.value}</strong>
+            <small className="text-xs text-muted-foreground">{t.hint}</small>
+          </Link>
+        ))}
+      </div>
+    </>
+  );
+}
+
+const DUE_LIMIT = 12;
+
+/** Ringkasan: karyawan dengan APD lewat / segera jatuh tempo, satu baris per karyawan, paling mendesak di atas. */
+function DueList({ rows, title, description, empty, status }: { rows: HoldingRow[]; title: string; description: string; empty: string; status: "expired" | "due_soon" }) {
+  const byEmp = new Map<string, { id: string; name: string; code: string; jobTitle: string; items: HoldingRow[] }>();
+  for (const h of rows) {
+    const e = byEmp.get(h.employeeId) ?? { id: h.employeeId, name: h.employeeName, code: h.employeeCode, jobTitle: h.jobTitle, items: [] };
+    e.items.push(h);
+    byEmp.set(h.employeeId, e);
+  }
+  const people = [...byEmp.values()]
+    .map((e) => ({ ...e, items: e.items.sort((a, b) => a.daysLeft - b.daysLeft) }))
+    .sort((a, b) => a.items[0].daysLeft - b.items[0].daysLeft);
+  const shown = people.slice(0, DUE_LIMIT);
+  const expired = status === "expired";
+  return (
+    <Content
+      size="md"
+      title={title}
+      description={`${formatNumber(people.length)} karyawan · ${description}`}
+      cardAction={people.length > 0 ? <Link href={`/apd?tab=karyawan&status=${status}`} className="text-sm underline underline-offset-2">Lihat semua</Link> : undefined}
+      className={cn(people.length > 0 && (expired ? "border-red-300 dark:border-red-900" : "border-amber-300 dark:border-amber-900"))}
+      bodyClassName="px-0"
+    >
+      {people.length === 0 ? (
+        <p className="px-5 text-sm text-muted-foreground">{empty}</p>
+      ) : (
+        <ul className="divide-y border-y">
+          {shown.map((e) => (
+            <li key={e.id} className="flex flex-wrap items-start gap-x-3 gap-y-1.5 px-5 py-2.5">
+              <div className="min-w-0 flex-1">
+                <Link href={`/manpower/${e.id}`} className="font-medium underline underline-offset-2">{e.name}</Link>
+                <small className="block truncate text-xs text-muted-foreground">{e.code} · {e.jobTitle}</small>
+                <span className="mt-1 flex flex-wrap gap-1">
+                  {e.items.map((h) => (
+                    <span key={h.typeCode} className={cn("rounded border px-1.5 py-0.5 text-xs", expired ? "border-red-200 bg-red-50 text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200" : "border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200")}>
+                      {h.typeName} · <span className="tabular-nums">{h.daysLeft < 0 ? `lewat ${-h.daysLeft} hari` : h.daysLeft === 0 ? "hari ini" : `${h.daysLeft} hari lagi`}</span>
+                    </span>
+                  ))}
+                </span>
+              </div>
+              <Link href={`/apd/pengajuan/baru?karyawan=${e.id}&alasan=periodic`} className={buttonVariants({ size: "xs", variant: expired ? "default" : "outline" })}>
+                <FilePlus2 /> Ajukan MR
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+      {people.length > DUE_LIMIT && (
+        <Link href={`/apd?tab=karyawan&status=${status}`} className="mt-2 block px-5 text-sm text-muted-foreground underline underline-offset-2">+{formatNumber(people.length - DUE_LIMIT)} karyawan lainnya</Link>
+      )}
+    </Content>
   );
 }
 
@@ -296,7 +366,7 @@ async function StockTab({ supabase, sp, warehouses }: { supabase: Supa; sp: Sear
         <div className="overflow-x-auto rounded-lg border">
           <table className="w-full min-w-[960px] text-sm">
             <thead className="sticky top-0 bg-muted/40 text-xs text-muted-foreground">
-              <tr><Th>Kode</Th><Th>Barang</Th><Th right>Stok awal</Th><Th right>Masuk</Th><Th right>Keluar</Th><Th right>Kembali</Th><Th right>Penyesuaian</Th><Th right>Stok</Th><Th>Status</Th><Th right>OS pengajuan</Th><Th>Mutasi terakhir</Th></tr>
+              <tr><Th>Kode</Th><Th>Barang</Th><Th right>Stok awal</Th><Th right>Masuk</Th><Th right>Keluar</Th><Th right>Kembali</Th><Th right>Penyesuaian</Th><Th right>Stok</Th><Th>Status</Th><Th right>OS pengajuan</Th><Th>In / Out terakhir</Th></tr>
             </thead>
             <tbody>
               {rows.map((r) => (
@@ -331,7 +401,7 @@ async function MovesTab({ supabase, sp, site, canManage, href }: { supabase: Sup
   const p = parseMoveParams(sp);
   const rows = await listMoves(supabase, p, site);
   return (
-    <Content title="Mutasi Stok" description={`${rows.length} mutasi${rows.length >= 500 ? " (500 terbaru)" : ""} · gudang atau site tujuan sesuai pilihan site`}>
+    <Content title="In / Out Stok" description={`${rows.length} transaksi${rows.length >= 500 ? " (500 terbaru)" : ""} · gudang atau site tujuan sesuai pilihan site`}>
       <div className="mb-3 flex flex-wrap items-center gap-1.5">
         {MOVE_FILTERS.map((k) => (
           <Link key={k} href={href({ jenis: k === "semua" ? null : k })} aria-pressed={p.kind === k} className={cn("rounded-full border px-2.5 py-0.5 text-xs", p.kind === k ? "border-primary bg-primary/5 font-medium text-primary" : "hover:bg-accent")}>{k === "semua" ? "Semua" : MOVE_KIND[k].label}</Link>
@@ -340,11 +410,11 @@ async function MovesTab({ supabase, sp, site, canManage, href }: { supabase: Sup
         <form method="get" className="ml-auto flex gap-2">
           <input type="hidden" name="tab" value="mutasi" />
           {p.kind !== "semua" && <input type="hidden" name="jenis" value={p.kind} />}
-          <input name="q" defaultValue={p.q} placeholder="Cari penerima / no ref / PIC" aria-label="Cari mutasi" className="h-8 w-56 rounded-md border bg-background px-2 text-sm" />
+          <input name="q" defaultValue={p.q} placeholder="Cari penerima / no ref / PIC" aria-label="Cari In / Out" className="h-8 w-56 rounded-md border bg-background px-2 text-sm" />
         </form>
       </div>
       {rows.length === 0 ? (
-        <Empty>Belum ada mutasi untuk filter ini.</Empty>
+        <Empty>Belum ada transaksi In / Out untuk filter ini.</Empty>
       ) : (
         <div className="overflow-x-auto rounded-lg border">
           <table className="w-full min-w-[1040px] text-sm">
@@ -381,12 +451,48 @@ async function MovesTab({ supabase, sp, site, canManage, href }: { supabase: Sup
   );
 }
 
-async function HoldingsTab({ supabase, sp, site, href }: { supabase: Supa; sp: SearchParams; site: string | null; href: (c: Record<string, string | null>) => string }) {
+// Label pendek seperti kolom status sheet "Populasi Manpower" di Excel (Expired / MR / On Time).
+const MATRIX_STATE: Record<string, { label: string; cell: string }> = {
+  expired: { label: "Expired", cell: "bg-red-100 text-red-900 dark:bg-red-950/60 dark:text-red-200" },
+  due_soon: { label: "MR", cell: "bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-200" },
+  ok: { label: "On Time", cell: "bg-green-100 text-green-900 dark:bg-green-950/50 dark:text-green-200" },
+};
+const STATE_RANK: Record<string, number> = { expired: 0, due_soon: 1, ok: 2 };
+const SubTh = ({ children, first }: { children: string; first?: boolean }) => <th scope="col" className={cn("border-b px-2 py-1.5 text-left font-medium whitespace-nowrap", first && "border-l")}>{children}</th>;
+
+/**
+ * Matriks APD per karyawan, mengikuti sheet "Populasi Manpower" Excel: satu baris per karyawan, satu grup kolom per jenis
+ * (UK/Warna · QTY · Supply · Duedate · Days Left · status). Grup hanya untuk jenis yang muncul di data; kolom UK hanya untuk
+ * jenis berukuran, QTY hanya bila ada penerimaan > 1. Filter status = karyawan yang punya minimal satu APD berstatus itu.
+ */
+async function HoldingsTab({ supabase, sp, site, href, types, siteNames }: { supabase: Supa; sp: SearchParams; site: string | null; href: (c: Record<string, string | null>) => string; types: ApdType[]; siteNames: Record<string, string> }) {
   const p = parseHoldingParams(sp);
-  const rows = await listHoldings(supabase, site, p);
-  const people = new Set(rows.map((r) => r.employeeId)).size;
+  const all = await listHoldings(supabase, site, { state: "semua", q: p.q });
+  const byEmp = new Map<string, { id: string; name: string; code: string; jobTitle: string; site: string; cells: Map<string, HoldingRow>; worst: number }>();
+  for (const h of all) {
+    const e = byEmp.get(h.employeeId) ?? { id: h.employeeId, name: h.employeeName, code: h.employeeCode, jobTitle: h.jobTitle, site: siteNames[h.locationId] ?? "-", cells: new Map(), worst: 2 };
+    e.cells.set(h.typeCode, h);
+    e.worst = Math.min(e.worst, STATE_RANK[h.state] ?? 2);
+    byEmp.set(h.employeeId, e);
+  }
+  const people = [...byEmp.values()]
+    .filter((e) => p.state === "semua" || [...e.cells.values()].some((h) => h.state === p.state))
+    .sort((a, b) => a.site.localeCompare(b.site, "id") || a.name.localeCompare(b.name, "id"));
+  const present = new Set(all.map((h) => h.typeCode));
+  const groups = types
+    .filter((t) => present.has(t.code))
+    .map((t) => ({
+      code: t.code,
+      name: t.name,
+      sizeLabel: t.sizeKind === "none" ? null : t.sizeKind === "color" ? "Warna" : "UK",
+      qty: all.some((h) => h.typeCode === t.code && (h.lastQty ?? 1) > 1),
+    }));
+  const count = (s: string) => all.filter((h) => h.state === s).length;
   return (
-    <Content title="Jatuh Tempo APD per Karyawan" description={`${rows.length} APD · ${people} karyawan. Hanya jenis yang pernah diterima dan dilacak masa periodiknya.`}>
+    <Content
+      title="APD Karyawan"
+      description={`${people.length} karyawan · ${count("expired")} APD expired · ${count("due_soon")} APD perlu MR. Supply = terakhir terima, Duedate = Supply + periodik Matrix APD, MR = masuk masa peringatan.`}
+    >
       <div className="mb-3 flex flex-wrap items-center gap-1.5">
         {HOLDING_FILTERS.map((k) => (
           <Link key={k} href={href({ status: k === "semua" ? null : k })} aria-pressed={p.state === k} className={cn("rounded-full border px-2.5 py-0.5 text-xs", p.state === k ? "border-primary bg-primary/5 font-medium text-primary" : "hover:bg-accent")}>{k === "semua" ? "Semua" : HOLDING_STATE[k].label}</Link>
@@ -397,24 +503,62 @@ async function HoldingsTab({ supabase, sp, site, href }: { supabase: Supa; sp: S
           <input name="q" defaultValue={p.q} placeholder="Cari nama / NIK / jabatan" aria-label="Cari karyawan" className="h-8 w-56 rounded-md border bg-background px-2 text-sm" />
         </form>
       </div>
-      {rows.length === 0 ? (
-        <Empty>Belum ada riwayat APD karyawan untuk filter ini. Riwayat terbentuk dari pengiriman (mutasi keluar) yang ditautkan ke karyawan.</Empty>
+      {people.length === 0 ? (
+        <Empty>Belum ada riwayat APD karyawan untuk filter ini. Riwayat terbentuk dari pengiriman (OUT) yang ditautkan ke karyawan.</Empty>
       ) : (
-        <div className="overflow-x-auto rounded-lg border">
-          <table className="w-full min-w-[880px] text-sm">
-            <thead className="bg-muted/40 text-xs text-muted-foreground">
-              <tr><Th>Karyawan</Th><Th>Jenis APD</Th><Th>Ukuran</Th><Th>Terakhir terima</Th><Th>Jatuh tempo</Th><Th>Status</Th><Th>{""}</Th></tr>
+        <div className="max-h-[75vh] overflow-auto rounded-lg border">
+          <table className="w-max min-w-full border-separate border-spacing-0 text-xs">
+            <thead className="sticky top-0 z-20 bg-muted text-muted-foreground">
+              <tr>
+                <th scope="col" rowSpan={2} className="sticky left-0 z-30 w-9 border-b bg-muted px-2 py-1.5 text-left font-medium">No</th>
+                <th scope="col" rowSpan={2} className="sticky left-9 z-30 min-w-44 border-r border-b bg-muted px-2 py-1.5 text-left font-medium">Nama</th>
+                <th scope="col" rowSpan={2} className="border-b px-2 py-1.5 text-left font-medium">Site</th>
+                <th scope="col" rowSpan={2} className="border-b px-2 py-1.5 text-left font-medium">Jabatan</th>
+                {groups.map((g) => (
+                  <th key={g.code} scope="colgroup" colSpan={4 + (g.sizeLabel ? 1 : 0) + (g.qty ? 1 : 0)} className="border-b border-l px-2 py-1.5 text-center font-semibold text-foreground">{g.name}</th>
+                ))}
+                <th scope="col" rowSpan={2} className="border-b border-l px-2 py-1.5 font-medium">{""}</th>
+              </tr>
+              <tr>
+                {groups.map((g) => (
+                  <Fragment key={g.code}>
+                    {g.sizeLabel && <SubTh first>{g.sizeLabel}</SubTh>}
+                    {g.qty && <SubTh first={!g.sizeLabel}>QTY</SubTh>}
+                    <SubTh first={!g.sizeLabel && !g.qty}>Supply</SubTh>
+                    <SubTh>Duedate</SubTh>
+                    <SubTh>Days Left</SubTh>
+                    <SubTh>Status</SubTh>
+                  </Fragment>
+                ))}
+              </tr>
             </thead>
             <tbody>
-              {rows.map((h) => (
-                <tr key={`${h.employeeId}-${h.typeCode}`} className="border-t">
-                  <td className="px-3 py-2"><Link href={`/manpower/${h.employeeId}`} className="font-medium underline underline-offset-2">{h.employeeName}</Link><small className="block text-xs text-muted-foreground">{h.employeeCode} · {h.jobTitle}</small></td>
-                  <td className="px-3 py-2">{h.typeName}<small className="block text-xs text-muted-foreground">{h.lastItem}</small></td>
-                  <td className="px-3 py-2">{h.size ?? "-"}</td>
-                  <td className="px-3 py-2 whitespace-nowrap tabular-nums">{formatDate(h.lastOn)}</td>
-                  <td className="px-3 py-2 whitespace-nowrap tabular-nums">{formatDate(h.nextDue)}<small className="block text-xs text-muted-foreground">{h.daysLeft < 0 ? `lewat ${-h.daysLeft} hari` : `${h.daysLeft} hari lagi`}</small></td>
-                  <td className="px-3 py-2"><StatusBadge value={h.state} map={HOLDING_STATE} /></td>
-                  <td className="px-3 py-2 text-right">{h.state !== "ok" && <Link href={`/apd/pengajuan/baru?karyawan=${h.employeeId}&alasan=periodic`} className="text-xs underline underline-offset-2">Ajukan ganti</Link>}</td>
+              {people.map((e, i) => (
+                <tr key={e.id} className="group">
+                  <td className="sticky left-0 z-10 w-9 border-t bg-card px-2 py-1.5 tabular-nums group-hover:bg-muted">{i + 1}</td>
+                  <td className="sticky left-9 z-10 border-t border-r bg-card px-2 py-1.5 group-hover:bg-muted">
+                    <Link href={`/manpower/${e.id}`} className="font-medium underline underline-offset-2">{e.name}</Link>
+                    <small className="block text-[11px] text-muted-foreground">{e.code}</small>
+                  </td>
+                  <td className="border-t px-2 py-1.5 whitespace-nowrap">{e.site}</td>
+                  <td className="border-t px-2 py-1.5 whitespace-nowrap">{e.jobTitle}</td>
+                  {groups.map((g) => {
+                    const h = e.cells.get(g.code);
+                    const st = h ? MATRIX_STATE[h.state] : null;
+                    return (
+                      <Fragment key={g.code}>
+                        {g.sizeLabel && <td className="border-t border-l px-2 py-1.5">{h?.size ?? ""}</td>}
+                        {g.qty && <td className={cn("border-t px-2 py-1.5 text-right tabular-nums", !g.sizeLabel && "border-l")}>{h?.lastQty ?? ""}</td>}
+                        <td title={h?.lastItem} className={cn("border-t px-2 py-1.5 whitespace-nowrap tabular-nums", !g.sizeLabel && !g.qty && "border-l")}>{h ? formatDate(h.lastOn) : ""}</td>
+                        <td className="border-t px-2 py-1.5 whitespace-nowrap tabular-nums">{h ? formatDate(h.nextDue) : ""}</td>
+                        <td className={cn("border-t px-2 py-1.5 text-right tabular-nums", st?.cell)}>{h ? formatNumber(h.daysLeft) : ""}</td>
+                        <td className={cn("border-t px-2 py-1.5 font-medium whitespace-nowrap", st?.cell)}>{st?.label ?? ""}</td>
+                      </Fragment>
+                    );
+                  })}
+                  <td className="border-t border-l px-2 py-1.5 whitespace-nowrap">
+                    {e.worst < 2 && <Link href={`/apd/pengajuan/baru?karyawan=${e.id}&alasan=periodic`} className="underline underline-offset-2">Ajukan MR</Link>}
+                  </td>
                 </tr>
               ))}
             </tbody>

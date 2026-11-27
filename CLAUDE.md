@@ -369,7 +369,8 @@ Sumber: folder `Monitoring APD/` (Excel + Form Berita Acara + Form Request). Spe
   rusak karena kelalaian wajib `deduction_ack`; approved: notifikasi HSE/SCM site + karyawan). Template demo: HSE → HR → HSE Senior. Data lama
   (`source = 'import'`) tidak lewat approval dan boleh tanpa `employee_id` (snapshot `recipient_name`).
 - **Pengingat** `apd_due` (`run_apd_reminders`, offset 14/0 hari; `run_reminders` dibungkus lagi di 24). Kategori notifikasi `apd`.
-- **UI**: `/apd` (tab `ringkasan/pengajuan/stok/mutasi/karyawan/periodik/barang`, staf K3; Karyawan dialihkan ke `/apd/saya`), `/apd/pengajuan` (redirect; + `baru`,
+- **Matrix APD = rumus Excel** (`db/app/29_apd_matrix_excel.sql`, keputusan user 2026-11-27): nilai sheet "Populasi Manpower" mengalahkan sheet "Matrix APD" (kemeja/kaos 180/MR 60, sepatu 545/90, helm 1095/365, jeans 730/365). Seed demo sepatu Rudi = 470 hari lalu (tetap "Segera MR"). Produksi: serah-terima `db/out/supabase/apd-matrix/`.
+- **UI**: `/apd` (tab `ringkasan/pengajuan/stok/mutasi/karyawan/periodik/barang`; label tampil: mutasi = "In / Out", karyawan = "APD Karyawan" (matriks per karyawan ala sheet Populasi Manpower: grup UK·QTY·Supply·Duedate·Days Left·Expired/MR/On Time per jenis), periodik = "Matrix APD", kunci URL tetap; Ringkasan mendahulukan daftar karyawan lewat / segera jatuh tempo, staf K3; Karyawan dialihkan ke `/apd/saya`), `/apd/pengajuan` (redirect; + `baru`,
   `[id]`, `[id]/ubah`), `/apd/saya`. Lib: `lib/apd-rules.ts` (label, zod; aman client), `lib/apd.ts` (loader). Pengiriman untuk pengajuan =
   tombol Kirim per baris (`MoveSheet` dengan `lineId`). Cetak Berita Acara = `PrintableDocument` + CCTV `export.print`.
 - **Data Excel** (U4, diubah 2026-11-26): lewat app, BUKAN psql (lourdes-db melarang tulis data manual di produksi). `/apd/impor`
